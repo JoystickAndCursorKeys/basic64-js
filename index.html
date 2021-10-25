@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>BEEBEE 64</title>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="chrome=1">
+
+	<link rel="icon" href="res/img/fav.png">
+	<style>
+		.outer {
+		  display: table;
+		  position: absolute;
+		  top: 0;
+		  left: 0;
+		  height: 100%;
+		  width: 100%;
+		}
+
+		.middle {
+		  display: table-cell;
+		  vertical-align: middle;
+		}
+
+		.inner {
+		  margin-left: auto;
+		  margin-right: auto;
+		  text-align: center;
+		}
+		.screenCanvas {
+  		margin-left: auto;
+  		margin-right: auto;
+
+  		outline: none;
+  		-webkit-tap-highlight-color: rgba(255, 255, 255, 0); /* mobile webkit */
+  		cursor:crosshair;
+
+  		display: block;
+		}
+
+	</style>
+
+	<script src="res/script/g1/core/boot.js"></script>
+	<script src="res/script/g1/screens/c64/screen.js"></script>
+	<script src="res/script/basictokenizer.js"></script>
+	<script src="res/script/basicparser.js"></script>
+	<script src="res/script/basiccommands.js"></script>
+	<script src="res/script/basiccontext.js"></script>
+	<script src="res/script/w64.js"></script>
+
+
+<script>
+
+	var dmCMU = null;
+	var booter = null;
+	var SCR_H = null;
+	var SCR_H = null;
+	var MIN_SCR_W = 1024;
+	var MIN_SCR_H = 600;
+
+	window.onload = function() {
+
+		var console = new C64Screen( 'screenCanvas', 'res/script/g1/screens/c64', start );
+
+	}
+
+	function start( console ) {
+
+		document.getElementById("screenCanvas").focus();
+
+		var container = document.getElementById("middlediv");
+
+		var doc = document;
+
+		var size = console.getRenderSize();
+		SCR_W = size[0];
+		SCR_H = size[1];
+
+		var pgm = new Program( console );
+		var program = new Boot( 'screenCanvas', SCR_W, SCR_H, [ pgm, 'basic' ] );
+
+	}
+
+</script>
+
+
+</head>
+<body bgcolor=#000030>
+
+<div class="outer" id="outerdiv">
+  <div id="middlediv" class="middle">
+    <div id="innerdiv" class="inner">
+		<canvas class='screenCanvas' id="screenCanvas" width="100%" height="100%" tabindex='1'></canvas>
+    </div>
+
+  </div>
+</div>
+
+
+</body>
+</html>
