@@ -23,12 +23,36 @@ class BasicCommands {
   }
 
   list( pars ) {
+
+    this.context.printLine( "" );
     var context = this.context;
 
     for (const l of context.program)
       {
-        context.printLine( l[2] );
+        this.listLine( l[2] );
       }
+  }
+
+  listLine( rawLine ) {
+
+    var inString = false;
+    for( var i=0; i<rawLine.length; i++ ) {
+
+      var c = rawLine.charAt(i);
+
+      if( !inString ) {
+        this.context.sendChars( c, false  );
+      }
+      else {
+        this.context.sendCharsSimple( c, false );
+      }
+
+      if( c == "\"" ) {
+        inString = !inString;
+      }
+    }
+    this.context.printLine( "" );
+
   }
 
 

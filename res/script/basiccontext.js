@@ -133,6 +133,26 @@ class BasicContext {
     }
   }
 
+  sendCharsSimple( s, newline ) {
+
+    for( var i=0; i< s.length; i++) {
+      var c=s.charCodeAt( i );
+
+      if( this.reverseOn ) {
+        this.console.writeCharRev( String.fromCharCode(c)  );
+      }
+      else {
+        this.console.writeChar( String.fromCharCode(c)  );
+      }
+
+
+    }
+
+    if( newline ) {
+      this.console.writeString( "", true );
+    }
+  }
+
   setCursXPos( p ) {
     console.log("Error still exist here: " + p)
     this.console.cursorX( p );
@@ -454,10 +474,12 @@ class BasicContext {
     var json = localStorage.getItem( storageName );
     var dir = JSON.parse( json );
 
+    var title = "0 \u0012\"VDisk          \"\u0092 00 2A"
     if(!json) {
-      return {files:[], title: "0 \"VDisk          \" 00 2A" };
+      return {files:[], title: title };
     }
-
+    dir.title = title;
+    dir.free = 32-dir.files.length;
     return dir;
 
   }
@@ -472,14 +494,18 @@ class BasicContext {
 
   loadDir() {
     var dir = this.getDir();
+    var row;
 
     this.program=[];
     this.program.push([null,null,dir.title]);
     for( var i=0; i<dir.files.length; i++) {
 
-      var row = dir.files[i].size +"     \"" + dir.files[i].fname + "\"";
+      row = dir.files[i].size +"     \"" + dir.files[i].fname + "\"";
       this.program.push([null,null,row]);
     }
+
+    row = dir.free +" slots free.";
+    this.program.push([null,null,row]);
 
     var tmp=2;
 

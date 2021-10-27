@@ -181,9 +181,7 @@ class Program {
 
           c.writeString("", true);
           bcontext.handleLineInput( line );
-
-
-
+          
       }
       else if( evt.key == "Pause" && evt.ctrlKey) {
         this.basiccontext.reset( false );
