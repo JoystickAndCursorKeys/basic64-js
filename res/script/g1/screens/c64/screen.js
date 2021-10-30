@@ -318,7 +318,7 @@ class C64Screen {
 
 	 _postLoadFontImage() {
 
-     console.log("here");
+     console.log("_postLoadFontImage reached");
      this.fonts = [];
 
 		 for (var i = 0; i < 16; i++) {
@@ -400,8 +400,8 @@ class C64Screen {
 
 	 spriteXPos( n, x ) {
  		 this.sprites[ n ].x = x;
-		 console.log("sprite.x " + n + " = " +x);
-		 console.log(this.sprites[ n ]);
+		 //console.log("sprite.x " + n + " = " +x);
+		 //console.log(this.sprites[ n ]);
  	 }
 
 	 spriteYPos( n, y ) {
@@ -445,7 +445,7 @@ class C64Screen {
  		 }
 
  		 this.spframes[ frame ].context.putImageData( this.pixels8, x, y );
- 		 console.log();
+ 		 //console.log();
  		 //this.spriteFrame(); todo
  		 this.spriteReFrame( frame );
  	 }
@@ -700,8 +700,8 @@ class C64Screen {
 		 for( var x=0; x<39; x++) {
 			 var c=this.backmap[ buf[this.cursory][x][0] ];
 			 if( !c ) { c=" "};
-			 console.log("Csrc: '"+buf[this.cursory][x][0]+"'");
-			 console.log("C: '"+c.charCodeAt(0)+"'");
+			 //console.log("Csrc: '"+buf[this.cursory][x][0]+"'");
+			 //console.log("C: '"+c.charCodeAt(0)+"'");
 			 line = line + c;
 		 }
 		 return line;

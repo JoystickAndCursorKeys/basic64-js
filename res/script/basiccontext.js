@@ -14,6 +14,9 @@ class BasicContext {
     this.saveCount = 0;
     this.kbBuffer = [];
 
+    this.forContext = {}
+
+
     var json = localStorage.getItem('w64Settings');
     this.settings = JSON.parse( json );
     if(this.settings == null ) {
@@ -293,7 +296,6 @@ class BasicContext {
 
       if( l[0] == line ) {
         this.runPointer = i;
-        //console.log("GOTO: Setting runpointer to "+ i);
         this.gotoFlag = true;
         return;
       }
@@ -361,11 +363,64 @@ class BasicContext {
   }
 
 
+  doForInit( from, to,  varName, cmdPointer, cmdArrayLen, linePointersLen ) {
+
+    var ctx = this.forContext;
+
+    if( this.vars[ varName ] === undefined ) {
+      this.vars[ varName ] = 0;
+    }
+    this.vars[ varName ] = this.evalExpression( from );
+
+    ctx.default = varName;
+    ctx[varName] = {};
+
+    var ctxv = ctx[varName];
+    ctxv.to = this.evalExpression( to );
+    ctxv.step = 1;
+    ctxv.jumpTo =
+      { line: this.runPointer,
+        cmdPointer: cmdPointer+1 }
+    if( ctxv.jumpTo.cmdPointer >= cmdArrayLen )  {
+
+      if( this.runPointer == -1) {
+        throw "Cannot find command after for";
+      }
+      else {
+        if( ( this.runPointer + 1) >= linePointersLen ) {
+          throw "Cannot find command after for, on next line";
+        }
+        ctxv.jumpTo.line++;
+        ctxv.cmdPointer = 0;
+      }
+    }
+
+    console.log("ctxv:", ctxv);
+    console.log("var:"+varName + " set to " + this.vars[ varName ]);
+  }
+
+  doForNext() {
+    var ctx = this.forContext;
+    var varName = ctx.default;
+
+    var ctxv = ctx[varName];
+
+    this.vars[ varName ] += ctxv.step;
+    if(this.vars[ varName ]<=ctxv.to) {
+
+
+      return ctxv.jumpTo;
+    }
+    return -1;
+  }
+
   runCommands( cmds ) {
     var commands = this.commands;
     var EXPR = 0, PAR = 1;
 
-    for( var i=0; i<cmds.length; i++) {
+    var end = cmds.length;
+    var i=0;
+    while( i<end ) {
       var cmd=cmds[i];
       if( cmd.type == "control" )  {
         var cn = cmd.controlKW;
@@ -374,6 +429,30 @@ class BasicContext {
         }
         else if( cn == "if" ) {
           this.doIf( cmd.params[0], cmd.params[1], cmd.comp, cmd.block );
+        }
+        else if( cn == "for:init" ) {
+          this.doForInit( cmd.params[0], cmd.params[1], cmd.variable, i, cmds.length );
+        }
+        else if( cn == "for:next" ) {
+          var jump = this.doForNext();
+          if( !(jump === -1 ) ) {
+
+            if( jump.line != -1 ) {
+                if( this.runPointer == jump.line ) {
+                  i = jump.cmdPointer;
+                  continue;                
+                }
+                else {
+                  this.runPointer = jump.line;
+                  this.gotoFlag = true;
+                }
+                return;
+            }
+            else {
+              i = jump.cmdPointer;
+              continue;
+            }
+          }
         }
       }
       else if( cmd.type == "call" )  {
@@ -421,7 +500,9 @@ class BasicContext {
         this.vars[ cmd.var ] = this.evalExpression( cmd.expression );
         //console.log("VAR("+cmd.var+")=" + this.vars[ cmd.var ]);
       }
+      i++;
     }
+
   }
 
   setVar( a, b ) {
@@ -616,6 +697,7 @@ class BasicContext {
       }
     }
     else {
+      this.runPointer = -1;
       this.runCommands( l.commands );
       if( ! this.runFlag ) {
         this.printLine("ready.");
