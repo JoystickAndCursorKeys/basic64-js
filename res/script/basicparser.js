@@ -549,7 +549,7 @@ class Parser {
           }
           else if( command.controlKW == "for") {
 
-            var variable, expr_from, expr_to;
+            var variable, expr_from, expr_to, expr_step;
             var endTokens = [];
 
             token = tokens.shift();
@@ -578,13 +578,29 @@ class Parser {
 
             endTokens = [];
             endTokens.push( { type: "cmdsep", data: ":" });
+            endTokens.push( { type: "name", data: "step" });
 
 						expr_to = this.parseExpression( context, endTokens );
+
+            token = tokens.shift();
+            if( token.type == "name" && token.data == "step") {
+
+                endTokens = [];
+                endTokens.push( { type: "cmdsep", data: ":" });
+                expr_step = this.parseExpression( context, endTokens );
+            }
+            else {
+              if( !( token === undefined ) ) {
+                tokens.unshift( token );
+              }
+              expr_step = null;
+            }
 
             command.controlKW = "for:init";
             command.params=[];
             command.params[0] = expr_from;
             command.params[1] = expr_to;
+            command.params[2] = expr_step;
             command.variable = variable;
             commands.push( command );
             console.log("command=", command);
