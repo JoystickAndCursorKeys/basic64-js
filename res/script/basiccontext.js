@@ -363,7 +363,7 @@ class BasicContext {
   }
 
 
-  doForInit( from, to,  varName, cmdPointer, cmdArrayLen, linePointersLen ) {
+  doForInit( from, to, step, varName, cmdPointer, cmdArrayLen, linePointersLen ) {
 
     var ctx = this.forContext;
 
@@ -377,7 +377,14 @@ class BasicContext {
 
     var ctxv = ctx[varName];
     ctxv.to = this.evalExpression( to );
-    ctxv.step = 1;
+
+    if( step == null ) {
+        ctxv.step = 1;
+    }
+    else {
+      ctxv.step = this.evalExpression( step );
+    }
+
     ctxv.jumpTo =
       { line: this.runPointer,
         cmdPointer: cmdPointer+1 }
@@ -406,10 +413,18 @@ class BasicContext {
     var ctxv = ctx[varName];
 
     this.vars[ varName ] += ctxv.step;
-    if(this.vars[ varName ]<=ctxv.to) {
-
-
-      return ctxv.jumpTo;
+    if( ctxv.step > 0) {
+      if(this.vars[ varName ]<=ctxv.to) {
+        return ctxv.jumpTo;
+      }
+    }
+    else if( ctxv.step == 0) {
+      throw "Step 0 not supported"
+    }
+    else {
+      if(this.vars[ varName ]>=ctxv.to) {
+        return ctxv.jumpTo;
+      }
     }
     return -1;
   }
@@ -431,7 +446,7 @@ class BasicContext {
           this.doIf( cmd.params[0], cmd.params[1], cmd.comp, cmd.block );
         }
         else if( cn == "for:init" ) {
-          this.doForInit( cmd.params[0], cmd.params[1], cmd.variable, i, cmds.length );
+          this.doForInit( cmd.params[0], cmd.params[1], cmd.params[2], cmd.variable, i, cmds.length );
         }
         else if( cn == "for:next" ) {
           var jump = this.doForNext();
@@ -440,7 +455,7 @@ class BasicContext {
             if( jump.line != -1 ) {
                 if( this.runPointer == jump.line ) {
                   i = jump.cmdPointer;
-                  continue;                
+                  continue;
                 }
                 else {
                   this.runPointer = jump.line;
