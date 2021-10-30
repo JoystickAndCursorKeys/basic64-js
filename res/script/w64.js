@@ -166,7 +166,7 @@ class Program {
 
     if( evt.type == 'keydown' ) {
 
-      console.log(evt);
+      //console.log(evt);
       var c = this.console;
       var stringMode;
       stringMode = this.stringMode;
@@ -181,7 +181,7 @@ class Program {
 
           c.writeString("", true);
           bcontext.handleLineInput( line );
-          
+
       }
       else if( evt.key == "Pause" && evt.ctrlKey) {
         this.basiccontext.reset( false );
@@ -276,7 +276,7 @@ class Program {
         }
 
         checkKey += ":" + evt.key;
-        console.log("check_key: " + checkKey );
+        //console.log("check_key: " + checkKey );
 
         if( this.stringMode ) {
           var mapEntry = this.keyToCode[checkKey];

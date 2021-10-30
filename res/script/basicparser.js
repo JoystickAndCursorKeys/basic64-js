@@ -94,7 +94,7 @@ class Parser {
 
   init() {
 
-	  this.CTRL_KW = ["if","then","and", "not", "or", "goto", "gosub", "return", "for", "to", "next", "step" ];
+	  this.CTRL_KW = ["if","then","goto","and", "not", "or",  "gosub", "return", "for", "to", "next", "step" ];
     this.INT_STAT =
      {
        "print": {
@@ -522,7 +522,10 @@ class Parser {
 					cmdType = "control";
 					command.type = cmdType;
 					command.controlKW = nameToken;
-					tokens.unshift( token );
+          if( token.type != "@@@notoken") {
+						tokens.unshift( token );
+					}
+
 
           if( command.controlKW == "goto") {
             var num = -1;
@@ -544,16 +547,64 @@ class Parser {
             commands.push( command );
 
           }
+          else if( command.controlKW == "for") {
+
+            var variable, expr_from, expr_to;
+            var endTokens = [];
+
+            token = tokens.shift();
+            if( token.type != "name" ) {
+              this.Exception( context,
+                    "For expects variable, no var found, found " + token.type+"/"+token.data);
+            }
+
+            variable = token.data;
+
+            token = tokens.shift();
+            if( !( token.type == "eq" && token.data == "=" )) {
+              this.Exception( context,
+                    "For expects '=', not found, found " + token.type+"/"+token.data);
+            }
+
+            endTokens = [];
+            endTokens.push( { type: "name", data: "to" });
+
+						expr_from = this.parseExpression( context, endTokens );
+
+            token = tokens.shift();
+            if( !( token.type == "name" && token.data == "to" ) ) {
+              this.Exception( context, "For expects 'to', not found, found " + token.type+"/"+token.data);
+            }
+
+            endTokens = [];
+            endTokens.push( { type: "cmdsep", data: ":" });
+
+						expr_to = this.parseExpression( context, endTokens );
+
+            command.controlKW = "for:init";
+            command.params=[];
+            command.params[0] = expr_from;
+            command.params[1] = expr_to;
+            command.variable = variable;
+            commands.push( command );
+            console.log("command=", command);
+
+          }
+          else if( command.controlKW == "next") {
+
+            var variable;
+            //var endTokens = [];
+            //endTokens.push( { type: "cmdsep", data: "@@@all" });
+
+            command.controlKW = "for:next";
+            commands.push( command );
+
+          }
           else if( command.controlKW == "if") {
 
             var expr1, expr2, comp;
             var endTokens = [];
             endTokens.push( { type: "eq", data: "=" });
-            endTokens.push( { type: "comp", data: "<" });
-            endTokens.push( { type: "comp", data: ">" });
-            endTokens.push( { type: "comp", data: ">=" });
-            endTokens.push( { type: "comp", data: "<=" });
-            endTokens.push( { type: "comp", data: "<>" });
 
 						var expr1 = this.parseExpression( context, endTokens );
 
