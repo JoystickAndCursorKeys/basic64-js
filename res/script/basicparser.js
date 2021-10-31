@@ -300,7 +300,7 @@ class Parser {
 		var token = context.tokens.shift();
 
 		if( !(token.type == "bracket" && token.data == "(")) {
-			this.Exception( context, "parsing subexpression, expected '(', not " + token.type + " - " + token.data);
+			this.Exception( context, "parsing subexpression, expected bracket, not " + token.type + " - " + token.data);
 		}
 
 		var endTokens = [];
@@ -369,6 +369,9 @@ class Parser {
 		var even = true;
 		var op = null;
 		var parts = expression.parts;
+    var first = true;
+    var negate = false;
+
 
 		while( true ) {
 			var token, part;
@@ -391,11 +394,16 @@ class Parser {
 
 				if( token.type == "num" ) {
 					part = { type: "num", data: token.data, op: op };
+          if( negate ) {
+            part.data = -part.data;
+          }
 					parts.push( part );
+          first = false;
 				}
 				else if( token.type == "str" ) {
 					part = { type: "str", data: token.data, op: op };
 					parts.push( part );
+          first = false;
 				}
 				else if( token.type=="bracket" && token.data=="(") {
 						tokens.unshift( token );
@@ -405,7 +413,9 @@ class Parser {
 
 						var expr = this.parseSubExpression( context, subEndTokens );
             expr.op = op;
+            expr.negate = negate;
 						parts.push ( expr );
+            first = false;
 				}
 				else if( token.type=="name" ) {
 
@@ -424,9 +434,15 @@ class Parser {
 							part = { type: "var", data: token.data, op: op };
 							parts.push ( part );
 						}
+            first = false;
 				}
+        else if( token.type=="op" && token.data=="-" && first ) {
+          negate = ! negate;
+
+          continue;
+        }
 				else {
-					this.Exception( context, "expected number, string, symbol or '(', not " + token.data);
+					this.Exception( context, "expected number, string, symbol or bracket, not " + token.data);
 				}
         op = null;
 			}
@@ -442,6 +458,7 @@ class Parser {
 				}
 			}
 			even = !even;
+
 		}
 
     if( op != null ) {
