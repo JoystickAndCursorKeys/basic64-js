@@ -247,6 +247,9 @@ class BasicContext {
       }
     }
 
+    if( expr.negate ) {
+      return -val;
+    }
     return val;
   }
 
@@ -486,7 +489,8 @@ class BasicContext {
 
         for( var j=0; j<cmd.params.length; j++) {
           if( pardefs[j] == EXPR ) {
-            var p = this.evalExpression( cmd.params[j] );;
+            var p = this.evalExpression( cmd.params[j] );
+            console.log(p);
             values.push( { type: "value", value: p } );
           }
           else {
