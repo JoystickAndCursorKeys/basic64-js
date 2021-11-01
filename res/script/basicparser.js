@@ -94,7 +94,7 @@ class Parser {
 
   init() {
 
-	  this.CTRL_KW = ["if","then","goto","and", "not", "or",  "gosub", "return", "for", "to", "next", "step" ];
+	  this.CTRL_KW = ["if","then","goto","and", "not", "or",  "gosub", "return", "for", "to", "next", "step", "data" ];
     this.INT_STAT =
      {
        "print": {
@@ -125,55 +125,6 @@ class Parser {
     console.log(" Exception " + x + " at line " + ctx.lineNumber);
     throw x + " at line " + ctx.lineNumber;
   }
-
-/*
-  screenCode2CTRLChar( c ) {
-    var c2 = null;
-    console.log(c.charCodeAt(0));
-    c2 = this.screenCodes2CTRLTable[ c ];
-    if( !(c2 === undefined )) {
-      console.log("->"+c2)
-      return c2;
-    }
-
-    return c;
-  }
-
-  screenCodes2CTRLChars( str ) {
-    var str2 = "";
-
-    for( 	var i=0;
-          i<str.length;
-          i++)
-    {
-      var c = str.charAt(i);
-
-      var c2 = this.screenCode2CTRLChar( c );
-      str2 += c2;
-    }
-
-    return str2;
-  }
-
-  handleStringsCTRLChars( tokens ) {
-
-		for( 	var i=0;
-					i<tokens.length;
-					i++)
-		{
-			var token = tokens[i];
-
-			if( token ) {
-				if( token.type == "str" ) {
-					token.data = this.screenCodes2CTRLChars( token.data );
-				}
-			}
-
-		}
-
-    return tokens;
-  }
-*/
 
 	removePadding( tokens ) {
 		var tokens2 = [];
@@ -353,6 +304,45 @@ class Parser {
     }
     return false;
   }
+
+
+  parseSimpleExpression( context, endTokens ) {
+
+    var endLoop;
+		var tokens = context.tokens;
+    if( tokens.length == 0) {
+      return undefined;
+    }
+
+		var token, returnValue=undefined;
+		token = tokens.shift();
+
+		if( !token ) {
+			this.Exception( context, "empty simple expression");
+		}
+
+    endLoop = this.isEndToken( token, endTokens );
+    if( endLoop ) {
+      this.Exception( context, "empty simple expression");
+    }
+
+		if( token.type == "num" ) {
+        returnValue= { type: "num", data: token.data };
+		}
+		else if( token.type == "str" ) {
+				returnValue= { type: "str", data: token.data };
+		}
+
+    token = tokens.shift();
+    if( token ) {
+      endLoop = this.isEndToken( token, endTokens );
+      if( !endLoop ) {
+        this.Exception( context, "empty simple expression end expected");
+      }
+    }
+
+		return [returnValue, token];
+	}
 
 	parseExpression( context, endTokens ) {
 
@@ -598,19 +588,21 @@ class Parser {
             endTokens.push( { type: "name", data: "step" });
 
 						expr_to = this.parseExpression( context, endTokens );
+            expr_step = { parts: [ { data: "1", op: null, type: "num"} ] };
 
             token = tokens.shift();
-            if( token.type == "name" && token.data == "step") {
+            if( !( token === undefined ) ) {
+              if( token.type == "name" && token.data == "step") {
 
-                endTokens = [];
-                endTokens.push( { type: "cmdsep", data: ":" });
-                expr_step = this.parseExpression( context, endTokens );
-            }
-            else {
-              if( !( token === undefined ) ) {
-                tokens.unshift( token );
+                  endTokens = [];
+                  endTokens.push( { type: "cmdsep", data: ":" });
+                  expr_step = this.parseExpression( context, endTokens );
               }
-              expr_step = null;
+              else {
+                if(! ( token.type == "cmdsep" && token.data == ":")) {
+                  throw "FOR unexpected token " + token.type + "/" + token.data;
+                }
+              }
             }
 
             command.controlKW = "for:init";
@@ -661,6 +653,46 @@ class Parser {
 
             command.block = this.parseLineCommands( context );
 
+            commands.push( command );
+
+          }
+          else if( command.controlKW == "data") {
+
+            var dataArray = [];
+            var endTokens;
+
+            endTokens = [];
+            endTokens.push( { type: "cmdsep", data: ":" });
+            endTokens.push( { type: "sep", data: "," });
+
+            while ( true ) {
+				        var pair = this.parseSimpleExpression( context, endTokens );
+
+                var expr1 = pair[0];
+
+
+                if( expr1 === undefined ) {
+                  throw "data expected data";
+                }
+
+                dataArray.push( expr1 );
+
+                token = pair[1];
+                if( token === undefined ) {
+                  break;
+                }
+                if( token.type == "cmdsep" && token.data == ":" ) {
+                  break;
+                }
+                else if( token.type == "sep" && token.data ==",") {
+            			continue;
+            		}
+                else {
+                  this.Exception( context, "data unknown token found " + token.type+"/"+token.data);
+                }
+            }
+
+            command.params=dataArray;
             commands.push( command );
 
           }
@@ -790,77 +822,4 @@ class Parser {
     return lineRecord;
 
   }
-
-  /*parseLineToContext( context ) {
-
-		var toker = new Tokenizer( new StringReader ( context.line ) );
-		var tokens = toker.tokenize();
-
-
-    var line = context.line;
-    var lineNr = 0;
-    var ExceptionLinNr = { syntaxError: true, message: "Line should start with LINENUMBER followed by a space or a tab character, line index=" + context.lineIndex };
-
-
-    if( tokens.length == 0 ) {
-			return null;
-		}
-
-		if( tokens[0].type == "num" ) {
-			lineNr = tokens[0].data;
-    }
-		else {
-			this.Exception( context, ExceptionLinNr);
-		}
-
-    context.lineNumber = lineNr;
-
-		tokens.shift();
-		context.tokens = tokens;
-		this.parseLineCommands( context );
-
-  }*/
-
-  /*parse( code ) {
-
-    this.init();
-
-    var regExp=/\r\n|\n\r|\n|\r/g;
-    var lines = code.replace(regExp,"\n").split("\n");
-    var context = {
-        lines: lines, line: null,
-				commands: []
-      }
-
-    var len = lines.length;
-
-    try {
-
-      for (var i = 0; i < len; i++) {
-        context.line = lines[i];
-        context.lineIndex = i;
-
-        this.parseLineToContext( context );
-      }
-
-    }
-    catch(err) {
-      if( !err.syntaxError ) {
-        return {
-          error: true,
-          syntaxError: false,
-          errorMessage: err.message,
-          exception: err
-        }
-      }
-      return {
-        error: true,
-        syntaxError: true,
-        errorMessage: err.message,
-      }
-    }
-
-    return context;
-  }*/
-
 }
