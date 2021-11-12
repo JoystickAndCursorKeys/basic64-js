@@ -166,6 +166,7 @@ class BasicContext {
     this.vpoke(53280,14);
     this.vpoke(53281,6);
     this.vpoke(53269,0);
+    this.vpoke(53270,200);
     this.console.setColor(14);
 
     this.printLine("");
@@ -320,8 +321,44 @@ class BasicContext {
     return this.runFlag;
   }
 
+
+  readData() {
+
+    if( this.dataPointer >= this.data.length ) {
+      return undefined;
+    }
+
+    var result = this.data[ this.dataPointer ];
+    this.dataPointer++;
+
+    return result;
+  }
+
   runPGM() {
     var c = this.console;
+    var p = this.program;
+    this.data = [];
+    this.dataPointer = 0;
+
+    for( var i=0; i<p.length; i++) {
+
+        var line = p[ i ];
+        var commands = line[1];
+
+        for( var j=0; j<commands.length; j++) {
+
+          var command = commands[j];
+          console.log("command", command);
+
+          if( command.type  == "control" && command.controlKW == "data") {
+            for( var k=0; k<command.params.length; k++) {
+              this.data.push( command.params[k] );
+            }
+          }
+        }
+    }
+    console.log("data:",this.data);
+
     if( this.program.length > 0) {
       this.runFlag = true;
       c.clearCursor();
@@ -448,6 +485,9 @@ class BasicContext {
         else if( cn == "if" ) {
           this.doIf( cmd.params[0], cmd.params[1], cmd.comp, cmd.block );
         }
+        else if( cn == "data" ) {
+          //Nothing
+        }
         else if( cn == "for:init" ) {
           this.doForInit( cmd.params[0], cmd.params[1], cmd.params[2], cmd.variable, i, cmds.length );
         }
@@ -490,11 +530,18 @@ class BasicContext {
         for( var j=0; j<cmd.params.length; j++) {
           if( pardefs[j] == EXPR ) {
             var p = this.evalExpression( cmd.params[j] );
-            console.log(p);
+            //console.log(p);
             values.push( { type: "value", value: p } );
           }
           else {
-            values.push( { type: "var", value: cmd.params[0].parts[0].data } );
+
+            var varName = cmd.params[0].parts[0].data;
+            var varType = "num";
+            if( varName.indexOf("$") > -1) {
+              varType = "str";
+            }
+
+            values.push( { type: "var", value: varName, varType: varType } );
           }
         }
         try {

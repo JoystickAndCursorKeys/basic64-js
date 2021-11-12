@@ -61,6 +61,32 @@ class BasicCommands {
       return [PAR];
   }
 
+  _if_read() {
+      var EXPR = 0, PAR = 1;
+      return [PAR];
+  }
+
+  read( pars ) {
+    var p0 = pars[ 0 ];
+    if( p0.type != "var" ) {
+      throw "READ: Param 0 is not a var";
+    }
+
+    var data = this.context.readData();
+    if( data === undefined ) { throw "OUT OF DATA"; }
+    else {
+      if( data.type =="num" ) {
+        this.context.setVar(
+          p0.value, parseInt( data.data ) );
+        }
+        else {
+          this.context.setVar(
+            p0.value,  data.data );
+        }
+      }
+  }
+
+
   get( pars ) {
     var p0 = pars[ 0 ];
     if( p0.type != "var" ) {
@@ -70,8 +96,6 @@ class BasicCommands {
     var k = this.context.pullKeyBuffer();
     if( k<0 ) { this.context.setVar(p0.value, ""); }
     else { this.context.setVar(p0.value, String.fromCharCode( k ) ); }
-
-
   }
 
   load( pars ) {
@@ -126,7 +150,7 @@ class BasicCommands {
   }
 
   print( pars ) {
-    console.log(pars);
+    //console.log(pars);
     var context = this.context;
 
     if( pars.length != 0 ) {
