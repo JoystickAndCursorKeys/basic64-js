@@ -1,4 +1,6 @@
+
 class C64SpriteFrame {
+
 	constructor() {
 		this.ini = false;
 	}
@@ -29,14 +31,16 @@ class C64Screen {
 	 constructor( rcanvasid, c64path, onload, onloaddata  ) {
 
 		  var __this = this;
+
+			this._setColors();
+
 		  var font = new Image();
-		  this.font = font;
+		  this.characterSetImage = font;
 		  this.onload = onload;
 		  this.onloaddata = onloaddata;
 
  		  this.vic = [];
 			this.vicUsed = [];
-
 
 			for( var i=0; i<47; i++) {
 				this.vic.push(0);
@@ -52,21 +56,28 @@ class C64Screen {
       this.canvas =  document.createElement('canvas');
       this.context = this.canvas.getContext('2d');
 
+
+
 			this.rcanvas =  document.getElementById( rcanvasid );
       this.rcontext = this.rcanvas.getContext('2d');
 
-      this.canvas.width=320;
-      this.canvas.height=200;
+			this.iwidth = 320;
+			this.iheight = 200;
+      this.canvas.width=this.iwidth;
+      this.canvas.height=this.iheight;
+
+			this.iImgDta = this.context.getImageData(0, 0, this.iwidth, this.iheight );
+	    this.iDta = this.iImgDta.data;
 
 			this.bufcanvas =  document.createElement('canvas');
       this.bufcontext = this.bufcanvas.getContext('2d');
-			this.bufcanvas.width=320;
-			this.bufcanvas.height=200;
+			this.bufcanvas.width = this.iwidth;
+			this.bufcanvas.height = this.iheight;
 
 
 			this.border = {
-				w: 64,
-				h: 32
+				w: 128,
+				h: 64
 			}
 
 			this.WIDTH = 960;
@@ -81,148 +92,8 @@ class C64Screen {
 
 			this.context.imageSmoothingEnabled= false;
 
-			this.colors = [];
-
-			this.colors[ 0 ] = { r:1, g:1, b:1 };
-			this.colors[ 1 ] = { r:255, g:255, b:255 };
-			this.colors[ 2 ] = { r:136, g:0, b:0 };
-			this.colors[ 3 ] = { r:170, g:255, b:238 };
-			this.colors[ 4 ] = { r:204, g:68, b:204 };
-			this.colors[ 5 ] = { r:0, g:204, b:85 };
-			this.colors[ 6 ] = { r:0, g:0, b:170 };
-			this.colors[ 7 ] = { r:238, g:238, b:119 };
-			this.colors[ 8 ] = { r:221, g:136, b:85 };
-			this.colors[ 9 ] = { r:102, g:68, b:0 };
-			this.colors[ 10 ] = { r:255, g:119, b:119 };
-			this.colors[ 11 ] = { r:51, g:51, b:51 };
-			this.colors[ 12 ] = { r:119, g:119, b:119 };
-			this.colors[ 13 ] = { r:170, g:255, b:102 };
-			this.colors[ 14 ] = { r:0, g:136, b:255 };
-			this.colors[ 15 ] = { r:187, g:187, b:187 };
-
-			var map = [];
-			for( var i=0 ; i<32; i++ ) {
-				map[String.fromCharCode(i)] = 128+i;
-			}
-
-			for( var i=128 ; i<160; i++ ) {
-				map[String.fromCharCode(i)] = 64+i;
-			}
-
-
-			map['@'] = 0;
-			map['a'] = 1;
-			map['b'] = 2;
-			map['c'] = 3;
-			map['d'] = 4;
-			map['e'] = 5;
-			map['f'] = 6;
-			map['g'] = 7;
-			map['h'] = 8;
-			map['i'] = 9;
-			map['j'] = 10;
-			map['k'] = 11;
-			map['l'] = 12;
-			map['m'] = 13;
-			map['n'] = 14;
-			map['o'] = 15;
-			map['p'] = 16;
-			map['q'] = 17;
-			map['r'] = 18;
-			map['s'] = 19;
-			map['t'] = 20;
-			map['u'] = 21;
-			map['v'] = 22;
-			map['w'] = 23;
-			map['x'] = 24;
-			map['y'] = 25;
-			map['z'] = 26;
-
-			map['['] = 27;
-			map[']'] = 29;
-			map['!'] = 33;
-			map['"'] = 34;
-			map['#'] = 35;
-			map['$'] = 36;
-			map['%'] = 37;
-			map['&'] = 38;
-			map['\''] = 39;
-			map['\\'] = 77;
-			map['{'] = 0x73;
-			map['}'] = 0x6b;
-			map['('] = 40;
-			map[')'] = 41;
-
-			map['*'] = 42;
-			map['+'] = 43;
-			map[','] = 44;
-			map['-'] = 45;
-			map['.'] = 46;
-			map['/'] = 47;
-
-			map['0'] = 48;
-			map['1'] = 49;
-			map['2'] = 50;
-			map['3'] = 51;
-			map['4'] = 52;
-			map['5'] = 53;
-			map['6'] = 54;
-			map['7'] = 55;
-			map['8'] = 56;
-		  map['9'] = 57;
-
-			map[' '] = 32;
-
-			map[':'] = 58;
-			map[';'] = 59;
-			map['<'] = 60;
-			map['='] = 61;
-			map['>'] = 62;
-			map['?'] = 63;
-
-			this.map = map;
-
-
-
-			var backmap = []
-			var mapInfo = Object.entries(map);
-			for( var i=0; i<mapInfo.length; i++) {
-				backmap[ mapInfo[i][1]] = mapInfo[i][0];
-			}
-			backmap[32] = " ";
-			this.backmap = backmap;
-			console.log( map );
-			console.log( backmap );
-
-			this.spframes = [];
-			for( var t=0; t<128; t++ ) {
-				this.spframes[ t ] = new C64SpriteFrame();
-				this.spframes[ t ].init();
-				this.spframes[ t ].context.fillStyle = this._htmlColor( this.colors[ 1 ] );
-				this.spframes[ t ].context.fillRect(
-					0,0,
-					24,
-					21
-				);
-			}
-
-
-			this.sprites = [];
-			for( var i=0; i<8; i++ ) {
-
-				this.sprites[ i ] = new Object();
-				var sp = this.sprites[ i ];
-				sp.x = 0; sp.y = 0; sp.enabled = 0; sp.frame = 0; sp.col = 0;
-
-				sp.canvas = document.createElement('canvas');
-				sp.context = sp.canvas.getContext('2d');
-				sp.canvas.width=24;
-				sp.canvas.height=21;
-
-				this.spriteCol(i,1);
-				this.spriteFrame(i,0);
-
-			}
+			this._setCharMapping();
+			this._initSpriteArrays();
 
 
 			this.pixel = this.context.createImageData(1,1);
@@ -236,8 +107,162 @@ class C64Screen {
 			this.bgcolLast = 6;
 			this.bcol = 14;
 			this.bcolLast = 14;
+			this.mcol1 = 2;
+			this.mcol1Last = 2;
+			this.mcol2 = 1;
+			this.mcol2Last = 2;
+
+			this.multiColor = false;
+			this.multiColorLast = false;
 
    }
+
+	 _initSpriteArrays() {
+		 this.spframes = [];
+		 for( var t=0; t<128; t++ ) {
+			 this.spframes[ t ] = new C64SpriteFrame();
+			 this.spframes[ t ].init();
+			 this.spframes[ t ].context.fillStyle = this._htmlColor( this.colors[ 1 ] );
+			 this.spframes[ t ].context.fillRect(
+				 0,0,
+				 24,
+				 21
+			 );
+		 }
+
+
+		 this.sprites = [];
+		 for( var i=0; i<8; i++ ) {
+
+			 this.sprites[ i ] = new Object();
+			 var sp = this.sprites[ i ];
+			 sp.x = 0; sp.y = 0; sp.enabled = 0; sp.frame = 0; sp.col = 0;
+
+			 sp.canvas = document.createElement('canvas');
+			 sp.context = sp.canvas.getContext('2d');
+			 sp.canvas.width=24;
+			 sp.canvas.height=21;
+
+			 this.spriteCol(i,1);
+			 this.spriteFrame(i,0);
+
+		 }
+	 }
+
+	 _setCharMapping() {
+		 var map = [];
+		 for( var i=0 ; i<32; i++ ) {
+			 map[String.fromCharCode(i)] = 128+i;
+		 }
+
+		 for( var i=128 ; i<160; i++ ) {
+			 map[String.fromCharCode(i)] = 64+i;
+		 }
+
+
+		 map['@'] = 0;
+		 map['a'] = 1;
+		 map['b'] = 2;
+		 map['c'] = 3;
+		 map['d'] = 4;
+		 map['e'] = 5;
+		 map['f'] = 6;
+		 map['g'] = 7;
+		 map['h'] = 8;
+		 map['i'] = 9;
+		 map['j'] = 10;
+		 map['k'] = 11;
+		 map['l'] = 12;
+		 map['m'] = 13;
+		 map['n'] = 14;
+		 map['o'] = 15;
+		 map['p'] = 16;
+		 map['q'] = 17;
+		 map['r'] = 18;
+		 map['s'] = 19;
+		 map['t'] = 20;
+		 map['u'] = 21;
+		 map['v'] = 22;
+		 map['w'] = 23;
+		 map['x'] = 24;
+		 map['y'] = 25;
+		 map['z'] = 26;
+
+		 map['['] = 27;
+		 map[']'] = 29;
+		 map['!'] = 33;
+		 map['"'] = 34;
+		 map['#'] = 35;
+		 map['$'] = 36;
+		 map['%'] = 37;
+		 map['&'] = 38;
+		 map['\''] = 39;
+		 map['\\'] = 77;
+		 map['{'] = 0x73;
+		 map['}'] = 0x6b;
+		 map['('] = 40;
+		 map[')'] = 41;
+
+		 map['*'] = 42;
+		 map['+'] = 43;
+		 map[','] = 44;
+		 map['-'] = 45;
+		 map['.'] = 46;
+		 map['/'] = 47;
+
+		 map['0'] = 48;
+		 map['1'] = 49;
+		 map['2'] = 50;
+		 map['3'] = 51;
+		 map['4'] = 52;
+		 map['5'] = 53;
+		 map['6'] = 54;
+		 map['7'] = 55;
+		 map['8'] = 56;
+		 map['9'] = 57;
+
+		 map[' '] = 32;
+
+		 map[':'] = 58;
+		 map[';'] = 59;
+		 map['<'] = 60;
+		 map['='] = 61;
+		 map['>'] = 62;
+		 map['?'] = 63;
+
+		 this.map = map;
+
+		 var backmap = []
+		 var mapInfo = Object.entries(map);
+		 for( var i=0; i<mapInfo.length; i++) {
+			 backmap[ mapInfo[i][1]] = mapInfo[i][0];
+		 }
+		 backmap[32] = " ";
+		 this.backmap = backmap;
+		 console.log( map );
+		 console.log( backmap );
+	 }
+
+	 _setColors() {
+		 this.colors = [];
+
+		 this.colors[ 0 ] = { r:1, g:1, b:1 };
+		 this.colors[ 1 ] = { r:255, g:255, b:255 };
+		 this.colors[ 2 ] = { r:136, g:0, b:0 };
+		 this.colors[ 3 ] = { r:170, g:255, b:238 };
+		 this.colors[ 4 ] = { r:204, g:68, b:204 };
+		 this.colors[ 5 ] = { r:0, g:204, b:85 };
+		 this.colors[ 6 ] = { r:0, g:0, b:170 };
+		 this.colors[ 7 ] = { r:238, g:238, b:119 };
+		 this.colors[ 8 ] = { r:221, g:136, b:85 };
+		 this.colors[ 9 ] = { r:102, g:68, b:0 };
+		 this.colors[ 10 ] = { r:255, g:119, b:119 };
+		 this.colors[ 11 ] = { r:51, g:51, b:51 };
+		 this.colors[ 12 ] = { r:119, g:119, b:119 };
+		 this.colors[ 13 ] = { r:170, g:255, b:102 };
+		 this.colors[ 14 ] = { r:0, g:136, b:255 };
+		 this.colors[ 15 ] = { r:187, g:187, b:187 };
+	 }
 
 	 _getByteBits( byte ) {
 		 var masks = [
@@ -274,12 +299,25 @@ class C64Screen {
 			 else if( nr == 53281)  {
 				 this.setBGColor( v % 16 );
 			 }
+			 else if( nr == 53282)  {
+				 this.setMColor1( v % 16 );
+			 }
+			 else if( nr == 53283)  {
+				 this.setMColor2( v % 16 );
+			 }
 			 else if( nr == 53269)  {
 				 var bits = this._getByteBits( v );
 				 var spr = this.sprites;
 				 for( var j=0; j<8; j++) {
 					 spr[ j ].enabled = bits[j];
 					 console.log("Sprite[" +j+"].enable=" + bits[j])
+				 }
+			 }
+			 else if( nr == 53269)  {
+				 var bits = this._getByteBits( v );
+				 this.multiColor = bits[4];
+				 for( var j=0; j<8; j++) {
+					 console.log("53269[" +j+"].enable=" + bits[j])
 				 }
 			 }
 			 else if( nr>53247 && nr < 53264 ) {
@@ -316,24 +354,49 @@ class C64Screen {
 			 this.rcontext.imageSmoothingEnabled= false;
 	 }
 
+	 _prepareFontImageData() {
+
+     var img1 = this.characterSetImage;
+     var img2 = document.createElement("canvas");
+
+     var ctx2 = img2.getContext("2d");
+
+     img2.width = img1.width;
+     img2.height = img1.height;
+     ctx2.drawImage(img1, 0, 0);
+
+     var imgdata = ctx2.getImageData(0, 0, img1.width, img1.height );
+     var sd = imgdata.data;
+
+     var pixelsCount = img1.width * img1.height ;
+     var len = pixelsCount * 4;
+     var data = new Uint8Array( pixelsCount * 2);
+
+     var di = 0;
+     for (var i = 0; i < len; i += 4) {
+       if (sd[i + 0]) {
+         data[ di ] = 1;
+         data[ di + pixelsCount ] = 0;
+       } else {
+         data[ di ] = 0;
+         data[ di + pixelsCount ] = 1;
+       }
+       di++;
+     }
+
+     return [data,img1.width, img1.height];
+   }
+
 	 _postLoadFontImage() {
 
      console.log("_postLoadFontImage reached");
-     this.fonts = [];
 
-		 for (var i = 0; i < 16; i++) {
+		 this.fontImageData = this._prepareFontImageData(this.srcImage);
 
-     	var tmpFont = this._prepColor( this.font, this.colors[ i ] );
-     	this.fonts[ i ] = new C64BlockFont( tmpFont , 8, 8, { r:0, g:0, b:0 } );
+		 //-----------------------
 
-		 }
 
-		 var ctx = this.context;
-		 var cvs = this.canvas;
-
-		 var rctx = this.context;
-		 var rcvs = this.canvas;
-
+		 //-------------------------
 		 this.bcolLast = -1;
 
 		 this.clearScreen();
@@ -358,6 +421,16 @@ class C64Screen {
 	 setBGColor( c ) {
 		 this.bgcol = c;
 	 }
+
+
+ 	 setMColor1( c ) {
+ 		 this.mcol1 = c;
+ 	 }
+
+	 setMColor2( c ) {
+ 		 this.mcol2 = c;
+ 	 }
+
 
 	 setBorderColor( c ) {
 		 this.bcol = c;
@@ -736,14 +809,145 @@ class C64Screen {
      return  index;
    }
 
-	 renderChar(x, y, c, col) {
-		 this.fonts[ col ].drawRaw( this.context, x, y, c );
+	 _renderDirectChrMono( x, y, c0, col0) {
+
+     var fid = this.fontImageData[0];
+     var fidW = this.fontImageData[1];
+     var fidH = this.fontImageData[2];
+     var iDta = this.iDta;
+     var srcPixWidth = fidW;
+     var pixWidthM4 = this.iwidth * 4;
+
+     var fgCol = this.colors[ col0 ];
+     var bgCol = this.colors[ this.bgcol ];
+
+     var c=c0;
+
+     var row = Math.floor( c / 16 );
+     var colmn = c % 16;
+
+     var xs0 = colmn * 8;
+     var ys= srcPixWidth * row * 8;
+     var xd0 = x*4;
+     var yd= pixWidthM4 * y;
+
+     for( var yC = 0; yC<8; yC++) {
+       var xs = xs0;
+       var xd = xd0;
+
+       for( var xC = 0; xC<8; xC++) {
+
+         var col = bgCol;
+
+         if (fid[ xs + ys ] ) {
+             col = fgCol;
+         }
+
+         var dBase = xd + yd;
+
+         iDta[ dBase + 0 ] = col.r;
+         iDta[ dBase + 1 ] = col.g;
+         iDta[ dBase + 2 ] = col.b;
+         iDta[ dBase + 3 ] = 255;
+
+         xs+=1;
+         xd+=4;
+       }
+       ys += srcPixWidth;
+       yd += pixWidthM4;
+     }
+
+   }
+
+   _renderDirectChrMulti( x, y, c0, col0) {
+
+     var fid = this.fontImageData[0];
+     var fidW = this.fontImageData[1];
+     var fidH = this.fontImageData[2];
+     var iDta = this.iDta;
+     var srcPixWidth = fidW;
+     var pixWidthM4 = this.iwidth * 4;
+
+		 var fgCol = this.colors[ col0 ];
+     var bgCol = this.colors[ this.bgcol ];
+		 var mcCol1 = this.colors[ this.mcol1 ];
+		 var mcCol2 = this.colors[ this.mcol2 ];
+
+
+     var cols = [];
+     cols[0] = bgCol; //bg color
+     cols[1] = mcCol1; //multi color 1
+     cols[2] = mcCol2; //multi color 2
+     cols[3] = fgCol;
+
+     var c=c0;
+
+     var row = Math.floor( c / 16 );
+     var colmn = c % 16;
+
+     var xs0 = colmn * 8;
+     var ys= srcPixWidth * row * 8;
+     var xd0 = x*4;
+     var yd= pixWidthM4 * y;
+
+     for( var yC = 0; yC<8; yC++) {
+       var xs = xs0;
+       var xd = xd0;
+
+       for( var xC = 0; xC<8; xC+=2) {
+
+         //console.log("xs,ys=",xs,ys);
+
+         var pVal0 = (fid[ xs + ys     ]    );
+         var pVal1 = (fid[ xs + 1 + ys ]*2  );
+         var pVal = pVal0 + pVal1;
+
+         //console.log(pVal);
+         var col = cols[ pVal ];
+         var dBase = xd + yd;
+
+         if( col === undefined ) {
+           console.log("Ooopsie");
+         }
+
+         iDta[ dBase + 0 ] = col.r;
+         iDta[ dBase + 1 ] = col.g;
+         iDta[ dBase + 2 ] = col.b;
+         iDta[ dBase + 3 ] = 255;
+         iDta[ dBase + 4 ] = col.r;
+         iDta[ dBase + 5 ] = col.g;
+         iDta[ dBase + 6 ] = col.b;
+         iDta[ dBase + 7 ] = 255;
+
+         xs+=2;
+         xd+=8;
+       }
+       ys += srcPixWidth;
+       yd += pixWidthM4;
+     }
+
+   }
+
+	 renderChar(x, y, c, col0) {
+		 var col = col0 % 16;
+
+     this._renderDirectChrMono( x, y, c, col );
 	 }
+
+	 renderCharMC(x, y, c, col0) {
+		 var col = col0 % 16;
+     if( col > 7 ) {
+       this._renderDirectChrMulti( x, y, c, col0 % 8);
+     }
+     else {
+       this._renderDirectChrMono( x, y, c, col0 );
+     }
+	 }
+
 
 	 _htmlColor( c ) {
 		  return 'rgba('+c.r+','+c.g+','+c.b+',1)';
 	 }
-
 
 
 	 renderDisplay( ) {
@@ -802,6 +1006,57 @@ class C64Screen {
 		 var ctx = this.context;
 		 var bufctx = this.bufcontext;
 
+		 //ctx.fillStyle = this._htmlColor( this.colors[ this.bgcol ] );
+
+		 this.renderChr = this.renderChar;
+		 if( this.multiColor ) {
+			 this.renderChr = this.renderCharMC;
+		 }
+
+		 if( this.bgcolLast != this.bgcol
+		 			|| this.mcol1Last != this.mcol1
+					|| this.mcol2Last != this.mcol2
+					|| this.multiColorLast != this.multiColor
+				) {
+			 for( var y=0; y<25; y++) {
+			 	for( var x=0; x<40; x++) {
+
+							buf[y][x][2] = false;
+						 	this.renderChr(x*8, y*8, buf[y][x][0], buf[y][x][1] );
+
+			 	}
+			 }
+			 this.bgcolLast = this.bgcol;
+		 }
+		 else {
+			 for( var y=0; y<25; y++) {
+			 	for( var x=0; x<40; x++) {
+					if( buf[y][x][2] ) {
+							buf[y][x][2] = false;
+						 this.renderChr(x*8, y*8, buf[y][x][0], buf[y][x][1] );
+					}
+			 	}
+			 }
+		 }
+
+		 ctx.putImageData(this.iImgDta, 0, 0);
+		 bufctx.drawImage( this.canvas, 0, 0);
+
+		 for( var i = 0; i < this.sprites.length; i++ ) {
+			 var sp = this.sprites[ i ];
+				 if( sp.enabled ) {
+
+					//console.log( "Draw sprite " + i,sp.x,sp.y);
+				 	bufctx.drawImage( sp.canvas, sp.x-24, sp.y-21 );
+			 }
+		 }
+	 }
+
+	 _renderBuffer__old() {
+		 var buf = this.buffer;
+		 var ctx = this.context;
+		 var bufctx = this.bufcontext;
+
 		 ctx.fillStyle = this._htmlColor( this.colors[ this.bgcol ] );
 
 		 if( this.bgcolLast != this.bgcol ) {
@@ -844,8 +1099,6 @@ class C64Screen {
 			 }
 		 }
 	 }
-
-
 
    _prepColor( img, col ) {
 
@@ -897,118 +1150,5 @@ class C64Screen {
       context.putImageData( imgdata, 0, 0);
       return canvas;
    }
-
-}
-
-class C64BlockFont {
-
-	constructor( img, gridw, gridh, transCol ) {
-
-			this.img = img;
-			this.gridw = gridw;
-			this.gridh = gridh;
-
-			this.iconsCanvas = [];
-			this.iconsContext = [];
-
-			var w = this.img.width;
-			var h = this.img.height;
-
-			this.iconCanvas = document.createElement('canvas');
-			this.iconContext = this.iconCanvas.getContext('2d');
-
-			this.iconCanvas.width = 	w;
-			this.iconCanvas.height = 	h;
-
-			this.iconContext.drawImage( this.img, 0, 0, w, h);
-
-			this.xiconcount = w / this.gridw;
-      this.xiconrowcount = h / this.gridh;
-
-      for (var yicon = 0; yicon < this.xiconrowcount; yicon++) {
-			for (var xicon = 0; xicon < this.xiconcount; xicon++) {
-
-				var sx = (xicon * this.gridw);
-				var sy = (yicon * this.gridh);
-				var imgdata = this.iconContext.getImageData(sx, sy, this.gridw, this.gridh);
-				var sd  = imgdata.data;
-
-				var dcanvas = document.createElement('canvas');
-				dcanvas.width  = this.gridw;
-				dcanvas.height = this.gridh;
-
-				var dcontext = dcanvas.getContext('2d');
-				var dimgdata = dcontext.createImageData( this.gridw, this.gridh );
-				var dd  = dimgdata.data;
-
-				var xoffset = 0;
-				var yoffset = 0;
-				var rowoffset = this.gridw * 4;
-				var offset;
-
-				for (var y = 0; y < this.gridh; y++) {
-					xoffset = 0;
-					for (var x = 0; x < this.gridw; x++) {
-						offset = yoffset + xoffset;
-
-						dd[ offset + 0] = sd[ offset + 0];
-						dd[ offset + 1] = sd[ offset + 1];
-						dd[ offset + 2] = sd[ offset + 2];
-						dd[ offset + 3] = sd[ offset + 3];
-
-						if( dd[ offset + 0] == transCol.r && dd[ offset + 1] == transCol.g && dd[ offset + 2] == transCol.b )
-						{
-							dd[ offset + 0] = 0;
-							dd[ offset + 1] = 0;
-							dd[ offset + 2] = 0;
-							dd[ offset + 3] = 0; /* Make transparent */
-						}
-
-						xoffset += 4;
-					}
-
-					yoffset += rowoffset;
-				}
-
-				dcontext.putImageData( dimgdata, 0, 0);
-				this.iconsCanvas.push( dcanvas  );
-				this.iconsContext.push( dcontext );
-			}
-      }
-
-
-      this.iconCanvas = null;
-      this.iconContext = null;
-      this.img = null;
-
-	}
-
-
-	drawRaw( ctx, x, y, i ) {
-    try {
-			ctx.drawImage( this.iconsCanvas[ i ], x, y );
-		}
-		catch ( ex ) {
-			console.log( ex );
-			console.log( ctx );
-			console.log( x );
-			console.log( y );
-			console.log( i );
-		}
-  }
-
-
-	centerX( str, screenWidth ) {
-		var txtW = str.length * this.gridw;
-		return Math.floor( (screenWidth/2) - ( txtW/2)) ;
-	}
-
-  drawString( ctx, x0, y, str ) {
-    var x = x0;
-    for (var i = 0; i < str.length; i++) {
-        this.drawChar( ctx, x, y, str.charAt(i) );
-        x+= this.gridw;
-    }
-  }
 
 }
