@@ -1,29 +1,4 @@
 
-class C64SpriteFrame {
-
-	constructor() {
-		this.ini = false;
-	}
-
-	init() {
-		if( this.ini ) { return; }
-
-		this.canvas =  document.createElement('canvas');
-		this.context = this.canvas.getContext('2d');
-
-		this.canvas.width=24;
-		this.canvas.height=21;
-
-		this.ini = true;
-
-	}
-
-	getCanvas() {
-		this.init();
-		return this.canvas;
-	}
-
-}
 
 
 class C64Screen {
@@ -55,8 +30,6 @@ class C64Screen {
 
       this.canvas =  document.createElement('canvas');
       this.context = this.canvas.getContext('2d');
-
-
 
 			this.rcanvas =  document.getElementById( rcanvasid );
       this.rcontext = this.rcanvas.getContext('2d');
@@ -112,41 +85,134 @@ class C64Screen {
 			this.mcol2 = 1;
 			this.mcol2Last = 2;
 
+
+			this.spritemcol1 = 5;
+			this.spritemcol1Last = 5;
+			this.spritemcol2 = 7;
+			this.spritemcol2Last = 7;
+
+
 			this.multiColor = false;
 			this.multiColorLast = false;
 
+			this.memory = new Uint8Array( 256 * 256 ); //64 KB, we're not using all
+			this.charMem = 12288;
+			this.useRomCharMem = true;
+			this.visibleRomCharMem = false;
+
+			//"randomize" memory, simulate look and feel when poking in basic
+			for( var i=0; i<256*256; i++) {
+				this.memory[ i ] = 0;
+				if( Math.random() >.9 ) {
+					this.memory[ i ] = Math.floor(Math.random() * 255);
+				}
+			}
+
    }
 
-	 _initSpriteArrays() {
-		 this.spframes = [];
-		 for( var t=0; t<128; t++ ) {
-			 this.spframes[ t ] = new C64SpriteFrame();
-			 this.spframes[ t ].init();
-			 this.spframes[ t ].context.fillStyle = this._htmlColor( this.colors[ 1 ] );
-			 this.spframes[ t ].context.fillRect(
-				 0,0,
-				 24,
-				 21
-			 );
+
+	 setVicRegisters( regs ) {
+
+		 for( var i=0; i<47; i++) {
+			 this.vic[ i ] = regs[ i ];
+			 this.vicUsed.push( i );
+		 }
+	 }
+
+	 getCopyVicRegisters() {
+		 var copy = [];
+		 for( var i=0; i<47; i++) {
+			 copy.push( this.vic[i] );
+		 }
+		 return copy;
+	 }
+
+	 getCopyScreen() {
+		 var rows = [];
+
+		 for( var y=0; y<25; y++) {
+			 var row0 = this.buffer[ y ];
+			 var row = [];
+
+			 for( var x=0; x<40; x++) {
+				 row[ x ] = row0[ x ];
+			 }
+
+			 rows[ y ] = row;
 		 }
 
+		 return rows;
+	 }
+
+	 setScreen( rows ) {
+
+		 for( var y=0; y<25; y++) {
+			 var row = rows[ y ];
+			 var newRow = [];
+
+			 for( var x=0; x<40; x++) {
+				 newRow[ x ] = row[ x ];
+				 newRow[ x ][2] = true;
+			 }
+			 this.buffer[ y ] = newRow;
+		 }
+	 }
+
+	 getCursorPos() {
+		 return [ this.cursorx, this.cursory ];
+	 }
+
+	 getState() {
+		 var cursor = {
+			 col: this.col,
+			 cx: this.cursorx,
+			 cy: this.cursory
+		 };
+		 var state = {
+			 vicRegisters: this.getCopyVicRegisters(),
+			 screen: this.getCopyScreen(),
+			 cursor: cursor
+		 }
+
+		 return state;
+	 }
+
+	 setState( state ) {
+		 this.setVicRegisters( state.vicRegisters );
+		 this.setScreen( state.screen );
+
+		 this.col = state.cursor.col;
+		 this.cursorx = state.cursor.cx;
+		 this.cursory = state.cursor.cy;
+	 }
+
+	 setCharRomVisible( x ) {
+		 this.visibleRomCharMem = x;
+	 }
+
+	 getCharRomVisible() {
+		 return this.visibleRomCharMem;
+	 }
+
+	 _initSpriteArrays() {
 
 		 this.sprites = [];
 		 for( var i=0; i<8; i++ ) {
 
 			 this.sprites[ i ] = new Object();
 			 var sp = this.sprites[ i ];
-			 sp.x = 0; sp.y = 0; sp.enabled = 0; sp.frame = 0; sp.col = 0;
-
-			 sp.canvas = document.createElement('canvas');
-			 sp.context = sp.canvas.getContext('2d');
-			 sp.canvas.width=24;
-			 sp.canvas.height=21;
-
-			 this.spriteCol(i,1);
-			 this.spriteFrame(i,0);
+			 sp.x = 0;
+			 sp.y = 0;
+			 sp.enabled = false;
+			 sp.fat = false;
+			 sp.long = false;
+			 sp.addr = 0;
+			 sp.col = 1;
+			 sp.multiCol = false;
 
 		 }
+
+
 	 }
 
 	 _setCharMapping() {
@@ -305,6 +371,12 @@ class C64Screen {
 			 else if( nr == 53283)  {
 				 this.setMColor2( v % 16 );
 			 }
+			 else if( nr == 53285)  {
+				 this.setSpriteMColor1( v % 16 );
+			 }
+			 else if( nr == 53286)  {
+				 this.setSpriteMColor1( v % 16 );
+			 }
 			 else if( nr == 53269)  {
 				 var bits = this._getByteBits( v );
 				 var spr = this.sprites;
@@ -313,14 +385,64 @@ class C64Screen {
 					 console.log("Sprite[" +j+"].enable=" + bits[j])
 				 }
 			 }
-			 else if( nr == 53269)  {
+			 else if( nr == 53270)  {
 				 var bits = this._getByteBits( v );
 				 this.multiColor = bits[4];
 				 for( var j=0; j<8; j++) {
 					 console.log("53269[" +j+"].enable=" + bits[j])
 				 }
 			 }
-			 else if( nr>53247 && nr < 53264 ) {
+			 else if( nr == 53272)  {
+				 var bits = this._getByteBits( v );
+				 var b1,b2,b3, value;
+				 b1 = bits[1];
+				 b2 = bits[2];
+				 b3 = bits[3];
+
+				 value = 0;
+				 if( b1 ) { value += 2; }
+				 if( b2 ) { value += 4; }
+				 if( b3 ) { value += 8; }
+
+				 console.log("poke 53272 -> " + value);
+/*
+this.charMem = 12288;
+this.useRomCharMem = true;
+this.visibleRomCharMem = false;
+*/
+				 if( value == 12 ) {
+					 this.useRomCharMem = false;
+					 this.charMem = 12288;
+				 } else {
+					 this.useRomCharMem = true;
+				 }
+
+			 }
+			 else if(nr == 53276) {
+				 var bits = this._getByteBits( v );
+				 var spr = this.sprites;
+				 for( var j=0; j<8; j++) {
+					 spr[ j ].multiCol = bits[j];
+					 console.log("Sprite[" +j+"].multiCol=" + bits[j])
+				 }
+			 }
+			 else if(nr == 53277) {
+				 var bits = this._getByteBits( v );
+				 var spr = this.sprites;
+				 for( var j=0; j<8; j++) {
+					 spr[ j ].fat = bits[j];
+					 console.log("Sprite[" +j+"].fat=" + bits[j])
+				 }
+			 }
+			 else if(nr == 53271) {
+				 var bits = this._getByteBits( v );
+				 var spr = this.sprites;
+				 for( var j=0; j<8; j++) {
+					 spr[ j ].long = bits[j];
+					 console.log("Sprite[" +j+"].long=" + bits[j])
+				 }
+			 }
+			 else if( nr>53247 && nr < 53264 ) { //sprite pos
 				var sprno = Math.floor((nr -53248) / 2);
 				var xcoord = !(nr % 2);
 				console.log("sprite #" + sprno);
@@ -335,10 +457,31 @@ class C64Screen {
 				}
 
 			 }
+			 else if( nr>53286 && nr < 53295 ) {
+				var sprno = nr - 53287;
+				console.log("sprite #" + sprno);
+				console.log("col " + v);
+
+				this.spriteCol( sprno, v );
+
+			 }
+
 
 		 }
 
 		 this.vicUsed = [];
+	 }
+
+	 poke( a, b ) {
+		 this.memory[a] = b % 256;
+	 }
+
+	 peek( a ) {
+		 return this.memory[a];
+	 }
+
+	 charRomPeek( a ) {
+		 return this.fontImageRom[a];
 	 }
 
 	 vpoke( a, b ) {
@@ -354,7 +497,8 @@ class C64Screen {
 			 this.rcontext.imageSmoothingEnabled= false;
 	 }
 
-	 _prepareFontImageData() {
+
+	 preparefontImageRom() {
 
      var img1 = this.characterSetImage;
      var img2 = document.createElement("canvas");
@@ -369,29 +513,61 @@ class C64Screen {
      var sd = imgdata.data;
 
      var pixelsCount = img1.width * img1.height ;
+     var pixelsCountD8 = (img1.width * img1.height) / 8 ;
      var len = pixelsCount * 4;
-     var data = new Uint8Array( pixelsCount * 2);
+     var data = new Uint8Array( 256 * 8 );
+     var srcBytesWidth = img1.width*4;
 
-     var di = 0;
-     for (var i = 0; i < len; i += 4) {
-       if (sd[i + 0]) {
-         data[ di ] = 1;
-         data[ di + pixelsCount ] = 0;
-       } else {
-         data[ di ] = 0;
-         data[ di + pixelsCount ] = 1;
-       }
-       di++;
+     for (var i = 0; i < pixelsCountD8; i ++ ) {
+       data[i] = 0;
      }
 
-     return [data,img1.width, img1.height];
+     var masks = [
+       0b00000001,0b00000010,0b00000100,0b00001000,
+       0b00010000,0b00100000,0b01000000,0b10000000
+     ];
+
+     var di = 0;
+     for (var charIx = 0; charIx < 128; charIx ++) {
+       di = charIx * 8;
+
+       var srcAddressRow = Math.floor(charIx / 16);
+       var srcAddressCol = charIx % 16;
+       var srcAddressBase = ((srcAddressCol * 8 * 4) + ( srcAddressRow * srcBytesWidth * 8));
+
+       if( charIx == 16) {
+         var tmp = 1001;
+       }
+
+       for (var pixRow = 0; pixRow < 8; pixRow ++) {
+
+           for (var pixColumn = 0; pixColumn < 8; pixColumn ++) {
+             var srcAddress = srcAddressBase
+                 + ( (7-pixColumn) * 4 )
+                 + ( pixRow * srcBytesWidth );
+
+
+             if (sd[ srcAddress ]) {
+               data[ di ] = data[ di ] | masks[ pixColumn ];
+               data[ di + pixelsCountD8 ] = data[ di + pixelsCountD8 ] | masks[ pixColumn ];
+             }
+         }
+         data[ di + pixelsCountD8 ] = 255 - data[ di + pixelsCountD8 ];
+         di++;
+       }
+     }
+
+     return data;
    }
+
 
 	 _postLoadFontImage() {
 
      console.log("_postLoadFontImage reached");
 
-		 this.fontImageData = this._prepareFontImageData(this.srcImage);
+		 //this.fontImageData = this._prepareFontImageData(this.srcImage);
+		 this.fontImageRom = this.preparefontImageRom(this.srcImage);
+
 
 		 //-----------------------
 
@@ -423,7 +599,15 @@ class C64Screen {
 	 }
 
 
- 	 setMColor1( c ) {
+ 	 setSpriteMColor1( c ) {
+ 		 this.spritemcol1 = c;
+ 	 }
+
+	 setSpriteMColor2( c ) {
+ 		 this.spritemcol2 = c;
+ 	 }
+
+	 setMColor1( c ) {
  		 this.mcol1 = c;
  	 }
 
@@ -436,35 +620,7 @@ class C64Screen {
 		 this.bcol = c;
 	 }
 
- 	 spriteFrame( s, f ) {
 
- 		 var sp = this.sprites[ s ];
- 		 this.spframes[ f ].init();
-
- 		 sp.frame = f;
-
- 		 var imgdata = sp.context.getImageData(0, 0, 24, 21 );
- 		 var dd  = imgdata.data;
-
- 		 var imgdata2 = this.spframes[ f ].context.getImageData(0, 0, 24, 21 );
- 		 var sd  = imgdata2.data;
-
- 		 var len = 24 * 21 * 4;
- 		 var c = this.colors[ sp.col ];
- 		 for( var i=0 ; i<len; i+=4 ) {
- 			 if( sd[ i+0 ] ) {
- 				 dd[ i+0 ] = c.r;
- 				 dd[ i+1 ] = c.g;
- 				 dd[ i+2 ] = c.b;
- 				 dd[ i+3 ] = 255;
- 			 }
- 			 else {
- 				 dd[ i+3 ] = 0;
- 			 }
- 		 }
-
- 		 sp.context.putImageData( imgdata, 0, 0 );
- 	 }
 
  	 spriteEnable( n, enabled ) {
  		 this.sprites[ n ].enabled = enabled;
@@ -488,67 +644,8 @@ class C64Screen {
 
  	 spriteCol( n, c ) {
  		 this.sprites[ n ].col = c;
-      this.spriteFrame( n, this.sprites[ n ].frame )
+
  	 }
-
-
- 	 spritePoke( frame, offset, byte ) {
-
- 		 var mem = this.pixels8data;
- 		 for( var i=0 ; i<8; i++) {
- 			 var mask = (1<<(7-i));
- 			 var v=0;
- 			 var o = i*4;
- 			 if( byte & mask ) {
- 				 v=255;
- 			 }
- 			 mem[ o+0 ] = v;
- 			 mem[ o+1 ] = v;
- 			 mem[ o+2 ] = v;
- 			 mem[ o+3 ] = v;
- 		 }
-
- 		 //x,y from offset, todo, must be a quicker way to do this
- 		 var x=0, y=0;
- 		 for( var i=0 ; i<offset; i++) {
- 			 x+=8;
- 			 if( x > 16 ) {
- 				 x=0; y++;
- 			 }
- 		 }
-
- 		 this.spframes[ frame ].context.putImageData( this.pixels8, x, y );
- 		 //console.log();
- 		 //this.spriteFrame(); todo
- 		 this.spriteReFrame( frame );
- 	 }
-
- 	 spritePlot( frame, x, y, on ) {
-
- 		 var d=this.pixeldata;
- 		 var v = 0;
- 		 if( on ) { v=255; }
- 		 d[0]   = v;
- 		 d[1]   = v;
- 		 d[2]   = v;
- 		 d[3]   = v;
- 		 this.spframes[ frame ].context.putImageData( this.pixel, x, y );
- 		 //this.spriteFrame(); todo
- 		 this.spriteReFrame( frame );
- 	 }
-
-
- 	 spriteReFrame( frame ) {
-
- 		 for( var s=0 ; s<8; s++) {
-
- 			 var sp = this.sprites[ s ];
- 			 if( sp.frame == frame ) {
- 				 this.spriteFrame( s, sp.frame ); //redraw with correct mono color
- 			 }
- 		 }
-
- 	 };
 
 	 getRenderSize() {
 		 return [ this.rcanvas.width, this.rcanvas.height ];
@@ -659,7 +756,12 @@ class C64Screen {
  		}
    }
 
-	 cursorX( x ) {
+
+	 setCursorY( y ) {
+		 this.cursory = y;
+	 }
+
+	 setCursorX( x ) {
 		 this.cursorx = x;
 	 }
 
@@ -706,7 +808,6 @@ class C64Screen {
  		}
 
 	 }
-
 
 	 writeCharRev( c ) {
 		var index = (this._mapASCII2Screen( c ) + 128) % 256;
@@ -809,37 +910,598 @@ class C64Screen {
      return  index;
    }
 
-	 _renderDirectChrMono( x, y, c0, col0) {
+	 setSpriteAddress( no, addr ) {
+		 this.sprites[no].addr = addr;
+	 }
 
-     var fid = this.fontImageData[0];
-     var fidW = this.fontImageData[1];
-     var fidH = this.fontImageData[2];
+
+	 renderSprite( no, x, y) {
+
+
+		 var sprite = this.sprites[ no ];
+		 if( sprite.multiCol ) {
+			 	if(sprite.fat) {
+						this._renderDirectSprMultiFat( no, x, y, sprite.long);
+				}
+				else {
+						this._renderDirectSprMulti( no, x, y, sprite.long);
+				}
+
+		 }
+		 else {
+			 if(sprite.fat) {
+					 this._renderDirectSprMonoFat( no, x, y, sprite.long);
+			 }
+			 else {
+					 this._renderDirectSprMono( no, x, y, sprite.long);
+			 }
+		 }
+
+
+		 //mono,w
+		 //mono,W
+		 //multi,w
+		 //multi,W
+
+	 }
+
+
+	 _renderDirectSprMulti( no, x, y, long) {
+		 //https://retro64.altervista.org/blog/programming-sprites-the-commodore-64-simple-tutorial-using-basic-v2/
+
+		 var fid = this.memory;
+		 var iDta = this.iDta;
+     var pixWidthM4 = this.iwidth * 4;
+		 var sprite = this.sprites[ no ];
+		 var dataPtr = sprite.addr;
+
+		 var fgCol = this.colors[ sprite.col ];
+		 var mcCol1 = this.colors[ this.spritemcol1 ];
+		 var mcCol2 = this.colors[ this.spritemcol2 ];
+
+		 var xd0 = x << 2 /* multiply 4, 4 bytes per pixel */;
+     var yd= pixWidthM4 * y;
+		 var yd2= pixWidthM4 * (y+1);
+
+
+		 for( var yC = 0; yC<21; yC++) {
+
+			 var xd = xd0;
+			 for( var xByteCount=0; xByteCount < 3; xByteCount++) {
+
+				 var byte = fid[ dataPtr ];
+				 var mask = 0b10000000;
+			 	 var mask2 = 0b01000000;
+
+				 if(long) {
+
+					 for( var xC = 0; xC<4; xC++) {
+
+							var col = null;
+							var val = 0;
+
+							if ( (byte & mask ) > 0 ) {
+							  val=1;
+							}
+							if ( (byte & mask2 ) > 0 ) {
+							  val+=2;
+							}
+
+							switch (val){
+							   case 1:
+							       col = mcCol1;
+							       break;
+								 case 2:
+							       col = mcCol2;
+							       break;
+								 case 3:
+							       col = fgCol;
+							       break;
+								 default:
+
+							}
+
+							var dBase = xd + yd;
+							var dBase2 = xd + yd2;
+
+							if ( col!=null ) {
+
+								 iDta[ dBase + 0 ] = col.r;
+							   iDta[ dBase + 1 ] = col.g;
+							   iDta[ dBase + 2 ] = col.b;
+							   iDta[ dBase + 3 ] = 255;
+
+								 iDta[ dBase + 4 ] = col.r;
+							   iDta[ dBase + 5 ] = col.g;
+							   iDta[ dBase + 6 ] = col.b;
+							   iDta[ dBase + 7 ] = 255;
+
+								 iDta[ dBase2 + 0 ] = col.r;
+							   iDta[ dBase2 + 1 ] = col.g;
+							   iDta[ dBase2 + 2 ] = col.b;
+							   iDta[ dBase2 + 3 ] = 255;
+
+								 iDta[ dBase2 + 4 ] = col.r;
+							   iDta[ dBase2 + 5 ] = col.g;
+							   iDta[ dBase2 + 6 ] = col.b;
+							   iDta[ dBase2 + 7 ] = 255;
+
+							}
+
+
+							mask = mask >> 2;
+							mask2 = mask2 >> 2;
+							xd+=8;
+					 }
+			 	}
+				else {
+					for( var xC = 0; xC<4; xC++) {
+
+						 var col = null;
+						 var val = 0;
+
+						 if ( (byte & mask ) > 0 ) {
+							 val=1;
+						 }
+						 if ( (byte & mask2 ) > 0 ) {
+							 val+=2;
+						 }
+
+						 switch (val){
+								case 1:
+										col = mcCol1;
+										break;
+								case 2:
+										col = mcCol2;
+										break;
+								case 3:
+										col = fgCol;
+										break;
+								default:
+
+						 }
+
+						 var dBase = xd + yd;
+
+						 if ( col!=null ) {
+
+								iDta[ dBase + 0 ] = col.r;
+								iDta[ dBase + 1 ] = col.g;
+								iDta[ dBase + 2 ] = col.b;
+								iDta[ dBase + 3 ] = 255;
+
+								iDta[ dBase + 4 ] = col.r;
+								iDta[ dBase + 5 ] = col.g;
+								iDta[ dBase + 6 ] = col.b;
+								iDta[ dBase + 7 ] = 255;
+
+						 }
+
+
+						 mask = mask >> 2;
+						 mask2 = mask2 >> 2;
+						 xd+=8;
+					}
+				}
+
+				 dataPtr++;
+			 }
+
+
+			 yd += pixWidthM4;
+			 if( long ) {
+				 yd += pixWidthM4;
+				 yd2 += pixWidthM4;
+				 yd2 += pixWidthM4;
+			 }
+		 }
+
+	 }
+
+	 _renderDirectSprMultiFat( no, x, y, long) {
+		 //https://retro64.altervista.org/blog/programming-sprites-the-commodore-64-simple-tutorial-using-basic-v2/
+
+		 var fid = this.memory;
+		 var iDta = this.iDta;
+     var pixWidthM4 = this.iwidth * 4;
+		 var sprite = this.sprites[ no ];
+		 var dataPtr = sprite.addr;
+
+		 var fgCol = this.colors[ sprite.col ];
+		 var mcCol1 = this.colors[ this.spritemcol1 ];
+		 var mcCol2 = this.colors[ this.spritemcol2 ];
+
+		 var xd0 = x << 2 /* multiply 4, 4 bytes per pixel */;
+     var yd= pixWidthM4 * y;
+		 var yd2= pixWidthM4 * (y+1);
+
+
+		 for( var yC = 0; yC<21; yC++) {
+
+			 var xd = xd0;
+			 for( var xByteCount=0; xByteCount < 3; xByteCount++) {
+
+				 var byte = fid[ dataPtr ];
+				 var mask = 0b10000000;
+			 	 var mask2 = 0b01000000;
+
+				 if( long ) {
+					 for( var xC = 0; xC<4; xC++) {
+
+							var col = null;
+							var val = 0;
+
+							if ( (byte & mask ) > 0 ) {
+							  val=1;
+							}
+							if ( (byte & mask2 ) > 0 ) {
+							  val+=2;
+							}
+
+							switch (val){
+							   case 1:
+							       col = mcCol1;
+							       break;
+								 case 2:
+							       col = mcCol2;
+							       break;
+								 case 3:
+							       col = fgCol;
+							       break;
+								 default:
+
+							}
+
+							var dBase = xd + yd;
+							var dBase2 = xd + yd2;
+
+							if ( col!=null ) {
+
+								 iDta[ dBase + 0 ] = col.r;
+							   iDta[ dBase + 1 ] = col.g;
+							   iDta[ dBase + 2 ] = col.b;
+							   iDta[ dBase + 3 ] = 255;
+
+								 iDta[ dBase + 4 ] = col.r;
+							   iDta[ dBase + 5 ] = col.g;
+							   iDta[ dBase + 6 ] = col.b;
+							   iDta[ dBase + 7 ] = 255;
+
+								 iDta[ dBase + 8 ] = col.r;
+							   iDta[ dBase + 9 ] = col.g;
+							   iDta[ dBase + 10 ] = col.b;
+							   iDta[ dBase + 11] = 255;
+
+								 iDta[ dBase + 12] = col.r;
+							   iDta[ dBase + 13] = col.g;
+							   iDta[ dBase + 14] = col.b;
+							   iDta[ dBase + 15] = 255;
+
+								 iDta[ dBase2 + 0 ] = col.r;
+							   iDta[ dBase2 + 1 ] = col.g;
+							   iDta[ dBase2 + 2 ] = col.b;
+							   iDta[ dBase2 + 3 ] = 255;
+
+								 iDta[ dBase2 + 4 ] = col.r;
+							   iDta[ dBase2 + 5 ] = col.g;
+							   iDta[ dBase2 + 6 ] = col.b;
+							   iDta[ dBase2 + 7 ] = 255;
+
+								 iDta[ dBase2 + 8 ] = col.r;
+							   iDta[ dBase2 + 9 ] = col.g;
+							   iDta[ dBase2 + 10 ] = col.b;
+							   iDta[ dBase2 + 11] = 255;
+
+								 iDta[ dBase2 + 12] = col.r;
+							   iDta[ dBase2 + 13] = col.g;
+							   iDta[ dBase2 + 14] = col.b;
+							   iDta[ dBase2 + 15] = 255;
+
+							}
+
+
+							mask = mask >> 2;
+							mask2 = mask2 >> 2;
+							xd+=16;
+					 }
+			 	 }
+				 else {
+					 for( var xC = 0; xC<4; xC++) {
+
+							var col = null;
+							var val = 0;
+
+							if ( (byte & mask ) > 0 ) {
+								val=1;
+							}
+							if ( (byte & mask2 ) > 0 ) {
+								val+=2;
+							}
+
+							switch (val){
+								 case 1:
+										 col = mcCol1;
+										 break;
+								 case 2:
+										 col = mcCol2;
+										 break;
+								 case 3:
+										 col = fgCol;
+										 break;
+								 default:
+
+							}
+
+							var dBase = xd + yd;
+
+							if ( col!=null ) {
+
+								 iDta[ dBase + 0 ] = col.r;
+								 iDta[ dBase + 1 ] = col.g;
+								 iDta[ dBase + 2 ] = col.b;
+								 iDta[ dBase + 3 ] = 255;
+
+								 iDta[ dBase + 4 ] = col.r;
+								 iDta[ dBase + 5 ] = col.g;
+								 iDta[ dBase + 6 ] = col.b;
+								 iDta[ dBase + 7 ] = 255;
+
+								 iDta[ dBase + 8 ] = col.r;
+								 iDta[ dBase + 9 ] = col.g;
+								 iDta[ dBase + 10 ] = col.b;
+								 iDta[ dBase + 11] = 255;
+
+								 iDta[ dBase + 12] = col.r;
+								 iDta[ dBase + 13] = col.g;
+								 iDta[ dBase + 14] = col.b;
+								 iDta[ dBase + 15] = 255;
+
+							}
+
+
+							mask = mask >> 2;
+							mask2 = mask2 >> 2;
+							xd+=16;
+					 }
+				 }
+
+				 dataPtr++;
+			 }
+
+
+			 yd += pixWidthM4;
+			 if( long ) {
+				 yd += pixWidthM4;
+				 yd2 += pixWidthM4;
+				 yd2 += pixWidthM4;
+			 }
+		 }
+
+	 }
+
+	 _renderDirectSprMono( no, x, y, long ) {
+		 //https://retro64.altervista.org/blog/programming-sprites-the-commodore-64-simple-tutorial-using-basic-v2/
+
+		 var fid = this.memory;
+		 var iDta = this.iDta;
+     var pixWidthM4 = this.iwidth * 4;
+		 var sprite = this.sprites[ no ];
+		 var dataPtr = sprite.addr;
+
+		 var fgCol = this.colors[ sprite.col ];
+
+		 var xd0 = x << 2 /* multiply 4, 4 bytes per pixel */;
+     var yd= pixWidthM4 * y;
+		 var yd2= pixWidthM4 * (y+1);
+
+
+		 for( var yC = 0; yC<21; yC++) {
+
+			 var xd = xd0;
+			 for( var xByteCount=0; xByteCount < 3; xByteCount++) {
+
+				 var byte = fid[ dataPtr ];
+				 var mask = 0b10000000;
+
+				 if(long) {
+					 for( var xC = 0; xC<8; xC++) {
+
+		         var dBase = xd + yd;
+						 var dBase2 = xd + yd2;
+
+		         if ( (byte & mask ) > 0 ) {
+
+								 iDta[ dBase + 0 ] = fgCol.r;
+				         iDta[ dBase + 1 ] = fgCol.g;
+				         iDta[ dBase + 2 ] = fgCol.b;
+				         iDta[ dBase + 3 ] = 255;
+
+								 iDta[ dBase2 + 0 ] = fgCol.r;
+				         iDta[ dBase2 + 1 ] = fgCol.g;
+				         iDta[ dBase2 + 2 ] = fgCol.b;
+				         iDta[ dBase2 + 3 ] = 255;
+		         }
+
+
+						 mask = mask >> 1;
+		         xd+=4;
+					 }
+				 }
+				 else {
+					 for( var xC = 0; xC<8; xC++) {
+
+		         var dBase = xd + yd;
+
+		         if ( (byte & mask ) > 0 ) {
+
+								 iDta[ dBase + 0 ] = fgCol.r;
+				         iDta[ dBase + 1 ] = fgCol.g;
+				         iDta[ dBase + 2 ] = fgCol.b;
+				         iDta[ dBase + 3 ] = 255;
+
+		         }
+
+
+						 mask = mask >> 1;
+		         xd+=4;
+					 }
+				 }
+				 dataPtr++;
+			 }
+
+			 yd += pixWidthM4;
+			 if( long ) { yd += pixWidthM4; yd2 += pixWidthM4; yd2 += pixWidthM4;}
+		 }
+
+	 }
+
+
+	 _renderDirectSprMonoFat( no, x, y, long ) {
+		 //https://retro64.altervista.org/blog/programming-sprites-the-commodore-64-simple-tutorial-using-basic-v2/
+
+		 var fid = this.memory;
+		 var iDta = this.iDta;
+     var pixWidthM4 = this.iwidth * 4;
+		 var sprite = this.sprites[ no ];
+		 var dataPtr = sprite.addr;
+
+		 var fgCol = this.colors[ sprite.col ];
+
+		 var xd0 = x << 2 /* multiply 4, 4 bytes per pixel */;
+     var yd= pixWidthM4 * y;
+		 var yd2= pixWidthM4 * (y + 1);
+
+
+		 for( var yC = 0; yC<21; yC++) {
+
+			 var xd = xd0;
+			 for( var xByteCount=0; xByteCount < 3; xByteCount++) {
+
+				 var byte = fid[ dataPtr ];
+				 var mask = 0b10000000;
+
+				 if( long ) {
+					 for( var xC = 0; xC<8; xC++) {
+
+		         var dBase = xd + yd;
+						 var dBase2 = xd + yd2;
+
+		         if ( (byte & mask ) > 0 ) {
+
+								 iDta[ dBase + 0 ] = fgCol.r;
+				         iDta[ dBase + 1 ] = fgCol.g;
+				         iDta[ dBase + 2 ] = fgCol.b;
+				         iDta[ dBase + 3 ] = 255;
+
+								 iDta[ dBase + 4 ] = fgCol.r;
+				         iDta[ dBase + 5 ] = fgCol.g;
+				         iDta[ dBase + 6 ] = fgCol.b;
+				         iDta[ dBase + 7 ] = 255;
+
+								 iDta[ dBase2 + 0 ] = fgCol.r;
+				         iDta[ dBase2 + 1 ] = fgCol.g;
+				         iDta[ dBase2 + 2 ] = fgCol.b;
+				         iDta[ dBase2 + 3 ] = 255;
+
+								 iDta[ dBase2 + 4 ] = fgCol.r;
+				         iDta[ dBase2 + 5 ] = fgCol.g;
+				         iDta[ dBase2 + 6 ] = fgCol.b;
+				         iDta[ dBase2 + 7 ] = 255;
+
+		         }
+
+
+						 mask = mask >> 1;
+		         xd+=8;
+					 }
+				 }
+				 else {
+					 for( var xC = 0; xC<8; xC++) {
+
+						 var dBase = xd + yd;
+
+						 if ( (byte & mask ) > 0 ) {
+
+								 iDta[ dBase + 0 ] = fgCol.r;
+								 iDta[ dBase + 1 ] = fgCol.g;
+								 iDta[ dBase + 2 ] = fgCol.b;
+								 iDta[ dBase + 3 ] = 255;
+
+								 iDta[ dBase + 4 ] = fgCol.r;
+								 iDta[ dBase + 5 ] = fgCol.g;
+								 iDta[ dBase + 6 ] = fgCol.b;
+								 iDta[ dBase + 7 ] = 255;
+
+
+						 }
+
+
+						 mask = mask >> 1;
+						 xd+=8;
+					 }
+				 }
+
+
+				 dataPtr++;
+			 }
+
+			 yd += pixWidthM4;
+			 if( long ) {
+				 yd += pixWidthM4;
+				 yd2 += pixWidthM4;
+				 yd2 += pixWidthM4;
+			 }
+		 }
+
+	 }
+
+	 _renderDirectChrMono( x, y, ch0, col0) {
+
+		 // ch0 is character code
+		 // col0 is color
+
+     var fid;
+		 var dataPtr;
+
+		 if( this.useRomCharMem ) {
+			fid = this.fontImageRom;
+			dataPtr = 0;
+		 }
+		 else {
+			fid = this.memory;
+			dataPtr = this.charMem;
+		 }
+
      var iDta = this.iDta;
-     var srcPixWidth = fidW;
      var pixWidthM4 = this.iwidth * 4;
 
      var fgCol = this.colors[ col0 ];
      var bgCol = this.colors[ this.bgcol ];
 
-     var c=c0;
+     var ch=ch0;
 
-     var row = Math.floor( c / 16 );
-     var colmn = c % 16;
+		 //calculate row + column nrs
+     var row = ch >> 4 /* div 16*/;
+     var column = ch % 16;
 
-     var xs0 = colmn * 8;
-     var ys= srcPixWidth * row * 8;
-     var xd0 = x*4;
+
+     var xd0 = x << 2 /* multiply 4, 4 bytes per pixel */;
      var yd= pixWidthM4 * y;
 
+		 //BASE of source data -> chM8 = font data start offset  + char offset
+     var chM8 = dataPtr + ch*8;
+
      for( var yC = 0; yC<8; yC++) {
-       var xs = xs0;
        var xd = xd0;
+
+       var byte = fid[ chM8 + yC ];
+       var mask = 0b10000000;
 
        for( var xC = 0; xC<8; xC++) {
 
          var col = bgCol;
 
-         if (fid[ xs + ys ] ) {
+         if ( (byte & mask ) > 0 ) {
              col = fgCol;
          }
 
@@ -850,83 +1512,89 @@ class C64Screen {
          iDta[ dBase + 2 ] = col.b;
          iDta[ dBase + 3 ] = 255;
 
-         xs+=1;
          xd+=4;
+         mask = mask >> 1;
        }
-       ys += srcPixWidth;
        yd += pixWidthM4;
      }
 
    }
 
-   _renderDirectChrMulti( x, y, c0, col0) {
+	 _renderDirectChrMulti( x, y, ch0, col0) {
 
-     var fid = this.fontImageData[0];
-     var fidW = this.fontImageData[1];
-     var fidH = this.fontImageData[2];
+     var fid = this.fontImageRom;
      var iDta = this.iDta;
-     var srcPixWidth = fidW;
      var pixWidthM4 = this.iwidth * 4;
 
-		 var fgCol = this.colors[ col0 ];
+     var fgCol = this.colors[ col0 ];
      var bgCol = this.colors[ this.bgcol ];
 		 var mcCol1 = this.colors[ this.mcol1 ];
 		 var mcCol2 = this.colors[ this.mcol2 ];
 
+     var ch=ch0;
 
-     var cols = [];
-     cols[0] = bgCol; //bg color
-     cols[1] = mcCol1; //multi color 1
-     cols[2] = mcCol2; //multi color 2
-     cols[3] = fgCol;
+     var row = ch >> 4 /* div 16*/ ;
+     var column = ch % 16;
 
-     var c=c0;
-
-     var row = Math.floor( c / 16 );
-     var colmn = c % 16;
-
-     var xs0 = colmn * 8;
-     var ys= srcPixWidth * row * 8;
-     var xd0 = x*4;
+     var xd0 = x << 2 /* multiply 4 */;
      var yd= pixWidthM4 * y;
 
+     var chM8 = ch*8;
+
      for( var yC = 0; yC<8; yC++) {
-       var xs = xs0;
        var xd = xd0;
 
-       for( var xC = 0; xC<8; xC+=2) {
+       var byte = fid[ chM8 + yC ];
+       var mask = 0b10000000;
+			 var mask2 = 0b01000000;
 
-         //console.log("xs,ys=",xs,ys);
+       for( var xC = 0; xC<4; xC+=1) { /*4 thick pixels */
 
-         var pVal0 = (fid[ xs + ys     ]    );
-         var pVal1 = (fid[ xs + 1 + ys ]*2  );
-         var pVal = pVal0 + pVal1;
+         var col = bgCol;
+				 var val = 0;
 
-         //console.log(pVal);
-         var col = cols[ pVal ];
-         var dBase = xd + yd;
-
-         if( col === undefined ) {
-           console.log("Ooopsie");
+         if ( (byte & mask ) > 0 ) {
+             val=1;
          }
+				 if ( (byte & mask2 ) > 0 ) {
+             val+=2;
+         }
+
+				 switch (val){
+				     case 1:
+				         col = mcCol1;
+				         break;
+						 case 2:
+				         col = mcCol2;
+				         break;
+						 case 3:
+				         col = fgCol;
+				         break;
+						 default:
+
+					}
+
+         var dBase = xd + yd;
 
          iDta[ dBase + 0 ] = col.r;
          iDta[ dBase + 1 ] = col.g;
          iDta[ dBase + 2 ] = col.b;
          iDta[ dBase + 3 ] = 255;
-         iDta[ dBase + 4 ] = col.r;
+
+				 iDta[ dBase + 4 ] = col.r;
          iDta[ dBase + 5 ] = col.g;
          iDta[ dBase + 6 ] = col.b;
          iDta[ dBase + 7 ] = 255;
 
-         xs+=2;
          xd+=8;
+         mask = mask >> 2;
+				 mask2 = mask2 >> 2;
        }
-       ys += srcPixWidth;
        yd += pixWidthM4;
      }
 
    }
+
 
 	 renderChar(x, y, c, col0) {
 		 var col = col0 % 16;
@@ -943,7 +1611,6 @@ class C64Screen {
        this._renderDirectChrMono( x, y, c, col0 );
      }
 	 }
-
 
 	 _htmlColor( c ) {
 		  return 'rgba('+c.r+','+c.g+','+c.b+',1)';
@@ -1039,17 +1706,20 @@ class C64Screen {
 			 }
 		 }
 
-		 ctx.putImageData(this.iImgDta, 0, 0);
-		 bufctx.drawImage( this.canvas, 0, 0);
 
-		 for( var i = 0; i < this.sprites.length; i++ ) {
+		 for( var i = this.sprites.length -1; i>=0; i-- ) {
 			 var sp = this.sprites[ i ];
 				 if( sp.enabled ) {
 
 					//console.log( "Draw sprite " + i,sp.x,sp.y);
-				 	bufctx.drawImage( sp.canvas, sp.x-24, sp.y-21 );
+				 	//bufctx.drawImage( sp.canvas, sp.x-24, sp.y-21 );
+					this.renderSprite( i, sp.x-24, sp.y-21 );
 			 }
 		 }
+
+		 ctx.putImageData(this.iImgDta, 0, 0);
+		 bufctx.drawImage( this.canvas, 0, 0);
+
 	 }
 
 	 _renderBuffer__old() {

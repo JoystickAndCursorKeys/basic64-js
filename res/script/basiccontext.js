@@ -2,7 +2,8 @@ class BasicContext {
 
   constructor( console ) {
     this.console = console;
-
+    this.menu = new Menu( console, this  );
+    this.menuFocus = false;
     this.program = [];
     this.cursorCount = 0;
     this.runFlag = false;
@@ -34,23 +35,98 @@ class BasicContext {
     km[0x1e] = 5;
     km[0x1f] = 6;
     km[0x9e] = 7;
+
     km[0x81] = 8;
+    km[0x95] = 9;
+    km[0x96] = 10;
+    km[0x97] = 11;
+    km[0x98] = 12;
+    km[0x99] = 13;
+    km[0x9a] = 14;
+    km[0x9b] = 15;
 
 
   }
 
-  poke_53280( v ) { this.console.setBorderColor( v % 16 );  }
-  poke_53281( v ) { this.console.setBGColor( v % 16 );  }
+
+  isMenu() {
+    return this.menuFocus;
+  }
+
+  toggleMenu() {
+    if(!this.menuFocus) {
+      this.menu.start();
+    }
+    else  {
+      this.menu.stop();
+    }
+    this.menuFocus = !this.menuFocus;
+  }
+
+  endMenu() {
+
+    this.menuFocus = false;
+  }
+
+  handleMenuKey( keyEvent ) {
+    this.menu.handleKey( keyEvent );
+  }
+
   vpoke(a,b) { this.console.vpoke( a - 53248,b%256  ); }
+  /* todo remove vpoke */
+
+
+  _getByteBits( byte ) {
+    var masks = [
+      0b00000001,0b00000010,0b00000100,0b00001000,
+      0b00010000,0b00100000,0b01000000,0b10000000
+    ];
+
+   var results = [ false, false, false, false, false, false, false, false ];
+
+   for( var i=0; i<8; i++) {
+
+     results[ i ] = (byte & masks[i]) > 0;
+
+   }
+
+   return results;
+  }
+
 
   poke( a, b ) {
-      var addr = "poke_" + a;
+/*      var addr = "poke_" + a;
       if( this[addr] ) {
         this[addr](b);
       }
-      if( a>53247 && a<53295) {
+*/
+      if( a == 1) {
 
-        this.console.vpoke( a - 53248,b%256  )
+        this.console.poke( a, b);
+
+
+        //%0xx: Character ROM visible at $D000-$DFFF. (Except for the value %000, see above.)
+        //%1xx: I/O area visible at $D000-$DFFF. (Except for the value %100, see above.)
+        //https://sta.c64.org/cbm64mem.html
+        var bits = this._getByteBits( b );
+
+
+        if( bits[0] == false ) {
+          this.console.setCharRomVisible( true );
+        }
+        else {
+          this.console.setCharRomVisible( false );
+        }
+
+      }
+      else if( a>53247 && a<53295) {
+
+        if( this.console.getCharRomVisible() == false ) {
+            this.console.vpoke( a - 53248,b%256  );
+        }
+        else {
+          //Can't poke in ROM
+        }
 
       }
       else if( a>1023 && a<2024) {
@@ -61,6 +137,15 @@ class BasicContext {
 
         this.console.setChar(x,y,c);
       }
+      else if( a>=2040 && a<2048) {
+
+        this.console.poke( a, b);
+
+        var sn = a - 2040;
+        var addr = b * 64;
+
+        this.console.setSpriteAddress(sn,addr);
+      }
       else if( a>55295 && a<56296) {
         var v = a - 55296;
         var y = Math.floor(v / 40);
@@ -68,6 +153,45 @@ class BasicContext {
         var c = b%256;
 
         this.console.setCharCol(x,y,c%16);
+      }
+      else {
+        this.console.poke( a, b);
+      }
+  }
+
+  peek( a ) {
+
+      if( this.console.getCharRomVisible() ) {
+        if( a>53247 && a<(53248+2048)) {
+          return this.console.charRomPeek( a - 53248 )
+        }
+      }
+      else {
+        if( a>53247 && a<53295) {
+
+          return this.console.vpeek( a - 53248 )
+
+        }
+      }
+
+
+      if( a>1023 && a<2024) {
+        var v = a - 1024;
+        var y = Math.floor(v / 40);
+        var x = v%40;
+        var c = b%256;
+
+        return this.console.getChar(x,y);
+      }
+      else if( a>55295 && a<56296) {
+        var v = a - 55296;
+        var y = Math.floor(v / 40);
+        var x = v%40;
+
+        return this.console.getCharCol(x,y);
+      }
+      else {
+        return this.console.peek( a );
       }
   }
 
@@ -93,6 +217,10 @@ class BasicContext {
     this.reverseOn = false;
   }
 
+  print( s ) {
+    this.sendChars(s, false);
+    this.reverseOn = false;
+  }
 
   sendChars( s, newline ) {
 
@@ -173,10 +301,22 @@ class BasicContext {
     if( hard ) {
       this.printLine(" **** commodore 64 basic emulator ****");
       this.printLine("");
-      this.printLine("  **** javascript implementation ****");
+      this.printLine("  **** basic64/js - f9 = menu ****");
       this.printLine("");
     }
     this.printLine("ready.");
+  }
+
+  getProgramAsText() {
+    var text = "";
+    for (const l of this.program)
+      {
+        if( text != "") {
+          text += "\n";
+        }
+        text +=  l[2].trim() ;
+      }
+    return text;
   }
 
 
@@ -200,7 +340,7 @@ class BasicContext {
       var values = [];
       for( var j=0; j<p.params.length; j++) {
         var par = this.evalExpression( p.params[j] );;
-        values.push( par );
+        values.push( {value: par} );
       }
       try {
         var commands = this.commands;
@@ -545,12 +685,12 @@ class BasicContext {
           }
         }
         try {
-          var stc = commands[ cmd.statementName];
+          var stc = commands[ "_stat_" + cmd.statementName];
           if( stc === undefined ) {
             this.printError("syntax");
           }
           else {
-              commands[ cmd.statementName]( values );
+              commands[ "_stat_" + cmd.statementName]( values );
           }
 
         }
@@ -725,7 +865,7 @@ class BasicContext {
       return this.load( null );
     }
 
-    var storageName = 'w64AutoSav_default.prg';
+    var storageName = 'w64AutoSav_default';
     if( fileName ) {
       storageName =  "w64AutoSav_" + fileName;
     }
@@ -746,8 +886,31 @@ class BasicContext {
   }
 
 
+  getVirtualDisk() {
+    var dir = this.getDir();
+    var content = [];
+
+    for( var i=0; i<dir.files.length; i++) {
+        var fileName = dir.files[i].fname;
+        var storageName =  "w64AutoSav_" + fileName;
+        var json = localStorage.getItem( storageName );
+        content.push( { fname: fileName ,content: json} );
+    }
+
+    var disk = {
+      dir: dir,
+      content: content
+    };
+
+    var diskStr = JSON.stringify( disk );
+
+    console.log( diskStr );
+
+    return diskStr;
+  }
+
   handleLineInput( str ) {
-    var p = new Parser();
+    var p = new Parser( this.commands );
     p.init();
     var l = p.parseLine( str );
     if( l == null ) {

@@ -7,6 +7,7 @@
 
 	<link rel="icon" href="res/img/fav.png">
 	<style>
+
 		.outer {
 		  display: table;
 		  position: absolute;
@@ -44,6 +45,7 @@
 	<script src="res/script/basictokenizer.js"></script>
 	<script src="res/script/basicparser.js"></script>
 	<script src="res/script/basiccommands.js"></script>
+	<script src="res/script/menu.js"></script>
 	<script src="res/script/basiccontext.js"></script>
 	<script src="res/script/w64.js"></script>
 
@@ -90,6 +92,10 @@
   <div id="middlediv" class="middle">
     <div id="innerdiv" class="inner">
 		<canvas class='screenCanvas' id="screenCanvas" width="100%" height="100%" tabindex='1'></canvas>
+
+		<a width=100% hidden href=# name="imageSaver" id="imageSaver">Save</a>
+		<input hidden name="imageLoader" id="imageLoader" type="file" onclick="this.value=null;"></input>
+
     </div>
 
   </div>

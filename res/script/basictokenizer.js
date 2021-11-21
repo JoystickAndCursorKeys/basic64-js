@@ -1,5 +1,5 @@
 class StringReader {
-	
+
 	constructor( strIn ) {
 			this.buffer = strIn;
 			this.index = 0;
@@ -36,9 +36,11 @@ class StringReader {
 
 
 class Tokenizer {
-	constructor( reader ) {
+
+	constructor( reader, keywords ) {
 			this.tokens = [];
 			this.reader = reader;
+			this.keywords = keywords;
 	}
 
 	isOpChar( ctx ) {
@@ -62,12 +64,19 @@ class Tokenizer {
 
 
 	isNameChar( ctx  ) {
-		if( this.endFound ) {
+
+		console.log("SEQ: " + ctx.seq);
+		if( ctx.endFound ) {
 			return false;
 		}
 		var rv = ctx.c.match("[a-zA-Z0-9$?]") != null;
 
 		if( ctx.c=="$" ) {
+			ctx.endFound = true;
+		}
+
+		if( this.keywords.indexOf( ctx.seq ) >-1 ) {
+			console.log("Found Keyword: " + ctx.seq );
 			ctx.endFound = true;
 		}
 
