@@ -8,29 +8,18 @@ class BasicCommands {
 
   }
 
-  /*pushCmd( cmd, def ) {
-    this.cmds[cmd] = def;
-  }
+  getStatements() {
+    var stats = Object.getOwnPropertyNames( BasicCommands.prototype );
 
-  pushFunc( cmd, def ) {
-    this.func[cmd] = def;
-  }
-  */
+    var stats2 = [];
 
-  /* commands */
-  new( pars ) {
-    this.context.new();
-  }
-
-  list( pars ) {
-
-    this.context.printLine( "" );
-    var context = this.context;
-
-    for (const l of context.program)
-      {
-        this.listLine( l[2] );
+    for( var i=0;i<stats.length;i++) {
+      if( stats[i].startsWith("_stat_")) {
+        stats2.push( stats[i].substr(6 ) );
       }
+    }
+
+    return stats2;
   }
 
   listLine( rawLine ) {
@@ -56,6 +45,23 @@ class BasicCommands {
   }
 
 
+  /************************ commands ************************/
+  _stat_new( pars ) {
+    this.context.new();
+  }
+
+  _stat_list( pars ) {
+
+    this.context.printLine( "" );
+    var context = this.context;
+
+    for (const l of context.program)
+      {
+        this.listLine( l[2] );
+        console.log(l[2]);
+      }
+  }
+
   _if_get() {
       var EXPR = 0, PAR = 1;
       return [PAR];
@@ -66,7 +72,7 @@ class BasicCommands {
       return [PAR];
   }
 
-  read( pars ) {
+  _stat_read( pars ) {
     var p0 = pars[ 0 ];
     if( p0.type != "var" ) {
       throw "READ: Param 0 is not a var";
@@ -87,7 +93,7 @@ class BasicCommands {
   }
 
 
-  get( pars ) {
+  _stat_get( pars ) {
     var p0 = pars[ 0 ];
     if( p0.type != "var" ) {
       throw "GET: Param 0 is not a var";
@@ -98,7 +104,7 @@ class BasicCommands {
     else { this.context.setVar(p0.value, String.fromCharCode( k ) ); }
   }
 
-  load( pars ) {
+  _stat_load( pars ) {
     var context = this.context;
     var result;
 
@@ -131,7 +137,7 @@ class BasicCommands {
 
   }
 
-  save( pars ) {
+  _stat_save( pars ) {
     var context = this.context;
 
     if( pars.length == 0) {
@@ -143,13 +149,13 @@ class BasicCommands {
   }
 
 
-  run( pars ) {
+  _stat_run( pars ) {
     var context = this.context;
 
     context.runPGM();
   }
 
-  print( pars ) {
+  _stat_print( pars ) {
     //console.log(pars);
     var context = this.context;
 
@@ -161,14 +167,14 @@ class BasicCommands {
     }
   }
 
-  poke( pars ) {
+  _stat_poke( pars ) {
 
     var context = this.context;
     context.poke( pars[0].value, pars[1].value);
 
   }
 
-  /* functions */
+  /************************ functions ************************/
   len( pars ) {
     return pars[0].value.length;
   }
@@ -236,5 +242,12 @@ class BasicCommands {
     if( x<0 ) { return -1; }
     else if( x>0 ) { return 1; }
     return 0;
+  }
+
+  peek( pars ) {
+
+    var context = this.context;
+    return context.peek( pars[0].value );
+
   }
 }

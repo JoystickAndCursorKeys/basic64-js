@@ -92,9 +92,15 @@
 
 class Parser {
 
+  constructor( cmds ) {
+    this.commands = cmds;
+  }
+
   init() {
 
+
 	  this.CTRL_KW = ["if","then","goto","and", "not", "or",  "gosub", "return", "for", "to", "next", "step", "data" ];
+    this.SHORTCUT_KW = ["?"];
     this.INT_STAT =
      {
        "print": {
@@ -112,6 +118,17 @@ class Parser {
          },
        "input": { parse: 'parseInput' },
      };
+
+     this.KEYWORDS = this.commands.getStatements();
+     for( var i=0; i<this.CTRL_KW.length; i++) {
+       this.KEYWORDS.push( this.CTRL_KW[ i ] );
+     }
+
+     for( var i=0; i<this.SHORTCUT_KW.length; i++) {
+       this.KEYWORDS.push( this.SHORTCUT_KW[ i ] );
+     }
+
+     console.log("KEYWORDS:" , this.KEYWORDS );
 
      this.screenCodes2CTRLTable = [];
      var tab = this.screenCodes2CTRLTable;
@@ -791,7 +808,7 @@ class Parser {
       commands: []
     };
 
-		var toker = new Tokenizer( new StringReader ( line ) );
+		var toker = new Tokenizer( new StringReader ( line ), this.KEYWORDS );
 		var tokens = toker.tokenize();
     this.logTokens( tokens );
     tokens = this.removePadding( tokens );

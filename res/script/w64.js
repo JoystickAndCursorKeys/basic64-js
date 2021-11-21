@@ -19,31 +19,53 @@ class Program {
     this.keyToCode = [];
     var k2c = this.keyToCode;
 
-    k2c["ALT_:1"] = '\xd0';
-    k2c["ALT_:2"] = '\x85';
-    k2c["ALT_:3"] = '\x9c';
-    k2c["ALT_:4"] = '\xdf';
-    k2c["ALT_:5"] = '\xdc';
-    k2c["ALT_:6"] = '\x9e';
-    k2c["ALT_:7"] = '\x9f';
-    k2c["ALT_:8"] = '\xde';
-    k2c["ALT_:9"] = '\x92';
-    k2c["ALT_:0"] = '\xd2';
+    //Columns 1 in https://www.c64-wiki.com/wiki/PETSCII_Codes_in_Listings
+
+    k2c["ALT_:1"] = '\xc1';
+    k2c["ALT_:2"] = '\xd5';
+    k2c["ALT_:3"] = '\xd6';
+    k2c["ALT_:4"] = '\xd7';
+    k2c["ALT_:5"] = '\xd8';
+    k2c["ALT_:6"] = '\xd9';
+    k2c["ALT_:7"] = '\xda';
+    k2c["ALT_:8"] = '\xdb';
+
+    k2c["CTRL_:1"] = '\xd0';
+    k2c["CTRL_:2"] = '\x85';
+    k2c["CTRL_:3"] = '\x9c';
+    k2c["CTRL_:4"] = '\xdf';
+    k2c["CTRL_:5"] = '\xdc';
+    k2c["CTRL_:6"] = '\x9e';
+    k2c["CTRL_:7"] = '\x9f';
+    k2c["CTRL_:8"] = '\xde';
+    k2c["CTRL_:9"] = '\x92';
+    k2c["CTRL_:0"] = '\xd2';
     k2c[":Home"]  = '\x93';
     k2c["SHFT_:Home"]  = '\xd3';
 
+    //Columns 3 in https://www.c64-wiki.com/wiki/PETSCII_Codes_in_Listings
     this.keyToCTRLCode = [];
     var k2c = this.keyToCTRLCode;
-    k2c["ALT_:1"] = '\x90'; //1
-    k2c["ALT_:2"] = '\x05'; //2
-    k2c["ALT_:3"] = '\x1c'; //3
-    k2c["ALT_:4"] = '\x9f'; //4
-    k2c["ALT_:5"] = '\x9c'; //5
-    k2c["ALT_:6"] = '\x1e'; //6
-    k2c["ALT_:7"] = '\x1f'; //7
-    k2c["ALT_:8"] = '\x9e'; //8
-    k2c["ALT_:9"] = '\x12'; //9
-    k2c["ALT_:0"] = '\x92'; //9
+    k2c["ALT_:1"] = '\x81';
+    k2c["ALT_:2"] = '\x95';
+    k2c["ALT_:3"] = '\x96';
+    k2c["ALT_:4"] = '\x97';
+    k2c["ALT_:5"] = '\x98';
+    k2c["ALT_:6"] = '\x99';
+    k2c["ALT_:7"] = '\x9a';
+    k2c["ALT_:8"] = '\x9b';
+
+
+    k2c["CTRL_:1"] = '\x90'; //1
+    k2c["CTRL_:2"] = '\x05'; //2
+    k2c["CTRL_:3"] = '\x1c'; //3
+    k2c["CTRL_:4"] = '\x9f'; //4
+    k2c["CTRL_:5"] = '\x9c'; //5
+    k2c["CTRL_:6"] = '\x1e'; //6
+    k2c["CTRL_:7"] = '\x1f'; //7
+    k2c["CTRL_:8"] = '\x9e'; //8
+    k2c["CTRL_:9"] = '\x12'; //9
+    k2c["CTRL_:0"] = '\x92'; //9
     k2c[":Home"]  = '\x13';
     k2c["SHFT_:Home"]  = '\x93';
 
@@ -99,8 +121,10 @@ class Program {
 
     var bcontext = this.basiccontext;
     var running = bcontext.isRunning();
+    var menuScreen = bcontext.isMenu();
     var modifierKey = false;
 
+    //console.log( evt );
 
     if( evt.key == "AltGraph") {
       this.k_altGraph = (evt.type  == 'keydown');
@@ -132,9 +156,20 @@ class Program {
     evt.k_shift = this.k_shift;
     evt.k_alt = this.k_alt;
 
-    if( ! running ) {
+
+    if( evt.key == "F9" ) {
+      bcontext.toggleMenu();
+      console.log("Menu");
+      evt.preventDefault();
+    }
+
+    if( ! running && !menuScreen ) {
       this.handleScrEditKeys( evt, bcontext );
-      //this.resetKeyModifiers();
+      return;
+    }
+    else if( menuScreen ) {
+      bcontext.handleMenuKey( evt );
+
       return;
     }
 
@@ -194,37 +229,23 @@ class Program {
 
           c.clearCursor();
           c.cursorLeft();
+          evt.preventDefault();
       }
       else if( evt.key == "ArrowRight") {
           c.clearCursor();
           c.cursorRight();
+          evt.preventDefault();
       }
       else if( evt.key == "ArrowUp") {
           c.clearCursor();
           c.cursorUp();
+          evt.preventDefault();
       }
       else if( evt.key == "ArrowDown") {
           c.clearCursor();
           c.cursorDown();
+          evt.preventDefault();
       }
-      /*else if( evt.key == "Home") {
-          if( stringMode ) {
-            if( evt.shiftKey ) {
-              c.writePetsciiChar( '\xd3' );
-            }
-            else {
-              c.writePetsciiChar( '\x93' );
-            }
-          }
-          else {
-            c.clearCursor();
-            c.cursorHome();
-
-            if( evt.shiftKey ) {
-              c.clearScreen();
-            }
-          }
-      }*/
       else if( evt.key == "F1") {
         c.writeString('list');
       }
@@ -276,7 +297,7 @@ class Program {
         }
 
         checkKey += ":" + evt.key;
-        //console.log("check_key: " + checkKey );
+        console.log("check_key: " + checkKey );
 
         if( this.stringMode ) {
           var mapEntry = this.keyToCode[checkKey];
