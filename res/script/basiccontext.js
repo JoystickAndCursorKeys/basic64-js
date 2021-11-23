@@ -12,16 +12,20 @@ class BasicContext {
     var c = this.console;
     this.commands = new BasicCommands( this );
     this.vars = [];
-    this.saveCount = 0;
+
     this.kbBuffer = [];
 
     this.forContext = {}
 
+    this.vDisks = new VDisk( );
 
-    var json = localStorage.getItem('w64Settings');
-    this.settings = JSON.parse( json );
-    if(this.settings == null ) {
-      this.settings={ cookies: false };
+    var json = localStorage.getItem('BJ64_Settings');
+    if(json!=null) {
+        this.settings = JSON.parse( json );
+    }
+    else {
+      this.settings = {}
+      this.settings.cookies = false;
     }
 
     this.code2colMap = [];
@@ -48,6 +52,59 @@ class BasicContext {
 
   }
 
+
+  setProgram( pgm ) {
+    this.program = pgm;
+    this.runFlag = false;
+    this.console.clearCursor();
+  }
+
+  getProgram() {
+    return this.program;
+  }
+
+  getProgramState() {
+    return {
+      runFlag: this.runFlag,
+      vars: this.vars,
+      forContext: this.forContext,
+      runPointer: this.runPointer
+    }
+  }
+
+  setProgramState( pgmState ) {
+      this.runFlag = pgmState.runFlag;
+      this.vars = pgmState.vars;
+      this.forContext = pgmState.forContext;
+      this.runPointer = pgmState.runPointer;
+  }
+
+  firstTimeAccessStorage() {
+    this.settings.cookies=true;
+    this.vDisks.initialize();
+
+    localStorage.setItem( "BJ64_Settings", JSON.stringify( this.settings ) );
+  }
+
+  confirmCookies() {
+
+      if( this.settings.cookies == false ) {
+        if (confirm('Settings and Virtual Storage require localstorage and cookies, \nEnable?')) {
+          this.firstTimeAccessStorage();
+          return true;
+        } else {
+          // Do nothing!
+          return false;
+        }
+      }
+      else {
+        if( !this.vDisks.ready() ) {
+          this.vDisks.initialize();
+        }
+        return true;
+      }
+
+  }
 
   isMenu() {
     return this.menuFocus;
@@ -275,8 +332,6 @@ class BasicContext {
       else {
         this.console.writeChar( String.fromCharCode(c)  );
       }
-
-
     }
 
     if( newline ) {
@@ -319,6 +374,10 @@ class BasicContext {
     return text;
   }
 
+  getProgramLines() {
+
+    return this.program;
+  }
 
   evalExpressionPart( p ) {
     var val=0;
@@ -397,7 +456,7 @@ class BasicContext {
   cycle() {
     var c = this.console;
 
-    if( !this.runFlag ) {
+    if( !this.runFlag || this.menuFocus ) {
       if(this.cursorCount++>15) {
         this.cursorCount = 0;
 
@@ -409,6 +468,7 @@ class BasicContext {
       var p = this.program;
 
       for( var cyc=0; cyc<5; cyc++) {
+
         var l = p[ this.runPointer ];
 
         //console.log("line:",l);
@@ -432,6 +492,7 @@ class BasicContext {
   }
 
   goto( line ) {
+
     var pgm = this.program;
     var len=this.program.length;
 
@@ -472,6 +533,29 @@ class BasicContext {
     this.dataPointer++;
 
     return result;
+  }
+
+
+  listCodeLine( rawLine ) {
+
+    var inString = false;
+    for( var i=0; i<rawLine.length; i++ ) {
+
+      var c = rawLine.charAt(i);
+
+      if( !inString ) {
+        this.sendChars( c, false  );
+      }
+      else {
+        this.sendCharsSimple( c, false );
+      }
+
+      if( c == "\"" ) {
+        inString = !inString;
+      }
+    }
+    this.printLine( "" );
+
   }
 
   runPGM() {
@@ -715,8 +799,199 @@ class BasicContext {
     this.vars[ a ] = b;
   }
 
-  insertPgmLine( linenr, commands, raw ) {
 
+
+  new( linenr ) {
+
+    this.program = [];
+  }
+
+  removePgmLine( linenr ) {
+
+    var pgm2 = [];
+
+    for( var i=0; i<this.program.length; i++) {
+      var pl=this.program[i];
+      if( pl[0] != linenr ) {
+        pgm2.push(pl);
+      }
+    }
+    this.program = pgm2;
+
+  }
+
+  getDir() {
+    if( !this.confirmCookies() ) {
+      return null;
+    }
+
+    return this.vDisks.getDir();
+  }
+
+  setDir( dir ) {
+
+    if( !this.confirmCookies() ) {
+      return;
+    }
+
+    this.vDisks.setDir( dir );
+  }
+
+
+  loadDir() {
+
+    if( !this.confirmCookies() ) {
+      return;
+    }
+
+    var dir = this.getDir();
+    var row;
+
+    this.program=[];
+    this.program.push([null,null,"0 \u0012\""+dir.title+"          \"\u0092 00 2A"]);
+    for( var i=0; i<dir.files.length; i++) {
+
+      row = this.padSpaces6( dir.files[i].size ) +" \"" + dir.files[i].fname + "\"";
+      this.program.push([null,null,row]);
+    }
+
+    row = dir.free +" slots free.";
+    this.program.push([null,null,row]);
+
+  }
+
+  padSpaces6( no ) {
+    var s = no + "";
+    for(var i=s.length; i<6; i++) {
+      s+=" ";
+    }
+    return s;
+  }
+
+
+  updateDir( fileName, programLen ) {
+
+    if( !this.confirmCookies() ) {
+      return;
+    }
+
+    this.vDisks.updateDir( fileName, programLen );
+  }
+
+
+
+  saveSerializedData( fileName0, serializedData, type, len ) {
+
+    if( !this.confirmCookies() ) {
+      return;
+    }
+
+    var fileName = "default";
+
+
+    console.log( "saving..." );
+    console.log( this.program );
+
+
+    if( fileName0 ) {
+      fileName = fileName0;
+    }
+
+    this.vDisks.saveFile( fileName, serializedData , type, len );
+
+
+    return true;
+  }
+
+  save( fileName0 ) {
+
+    if( !this.confirmCookies() ) {
+      return;
+    }
+
+    var fileName = "default";
+
+    console.log( "saving..." );
+    console.log( this.program );
+
+
+    if( fileName0 ) {
+      fileName = fileName0;
+    }
+
+    this.vDisks.saveFile( fileName, JSON.stringify( this.program ), "bas", this.program.length );
+
+
+  }
+
+  load( fileName ) {
+
+    if( !this.confirmCookies() ) {
+      return false;
+    }
+
+    if( fileName == "$" ) {
+      this.loadDir();
+      return [true,false];
+    }
+    else if( fileName == "*" ) {
+      return this.load( null );
+    }
+
+    var container = this.vDisks.loadFile( fileName );
+
+    if( container == null ) {
+      this.program=[];
+      return false;
+    }
+
+    this.program = null;
+
+    if( container.type == "bas") {
+
+      this.program = JSON.parse( container.data );
+
+    }
+    else if( container.type == "snp") {
+
+      var state = JSON.parse( container.data );
+      if( !(state.pgm === undefined) ) {
+          this.program = state.pgm;
+          this.setProgramState( state.pgmState );
+          this.console.setState( state.console );
+      }
+      else {
+        throw "error loading snapshot " + fileName;
+      }
+
+    }
+
+    if( this.program != null ) {
+      var p = this.program;
+      for( var i=0; i<p.length; i++) {
+        if( p[i] == null ) {
+          delete p[i];
+        }
+      }
+      return [true, container.type == "snp" ];
+    }
+    return false;
+  }
+
+
+  getVirtualDisk() {
+
+    if( !this.confirmCookies() ) {
+      return null;
+    }
+
+    return this.vDisks.getFullDisk();
+
+  }
+
+
+  insertPgmLine( linenr, commands, raw ) {
+    /*
     for( var i=0; i<this.program.length; i++) {
       var pl=this.program[i];
       if( pl[0] == linenr ) {
@@ -732,181 +1007,65 @@ class BasicContext {
     }
 
     this.program.sort( sortF );
-    //this.autoSave();
+    */
 
+    this.insertPgmLineLocal( linenr, commands, raw, this.program );
   }
 
-  new( linenr ) {
+  insertPgmLineLocal( linenr, commands, raw, myProgram ) {
 
-    this.program = [];
-    //this.autoSave();
-  }
-
-  removePgmLine( linenr ) {
-
-    var pgm2 = [];
-
-    for( var i=0; i<this.program.length; i++) {
-      var pl=this.program[i];
-      if( pl[0] != linenr ) {
-        pgm2.push(pl);
-      }
-    }
-    this.program = pgm2;
-    //this.autoSave();
-  }
-
-  getDir() {
-    var storageName =  "w64AutoSav_dir";
-    var json = localStorage.getItem( storageName );
-    var dir = JSON.parse( json );
-
-    var title = "0 \u0012\"VDisk          \"\u0092 00 2A"
-    if(!json) {
-      return {files:[], title: title };
-    }
-    dir.title = title;
-    dir.free = 32-dir.files.length;
-    return dir;
-
-  }
-
-  setDir( dir ) {
-    var storageName =  "w64AutoSav_dir";
-
-    localStorage.setItem(storageName, JSON.stringify( dir ) );
-
-  }
-
-
-  loadDir() {
-    var dir = this.getDir();
-    var row;
-
-    this.program=[];
-    this.program.push([null,null,dir.title]);
-    for( var i=0; i<dir.files.length; i++) {
-
-      row = dir.files[i].size +"     \"" + dir.files[i].fname + "\"";
-      this.program.push([null,null,row]);
-    }
-
-    row = dir.free +" slots free.";
-    this.program.push([null,null,row]);
-
-    var tmp=2;
-
-  }
-
-
-  updateDir( fileName, programLen ) {
-    var dir = this.getDir();
-
-    var found = -1;
-    for( var i=0; i<dir.files.length; i++) {
-      if( dir.files[i].fname == fileName ) {
-        found  = i;
-        break;
+    for( var i=0; i<myProgram.length; i++) {
+      var pl=myProgram[i];
+      if( pl[0] == linenr ) {
+        myProgram[i] = [linenr, commands, raw ];
+        return;
       }
     }
 
-    if( found > -1 ) {
-      dir.files[i].size = programLen;
-    }
-    else {
-      dir.files.push( {fname: fileName, size: programLen } );
-    }
-    this.setDir(dir);
-  }
+    myProgram.push( [linenr, commands, raw ]);
 
-  save( fileName0 ) {
-    var myStorage = window.localStorage;
-    var fileName = "default.prg";
-
-    if( this.saveCount == 0 && this.settings.cookies == false) {
-      this.printLine("!warning");
-      this.printLine("!save will use cookies or local storage");
-      this.printLine("!type save again to agree");
-      this.saveCount++;
-
-      return;
-    }
-    console.log( "saving..." );
-    console.log( this.program );
-
-
-    if( fileName0 ) {
-      fileName = fileName0;
+    var sortF = function compare( a, b ) {
+      return a[0] - b[0];
     }
 
-    var storageName = 'w64AutoSav_'+fileName;
-
-    //save pgm
-    localStorage.setItem(storageName, JSON.stringify( this.program ) );
-
-    this.updateDir( fileName, this.program.length );
-
-    //save settings
-    if( this.saveCount == 1 && this.settings.cookies == false) {
-      this.settings.cookies = true;
-      localStorage.setItem('w64Settings', JSON.stringify( this.settings ) );
-    }
-    this.saveCount++;
+    myProgram.sort( sortF );
 
   }
 
-  load( fileName ) {
+  textLinesToBas( lines ) {
 
-    if( fileName == "$" ) {
-      this.loadDir();
-      return true;
-    }
-    else if( fileName == "*" ) {
-      return this.load( null );
-    }
+    var myProgram = [];
 
-    var storageName = 'w64AutoSav_default';
-    if( fileName ) {
-      storageName =  "w64AutoSav_" + fileName;
-    }
+    for( var i = 0; i<lines.length; i++ ) {''
 
-    var json = localStorage.getItem( storageName );
-    this.program = JSON.parse( json );
-    if( json == null ) {
-      this.program=[];
-      return false;
-    }
-    var p = this.program;
-    for( var i=0; i<p.length; i++) {
-      if( p[i] == null ) {
-        delete p[i];
+      var line = lines[ i ];
+      var p = new Parser( this.commands );
+      p.init();
+      var l = p.parseLine( line );
+      if( l == null ) {
+        continue;
       }
+      if( l.lineNumber != -1 ) {
+        if( l.commands.length > 0) {
+          this.insertPgmLineLocal( l.lineNumber, l.commands, l.raw, myProgram);
+          //this.program[ l.lineNumber ] = [l.commands,l.raw];
+        }
+        else {
+          throw "Error, no commands on line " + l.lineNumber;
+        }
+      }
+      else {
+        throw "Error, command must start with number to be part of program";
+      }
+
+      console.log("program:",myProgram);
+      console.log("Line: ", l );
     }
-    return true;
+    return myProgram;
   }
 
-
-  getVirtualDisk() {
-    var dir = this.getDir();
-    var content = [];
-
-    for( var i=0; i<dir.files.length; i++) {
-        var fileName = dir.files[i].fname;
-        var storageName =  "w64AutoSav_" + fileName;
-        var json = localStorage.getItem( storageName );
-        content.push( { fname: fileName ,content: json} );
-    }
-
-    var disk = {
-      dir: dir,
-      content: content
-    };
-
-    var diskStr = JSON.stringify( disk );
-
-    console.log( diskStr );
-
-    return diskStr;
+  printReady() {
+    this.printLine("ready.");
   }
 
   handleLineInput( str ) {

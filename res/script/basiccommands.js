@@ -22,27 +22,7 @@ class BasicCommands {
     return stats2;
   }
 
-  listLine( rawLine ) {
 
-    var inString = false;
-    for( var i=0; i<rawLine.length; i++ ) {
-
-      var c = rawLine.charAt(i);
-
-      if( !inString ) {
-        this.context.sendChars( c, false  );
-      }
-      else {
-        this.context.sendCharsSimple( c, false );
-      }
-
-      if( c == "\"" ) {
-        inString = !inString;
-      }
-    }
-    this.context.printLine( "" );
-
-  }
 
 
   /************************ commands ************************/
@@ -57,7 +37,7 @@ class BasicCommands {
 
     for (const l of context.program)
       {
-        this.listLine( l[2] );
+        this.context.listCodeLine( l[2] );
         console.log(l[2]);
       }
   }
@@ -108,6 +88,15 @@ class BasicCommands {
     var context = this.context;
     var result;
 
+    context.printLine("");
+
+    if( pars.length == 0) {
+      context.printLine("searching");
+    }
+    else {
+      context.printLine("searching for " + pars[0].value);
+    }
+
     if( pars.length == 0) {
         result = context.load( false );
     }
@@ -115,23 +104,24 @@ class BasicCommands {
       result = context.load( pars[0].value );
     }
 
-    context.printLine("");
 
 
-    if( result ) {
-      if( pars.length == 0) {
-        context.printLine("searching");
-        context.printLine("found default.prg");
-      }
-      else {
-        context.printLine("searching for " + pars[0].value);
-        context.printLine("found "+pars[0].value);
-      }
-      context.printLine("loading");
-
+    if( !result ) {
+      context.printLine("?not found error");
     }
     else  {
-      context.printLine("?not found error");
+
+      if( !result[1] ) {  //only print when not a snapshot
+
+        if( pars.length == 0) {
+          context.printLine("found default");
+        }
+        else {
+          context.printLine("found "+pars[0].value);
+        }
+        context.printLine("loading");
+      }
+
     }
 
 
