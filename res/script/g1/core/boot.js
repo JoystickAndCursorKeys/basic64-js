@@ -1,5 +1,15 @@
 const NOSTATECHANGE = 99999;
 
+var gameRenderFrameFunctionRec = {}
+
+function gameRenderFrameFunction(  )
+{
+  var r = gameRenderFrameFunctionRec;
+
+  r._this.renderFrame( r.ctx, r.exceptionHandler );
+}
+
+
 class GameState {
 
 
@@ -558,7 +568,15 @@ class GameState {
     }
 
     if( this.exception == false ) {
-      requestAnimationFrame(() => { this.renderFrame( ctx, exceptionHandler ) } );
+
+      gameRenderFrameFunctionRec = {
+        _this: this,
+        ctx: ctx,
+        exceptionHandler: exceptionHandler
+      };
+
+
+      requestAnimationFrame( gameRenderFrameFunction );
     }
 
   }
@@ -707,7 +725,7 @@ class Boot {
         var __this = this;
 
         try {
-          requestAnimationFrame(() => { this.state.renderFrame( this.renderContext, this ) } );
+          this.state.renderFrame( this.renderContext, this );
         }
         catch( except ) {
           console.log( "RENDER ERROR");

@@ -14,11 +14,11 @@ class C64Screen {
 		  this.onload = onload;
 		  this.onloaddata = onloaddata;
 
- 		  this.vic = [];
+ 		  this.vic = new Uint8Array(48);
 			this.vicUsed = [];
 
 			for( var i=0; i<47; i++) {
-				this.vic.push(0);
+				this.vicUsed.push(false);
 			}
 
       font.onload = function ( evt ) {
@@ -53,8 +53,8 @@ class C64Screen {
 				h: 64
 			}
 
-			this.WIDTH = 960;
-			this.HEIGHT = 600;
+			this.WIDTH = 960 * 1.25;
+			this.HEIGHT = 600 * 1.25;
 
 			this.FULLWIDTH = this.WIDTH + this.border.w * 2;
 			this.FULLHEIGHT = this.HEIGHT + this.border.h * 2;
@@ -445,9 +445,9 @@ this.visibleRomCharMem = false;
 			 else if( nr>53247 && nr < 53264 ) { //sprite pos
 				var sprno = Math.floor((nr -53248) / 2);
 				var xcoord = !(nr % 2);
-				console.log("sprite #" + sprno);
-				console.log("is xcoord " + xcoord);
-				console.log("coord #" + v);
+				//console.log("sprite #" + sprno);
+				//console.log("is xcoord " + xcoord);
+				//console.log("coord #" + v);
 
 				if( xcoord ) {
 					this.spriteXPos( sprno, v );
@@ -459,10 +459,10 @@ this.visibleRomCharMem = false;
 			 }
 			 else if( nr>53286 && nr < 53295 ) {
 				var sprno = nr - 53287;
-				console.log("sprite #" + sprno);
-				console.log("col " + v);
+				//console.log("sprite #" + sprno);
+				//console.log("col " + v);
 
-				this.spriteCol( sprno, v );
+				this.spriteCol( sprno, v % 16);
 
 			 }
 
@@ -1653,6 +1653,8 @@ this.visibleRomCharMem = false;
 		var dh = this.HEIGHT;
 		var b = this.border;
 
+		//dCtx.globalAlpha = 0.01;
+
 		dCtx.drawImage( sCvs, b.w, b.h, dw, dh);
 	 }
 
@@ -1718,6 +1720,7 @@ this.visibleRomCharMem = false;
 		 }
 
 		 ctx.putImageData(this.iImgDta, 0, 0);
+
 		 bufctx.drawImage( this.canvas, 0, 0);
 
 	 }

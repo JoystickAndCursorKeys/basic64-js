@@ -16,16 +16,26 @@ class VDisk {
       var diskName = "Default";
       this.disks = [ diskId ];
       this.currentDisk = diskId;
+      this.lastDisk = 1;
 
       localStorage.setItem( "BJ64_disks_list", JSON.stringify( this.disks ) );
       localStorage.setItem( "BJ64_0001_dir", JSON.stringify( {files:[], title: diskName, readOnly: false } ) );
       localStorage.setItem( "BJ64_disk_current", diskId );
     }
     else {
+      this.disks = JSON.parse( json );
       this.currentDisk = localStorage.getItem( "BJ64_disk_current" );
+
+      var last = -1;
+      for( var i=0; i<this.disks.length; i++) {
+        if( parseInt( this.disks[i] ) > last ) {
+          last = parseInt( this.disks[ i ] );
+        }
+      }
+      this.lastDisk = last;
     }
 
-    this.disks = JSON.parse( json );
+
     this.initialized=true;
 
   }
@@ -120,6 +130,28 @@ class VDisk {
     var json = localStorage.getItem( storageName );
 
     return JSON.parse( json );
+  }
+
+  createFullDisk( name, image ) {
+
+    this.lastDisk++;
+    var labl = "" + this.lastDisk;
+    labl = labl.padStart( 4,"0");
+    var dir = image.dir;
+    var content = image.content;
+
+    var storageName =  "BJ64_" + labl + "_dir";
+    localStorage.setItem(storageName, JSON.stringify( dir ) );
+
+    for( var i=0; i<content.length; i++) {
+        var fileName = content[i].fname;
+        var storageName =  "BJ64_" + labl + "_" + fileName;
+        localStorage.setItem( storageName, content[i].content );
+    }
+
+    this.disks.push( labl );
+    localStorage.setItem( "BJ64_disks_list", JSON.stringify( this.disks ) );
+
   }
 
   getFullDisk() {

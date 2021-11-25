@@ -266,7 +266,9 @@ class BasicContext {
   }
 
   printError( s ) {
-    this.console.writeString( "?" + s + " error", true );
+
+    this.console.writeString( "?" + s + " error" + this.onLineStr(), true );
+
   }
 
   printLine( s ) {
@@ -390,6 +392,9 @@ class BasicContext {
     }
     else if( p.type=="var" ) {
       val = this.vars[ p.data ];
+      if( val == undefined ) {
+        val = 0;
+      }
     }
     else if( p.type=="expr" ) {
       val = this.evalExpression( p );
@@ -406,6 +411,7 @@ class BasicContext {
         var stc = commands[ p.functionName];
         if( stc === undefined ) {
           this.printError("syntax");
+          return null;
         }
         else {
             val = commands[ p.functionName]( values );
@@ -422,6 +428,12 @@ class BasicContext {
   }
 
   evalExpression( expr ) {
+
+    //console.log( "parse ", expr);
+    if( expr.parts.length == 0 ) {
+      //console.log( "parse -> null");
+      return null;
+    }
 
     var val = this.evalExpressionPart( expr.parts[ 0 ] );
 
@@ -471,8 +483,14 @@ class BasicContext {
 
         var l = p[ this.runPointer ];
 
-        //console.log("line:",l);
-        this.runCommands( l[1] );
+        console.log("line:",l);
+        var rv = this.runCommands( l[1] );
+        console.log("rv:",rv);
+        if( !rv ) {
+          this.runFlag = false;
+          this.printLine("ready.");
+          return;
+        }
         if( !this.gotoFlag) {
           this.runPointer ++;
           if( this.runPointer >=  p.length ) {
@@ -593,37 +611,38 @@ class BasicContext {
 
   doIf( a,b,comp,block ) {
 
+    var rv = true;
     if( comp == "=" ) {
       if( this.evalExpression(a) == this.evalExpression(b) ) {
-        this.runCommands( block );
+        rv = this.runCommands( block );
       }
     }
     else if( comp == "<" ) {
       if( this.evalExpression(a) < this.evalExpression(b) ) {
-        this.runCommands( block );
+        rv = this.runCommands( block );
       }
     }
     else if( comp == ">" ) {
       if( this.evalExpression(a) > this.evalExpression(b) ) {
-        this.runCommands( block );
+        rv = this.runCommands( block );
       }
     }
     else if( comp == "<=" ) {
       if( this.evalExpression(a) <= this.evalExpression(b) ) {
-        this.runCommands( block );
+        rv = this.runCommands( block );
       }
     }
     else if( comp == ">=" ) {
       if( this.evalExpression(a) >= this.evalExpression(b) ) {
-        this.runCommands( block );
+        rv = this.runCommands( block );
       }
     }
     else if( comp == "<>" ) {
       if( this.evalExpression(a) != this.evalExpression(b) ) {
-        this.runCommands( block );
+        rv = this.runCommands( block );
       }
     }
-
+    return rv;
   }
 
 
@@ -693,6 +712,15 @@ class BasicContext {
     return -1;
   }
 
+  onLineStr() {
+    if( this.runPointer > -1 ) {
+
+      var line = this.program[this.runPointer];
+      return " in " + line[0];
+    }
+    return "";
+  }
+
   runCommands( cmds ) {
     var commands = this.commands;
     var EXPR = 0, PAR = 1;
@@ -707,7 +735,11 @@ class BasicContext {
           this.goto( cmd.params[0] );
         }
         else if( cn == "if" ) {
-          this.doIf( cmd.params[0], cmd.params[1], cmd.comp, cmd.block );
+          var rv = this.doIf( cmd.params[0], cmd.params[1], cmd.comp, cmd.block );
+          if( !rv ) {
+            this.printError("syntax");
+            return false;
+          }
         }
         else if( cn == "data" ) {
           //Nothing
@@ -772,6 +804,7 @@ class BasicContext {
           var stc = commands[ "_stat_" + cmd.statementName];
           if( stc === undefined ) {
             this.printError("syntax");
+            return false;
           }
           else {
               commands[ "_stat_" + cmd.statementName]( values );
@@ -781,6 +814,7 @@ class BasicContext {
         catch ( e ) {
           console.log(e);
           this.printError("unexpected");
+          return false;
         }
       }
       else if( cmd.type == "assignment" )  {
@@ -792,6 +826,8 @@ class BasicContext {
       }
       i++;
     }
+
+    return true;
 
   }
 
@@ -924,21 +960,7 @@ class BasicContext {
 
   }
 
-  load( fileName ) {
-
-    if( !this.confirmCookies() ) {
-      return false;
-    }
-
-    if( fileName == "$" ) {
-      this.loadDir();
-      return [true,false];
-    }
-    else if( fileName == "*" ) {
-      return this.load( null );
-    }
-
-    var container = this.vDisks.loadFile( fileName );
+  loadContainer( container ) {
 
     if( container == null ) {
       this.program=[];
@@ -978,6 +1000,26 @@ class BasicContext {
     return false;
   }
 
+  load( fileName ) {
+
+    if( !this.confirmCookies() ) {
+      return false;
+    }
+
+    if( fileName == "$" ) {
+      this.loadDir();
+      return [true,false];
+    }
+    else if( fileName == "*" ) {
+      return this.load( null );
+    }
+
+    var container = this.vDisks.loadFile( fileName );
+
+    return this.loadContainer( container );
+
+  }
+
 
   getVirtualDisk() {
 
@@ -989,6 +1031,15 @@ class BasicContext {
 
   }
 
+  createFullDisk( name, image ) {
+
+    if( !this.confirmCookies() ) {
+      return null;
+    }
+
+    return this.vDisks.createFullDisk( name, image );
+
+  }
 
   insertPgmLine( linenr, commands, raw ) {
     /*
@@ -1041,6 +1092,9 @@ class BasicContext {
       var line = lines[ i ];
       var p = new Parser( this.commands );
       p.init();
+      if( line.length > 80 ) {
+        throw "Line to long " + line;
+      }
       var l = p.parseLine( line );
       if( l == null ) {
         continue;
@@ -1071,7 +1125,13 @@ class BasicContext {
   handleLineInput( str ) {
     var p = new Parser( this.commands );
     p.init();
-    var l = p.parseLine( str );
+    try {
+      var l = p.parseLine( str );
+    }
+    catch( e ) {
+      this.printError( "syntax" );
+      this.printLine("ready.");
+    }
     if( l == null ) {
       return;
     }

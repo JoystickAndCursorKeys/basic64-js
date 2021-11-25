@@ -390,9 +390,7 @@ class Parser {
 
       var endLoop = this.isEndToken( token, endTokens );
       if( endLoop ) {
-        if( parts.length == 0 ) {
-          this.Exception( context, "empty expression");
-        }
+
         tokens.unshift( token );
         break;
       }
