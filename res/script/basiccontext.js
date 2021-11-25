@@ -68,7 +68,8 @@ class BasicContext {
       runFlag: this.runFlag,
       vars: this.vars,
       forContext: this.forContext,
-      runPointer: this.runPointer
+      runPointer: this.runPointer,
+      runPointer2: this.runPointer2
     }
   }
 
@@ -77,6 +78,7 @@ class BasicContext {
       this.vars = pgmState.vars;
       this.forContext = pgmState.forContext;
       this.runPointer = pgmState.runPointer;
+      this.runPointer2 = pgmState.runPointer2;
   }
 
   firstTimeAccessStorage() {
@@ -487,9 +489,9 @@ class BasicContext {
 
         var l = p[ this.runPointer ];
 
-        console.log("line:",l);
+        //console.log("line:",l);
         var rv = this.runCommands( l[1] );
-        console.log("rv:",rv);
+        //console.log("rv:",rv);
         if( !rv ) {
           this.runFlag = false;
           this.printLine("ready.");
@@ -523,6 +525,8 @@ class BasicContext {
 
       if( l[0] == line ) {
         this.runPointer = i;
+        this.runPointer2 = 0;
+
         this.gotoFlag = true;
         return;
       }
@@ -609,6 +613,7 @@ class BasicContext {
       this.runFlag = true;
       c.clearCursor();
       this.runPointer = 0;
+      this.runPointer2 = 0;
       this.gotoFlag = false;
     }
   }
@@ -733,7 +738,7 @@ class BasicContext {
     var EXPR = 0, PAR = 1;
 
     var end = cmds.length;
-    var i=0;
+    var i=this.runPointer2;
     while( i<end ) {
       var cmd=cmds[i];
       if( cmd.type == "control" )  {
@@ -765,9 +770,10 @@ class BasicContext {
                 }
                 else {
                   this.runPointer = jump.line;
+                  this.runPointer2 = jump.cmdPointer;
                   this.gotoFlag = true;
                 }
-                return;
+                return true;
             }
             else {
               i = jump.cmdPointer;
@@ -793,7 +799,7 @@ class BasicContext {
         for( var j=0; j<cmd.params.length; j++) {
           if( pardefs[j] == EXPR ) {
             var p = this.evalExpression( cmd.params[j] );
-            console.log("p",p);
+            //console.log("p",p);
             if( p != null ) {
               values.push( { type: "value", value: p } );
             }
@@ -836,6 +842,7 @@ class BasicContext {
       i++;
     }
 
+    this.runPointer2 = 0;
     return true;
 
   }
@@ -1155,6 +1162,7 @@ class BasicContext {
     }
     else {
       this.runPointer = -1;
+      this.runPointer2 = 0;
       this.runCommands( l.commands );
       if( ! this.runFlag ) {
         this.printLine("ready.");

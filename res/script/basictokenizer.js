@@ -65,7 +65,7 @@ class Tokenizer {
 
 	isNameChar( ctx  ) {
 
-		console.log("SEQ: " + ctx.seq);
+		//console.log("SEQ: " + ctx.seq);
 		if( ctx.endFound ) {
 			return false;
 		}
@@ -76,7 +76,7 @@ class Tokenizer {
 		}
 
 		if( this.keywords.indexOf( ctx.seq ) >-1 ) {
-			console.log("Found Keyword: " + ctx.seq );
+			//console.log("Found Keyword: " + ctx.seq );
 			ctx.endFound = true;
 		}
 

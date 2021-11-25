@@ -297,7 +297,7 @@ class Program {
         }
 
         checkKey += ":" + evt.key;
-        console.log("check_key: " + checkKey );
+        //console.log("check_key: " + checkKey );
 
         if( this.stringMode ) {
           var mapEntry = this.keyToCode[checkKey];
