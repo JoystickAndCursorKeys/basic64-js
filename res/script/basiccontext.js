@@ -429,6 +429,10 @@ class BasicContext {
 
   evalExpression( expr ) {
 
+    if( expr == null ) {
+      return null;
+    }
+
     //console.log( "parse ", expr);
     if( expr.parts.length == 0 ) {
       //console.log( "parse -> null");
@@ -611,6 +615,9 @@ class BasicContext {
 
   doIf( a,b,comp,block ) {
 
+    if( a==null || b == null || comp == null || block == null ) {
+      return false;
+    }
     var rv = true;
     if( comp == "=" ) {
       if( this.evalExpression(a) == this.evalExpression(b) ) {
@@ -786,8 +793,10 @@ class BasicContext {
         for( var j=0; j<cmd.params.length; j++) {
           if( pardefs[j] == EXPR ) {
             var p = this.evalExpression( cmd.params[j] );
-            //console.log(p);
-            values.push( { type: "value", value: p } );
+            console.log("p",p);
+            if( p != null ) {
+              values.push( { type: "value", value: p } );
+            }
           }
           else {
 
