@@ -38,12 +38,18 @@
   		display: block;
 		}
 
+		textarea {
+			width: 99%;
+			height: 90vh;
+		}
+
 	</style>
 
 	<script src="res/script/g1/core/boot.js"></script>
 	<script src="res/script/g1/screens/c64/screen.js"></script>
 	<script src="res/script/basictokenizer.js"></script>
 	<script src="res/script/basicparser.js"></script>
+	<script src="res/script/vdisk.js"></script>
 	<script src="res/script/basiccommands.js"></script>
 	<script src="res/script/menu.js"></script>
 	<script src="res/script/basiccontext.js"></script>
@@ -58,16 +64,19 @@
 	var SCR_H = null;
 	var MIN_SCR_W = 1024;
 	var MIN_SCR_H = 600;
+	var screenCanvas;
 
 	window.onload = function() {
-
+		screenCanvas = document.getElementById("screenCanvas");
 		var console = new C64Screen( 'screenCanvas', 'res/script/g1/screens/c64', start );
 
 	}
 
+	var program;
+
 	function start( console ) {
 
-		document.getElementById("screenCanvas").focus();
+		screenCanvas.focus();
 
 		var container = document.getElementById("middlediv");
 
@@ -78,8 +87,36 @@
 		SCR_H = size[1];
 
 		var pgm = new Program( console );
-		var program = new Boot( 'screenCanvas', SCR_W, SCR_H, [ pgm, 'basic' ] );
+		program = new Boot( 'screenCanvas', SCR_W, SCR_H, [ pgm, 'basic' ] );
 
+	}
+
+	function enableClipBoardWidget() {
+
+		screenCanvas.style="display:none";
+		document.getElementById("exporttxt").style="display:block";
+		document.getElementById("exporttxtdata").focus();
+		document.getElementById('exporttxtdata').value = 'PASTE HERE (CTRL-V)';
+		document.getElementById("exporttxtdata").select();
+
+	}
+
+	var clipboardCallback_class, clipboardCallback_method;
+
+	function registerClipboardCallback( clazz, method ) {
+		clipboardCallback_class = clazz;
+		clipboardCallback_method = method;
+	}
+
+	function clipboardCallback() {
+		console.log("callback");
+		document.getElementById("exporttxt").style="display:none";
+		screenCanvas.style="display:block";
+		screenCanvas.focus();
+
+		var text = document.getElementById('exporttxtdata').value;
+
+		clipboardCallback_class[ clipboardCallback_method ]( text );
 	}
 
 </script>
@@ -95,7 +132,10 @@
 
 		<a width=100% hidden href=# name="imageSaver" id="imageSaver">Save</a>
 		<input hidden name="imageLoader" id="imageLoader" type="file" onclick="this.value=null;"></input>
-
+		<div id=exporttxt hidden ><input value="Ready" type=button
+				onclick="clipboardCallback();">
+				<textarea width=100% id=exporttxtdata></textarea>
+		</div>
     </div>
 
   </div>

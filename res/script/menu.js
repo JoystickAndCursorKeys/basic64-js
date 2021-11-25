@@ -1,8 +1,65 @@
+class Uploader {
+
+	setCallback ( callbackC, callbackM ) {
+		this.callbackC = callbackC;
+		this.callbackM = callbackM;
+	}
+
+
+
+	handleEvent(evt) {
+		console.log("handleEvent " + evt.type);
+		switch(evt.type) {
+		case "change":
+			console.log("--------------handle upload event");
+			console.log(evt);
+			this.handleUpload( evt );
+
+		break;
+		}
+	}
+
+	handleUpload(e){
+
+    console.log("handleUpload " + e);
+		var reader = new FileReader();
+
+		var thisFileName = e.target.files[0].name;
+		var _this = this;
+
+
+			reader.onload = function(event){
+
+				console.log("reader onload " + thisFileName);
+
+				var text =  event.target.result ;
+				console.log( text );
+
+				_this.callbackC[ _this.callbackM ]( text, thisFileName );
+
+			}
+
+			console.log("read " + e.target.files[0]);
+			console.log(e.target.files[0]);
+			reader.readAsText(e.target.files[0]);
+
+	}
+}
+
+
 class Menu {
 
   constructor( screen, context ) {
     this.console = screen;
     this.context = context;
+
+    this.uploader = new Uploader( );
+
+    var uploadElement = document.getElementById( "imageLoader" );
+    this.run = false;
+    this.uploader.setCallback( this, "notset" );
+
+		uploadElement.addEventListener('change', this.uploader, true);
 
     this.menuvmState = "main";
     this.optSelect = 0;
@@ -14,8 +71,11 @@ class Menu {
     var opts = [];
     //opts.push({opt: "status", display: "Status" });
     //opts.push({opt: "loadsave", display: "Load/Save" });
+
+    opts.push({opt: "diskMenu", display: "Disk" });
+    opts.push({opt: "exportMenu", display: "Export" });
+
     opts.push({opt: "clipboardMenu", display: "Clipboard" });
-    opts.push({opt: "exportMenu", display: "Disk" });
     //opts.push({opt: "keys", display: "Keys" });
     //opts.push({opt: "tools", display: "Tools" });
     opts.push({opt: "reset", display: "Reset" });
@@ -27,22 +87,31 @@ class Menu {
 
     opts = [];
     opts.push({opt: "copyPGMtoClip", display: "Copy Program to Clipboard" });
-//    opts.push({opt: "pastePGMFromClip", display: "Overwrite Program with Clipboard" });
-//    opts.push({opt: "pastePGMFromClipAppend", display: "Merge Program with Clipboard" });
+    opts.push({opt: "pastePGMFromClip", display: "Overwrite Program with Clipboard" });
     this.options["clipboard"] = opts;
     this.menus["clipboard"] = "clipboard power menu";
     this.menuOffset["clipboard"] = 0;
 
+
     opts = [];
     opts.push({opt: "exportVDisk", display: "Export Virtual Disk" });
+    opts.push({opt: "importVDisk", display: "Import Virtual Disk" });
     opts.push({opt: "exportBas", display: "Export Basic Program" });
+    opts.push({opt: "importBas", display: "Import Basic Program" });
+    opts.push({opt: "importBasRun", display: "Import/Run Basic Program" });
     opts.push({opt: "exportSnapshot", display: "Export Snapshot" });
-    //opts.push({opt: "selectVDisk", display: "Select Virtual Disk" });
-//    opts.push({opt: "pastePGMFromClip", display: "Overwrite Program with Clipboard" });
-//    opts.push({opt: "pastePGMFromClipAppend", display: "Merge Program with Clipboard" });
+    opts.push({opt: "importSnapshot", display: "Import Snapshot" });
     this.options["export"] = opts;
-    this.menus["export"] = "disk power menu";
+    this.menus["export"] = "export power menu";
     this.menuOffset["export"] = 7;
+
+
+    opts = [];
+    opts.push({opt: "listDirectory", display: "List VDisk Directory" });
+    opts.push({opt: "saveSnapshot", display: "Save Snapshot" });
+    this.options["disk"] = opts;
+    this.menus["disk"] = "disk power menu";
+    this.menuOffset["disk"] = 7;
   }
 
 
@@ -137,22 +206,56 @@ class Menu {
 
   start() {
 
-    this.vmState = this.console.getState();
+    this.console.clearCursor();
+
+    this.vmState =
+    {
+        console: this.console.getState(),
+        pgm: this.context.getProgram(),
+        pgmState: this.context.getProgramState()
+    }
+
     console.log( this.vmState );
     this.rendervmState();
 
   }
 
+  message( m ) {
+    this.context.printLine("*** " + m);
+  }
+
+  errorMessage( m ) {
+    this.context.printLine("?" + m + " error");
+  }
+
   stop() {
     console.log( "End menu");
 
-    this.console.setState( this.vmState );
+    this.console.setState( this.vmState.console );
+    this.console.clearCursor();
   }
 
   endMenu() {
     this.context.endMenu();
     this.stop();
   }
+
+  endMenuWithMessage( m ) {
+    this.context.endMenu();
+    this.stop();
+    this.context.printLine( "" );
+    this.message(m);
+
+  }
+
+  endMenuWithError( m ) {
+    this.context.endMenu();
+    this.stop();
+    this.context.printLine( "" );
+    this.errorMessage(m);
+
+  }
+
 
 
   handleKey( evt ) {
@@ -253,6 +356,12 @@ class Menu {
     this.rendervmState();
   }
 
+  do_diskMenu() {
+    this.menuvmState = "disk";
+    this.optSelect = 0
+    this.rendervmState();
+  }
+
   do_clipboardMenu() {
     this.menuvmState = "clipboard";
     this.optSelect = 0
@@ -267,6 +376,80 @@ class Menu {
 
   do_copyPGMtoClip() {
     navigator.clipboard.writeText( this.context.getProgramAsText() );
+
+    this.endMenuWithMessage("copied to clip");
+  }
+
+  do_pastePGMFromClip() {
+
+    registerClipboardCallback( this, "do_pastePGMFromClipCallback" );
+    enableClipBoardWidget();
+    this.run = false;
+  }
+
+  do_pastePGMFromClipCallback( text ) {
+
+    console.log("callback2");
+    var lines = text.split(/\r?\n/);
+
+    try {
+      var bas = this.context.textLinesToBas( lines );
+      //this.context.saveSerializedData( "import", JSON.stringify( bas ), "bas", bas.length );
+      this.context.setProgram( bas );
+
+      if( this.run ) {
+        this.run = false;
+        this.endMenu();
+        this.context.printLine("run");
+        this.context.runPGM();
+
+      }
+      else {
+        this.endMenuWithMessage("import ok");
+        this.context.printLine("list");
+
+        var pgm = this.context.getProgramLines();
+        for (const l of pgm )
+          {
+            this.context.listCodeLine( l[2] );
+            console.log(l[2]);
+          }
+      }
+
+    }
+    catch (e) {
+      this.endMenuWithError("sytax");
+    }
+
+
+  }
+
+
+  do_listDirectory() {
+
+
+    if( !this.context.confirmCookies() ) {
+      return;
+    }
+
+    this.endMenu();
+
+    var dir = this.context.getDir();
+    var row;
+
+    this.context.printLine("");
+    this.context.listCodeLine( "0 \u0012\""+dir.title+"          \"\u0092 00 2A");
+    for( var i=0; i<dir.files.length; i++) {
+      row = this.context.padSpaces6( dir.files[i].size ) +" \"" + dir.files[i].fname + "\"";
+      this.context.listCodeLine( row );
+    }
+
+    row = dir.free +" slots free.";
+    this.context.listCodeLine( row );
+
+    this.context.printReady();
+
+
   }
 
   do_exportVDisk() {
@@ -283,7 +466,36 @@ class Menu {
     link.href = objectUrl;
     link.click();
 
+    this.endMenuWithMessage("downloading vdisk");
+
   }
+
+  do_importVDisk() {
+    var uploadElement = document.getElementById( "imageLoader" );
+
+    this.run = true;
+    this.uploader.setCallback( this, "do_importVDiskCallBack" );
+
+		uploadElement.click();
+		console.log( "clicked" );
+
+  }
+
+  do_importVDiskCallBack( text, fName ) {
+    console.log("import vdisk " + text);
+    console.log("import vdisk " + fName);
+    var diskName = fName;
+
+    if( diskName == null || diskName == "") {
+      diskName = "noname";
+    }
+
+    if( diskName.endsWith(".vd64") ) {
+      diskName = diskName.substring(0,diskName.length-5);
+    }
+    this.context.createFullDisk( diskName, JSON.parse( text ) );
+  }
+
 
   do_exportBas() {
     var data = this.context.getProgramAsText();
@@ -299,10 +511,64 @@ class Menu {
     link.href = objectUrl;
     link.click();
 
+    this.endMenuWithMessage("downloading bas");
+
+  }
+
+  do_importBasRun() {
+
+		var uploadElement = document.getElementById( "imageLoader" );
+
+    this.run = true;
+    this.uploader.setCallback( this, "do_importBasCallBack" );
+
+		uploadElement.click();
+		console.log( "clicked" );
+
+  }
+
+  do_importBas() {
+
+		var uploadElement = document.getElementById( "imageLoader" );
+    this.run = false;
+
+    this.uploader.setCallback( this, "do_importBasCallBack" );
+
+		uploadElement.click();
+		console.log( "clicked" );
+
+  }
+
+  do_importBasCallBack( text, fName ) {
+
+    var lines = text.split(/\r?\n/);
+    var bas = this.context.textLinesToBas( lines );
+    //this.context.saveSerializedData( "import", JSON.stringify( bas ), "bas", bas.length );
+    this.context.setProgram( bas );
+
+    if( this.run ) {
+      this.run = false;
+      this.endMenu();
+      this.context.printLine("run");
+      this.context.runPGM();
+
+    }
+    else {
+      this.endMenuWithMessage("import ok");
+      this.context.printLine("list");
+
+      var pgm = this.context.getProgramLines();
+      for (const l of pgm )
+        {
+          this.context.listCodeLine( l[2] );
+          console.log(l[2]);
+        }
+    }
+
   }
 
   do_exportSnapshot() {
-    var data = JSON.stringify(this.vmState);
+    var data = JSON.stringify( this.vmState );
 
     var blob = new Blob( [data] , {
         type: 'text/plain'
@@ -317,6 +583,40 @@ class Menu {
 
   }
 
+  do_importSnapshot() {
+
+		var uploadElement = document.getElementById( "imageLoader" );
+    this.run = false;
+
+    this.uploader.setCallback( this, "do_importSnapshotCallBack" );
+
+		uploadElement.click();
+		console.log( "clicked" );
+
+  }
+
+  do_importSnapshotCallBack( text, fName ) {
+
+    console.log("Import Snapshot");
+
+    this.endMenuWithMessage("snapshot restore");
+
+    this.context.loadContainer(
+      {
+        type: "snp",
+        data: text
+      });
+  }
+
+  do_saveSnapshot() {
+
+    var data = JSON.stringify(this.vmState);
+
+    this.context.saveSerializedData( "snapshot", data, "snp", 65536 );
+
+    this.endMenuWithMessage("snapshot saved");
+  }
+
 
   do_reset() {
     this.endMenu();
@@ -327,6 +627,7 @@ class Menu {
   do_documentation() {
     window.open("https://github.com/JoystickAndCursorKeys/basic64-js/wiki",'_blank');
 
+    this.endMenuWithMessage("opened docs");
   }
 
 /*

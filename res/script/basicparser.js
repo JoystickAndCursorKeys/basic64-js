@@ -390,9 +390,7 @@ class Parser {
 
       var endLoop = this.isEndToken( token, endTokens );
       if( endLoop ) {
-        if( parts.length == 0 ) {
-          this.Exception( context, "empty expression");
-        }
+
         tokens.unshift( token );
         break;
       }
@@ -455,7 +453,7 @@ class Parser {
 			}
 			else {
 
-				if( token.type == "op" ) {
+				if( token.type == "op") {
 					op = token.data;
 				}
 				else {
@@ -647,6 +645,8 @@ class Parser {
             var expr1, expr2, comp;
             var endTokens = [];
             endTokens.push( { type: "eq", data: "=" });
+            endTokens.push( { type: "comp", data: "<" });
+            endTokens.push( { type: "comp", data: ">" });
 
 						var expr1 = this.parseExpression( context, endTokens );
 
