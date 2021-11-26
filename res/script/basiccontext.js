@@ -598,7 +598,6 @@ class BasicContext {
         for( var j=0; j<commands.length; j++) {
 
           var command = commands[j];
-          console.log("command", command);
 
           if( command.type  == "control" && command.controlKW == "data") {
             for( var k=0; k<command.params.length; k++) {
@@ -693,7 +692,7 @@ class BasicContext {
           throw "Cannot find command after for, on next line";
         }
         ctxv.jumpTo.line++;
-        ctxv.cmdPointer = 0;
+        ctxv.jumpTo.cmdPointer = 0;
       }
     }
 
@@ -710,6 +709,7 @@ class BasicContext {
     this.vars[ varName ] += ctxv.step;
     if( ctxv.step > 0) {
       if(this.vars[ varName ]<=ctxv.to) {
+        console.log( "Next: " , ctxv.jumpTo );
         return ctxv.jumpTo;
       }
     }
@@ -741,6 +741,7 @@ class BasicContext {
     var i=this.runPointer2;
     while( i<end ) {
       var cmd=cmds[i];
+      console.log( cmd );
       if( cmd.type == "control" )  {
         var cn = cmd.controlKW;
         if( cn == "goto" ) {
