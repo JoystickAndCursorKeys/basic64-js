@@ -698,6 +698,25 @@ this.visibleRomCharMem = false;
 		 }
 	 }
 
+
+	 getChar( x, y, index ) {
+
+		var buf = this.buffer;
+		var chr = buf[y][x];
+
+		return chr[0];
+
+	 }
+
+	 getCharCol( x, y, index ) {
+
+		var buf = this.buffer;
+		var chr = buf[y][x];
+		
+		return chr[1];
+
+	 }
+
 	 setChar( x, y, index ) {
 
 		var buf = this.buffer;
@@ -1725,53 +1744,6 @@ this.visibleRomCharMem = false;
 
 	 }
 
-	 _renderBuffer__old() {
-		 var buf = this.buffer;
-		 var ctx = this.context;
-		 var bufctx = this.bufcontext;
-
-		 ctx.fillStyle = this._htmlColor( this.colors[ this.bgcol ] );
-
-		 if( this.bgcolLast != this.bgcol ) {
-			 for( var y=0; y<25; y++) {
-			 	for( var x=0; x<40; x++) {
-
-							buf[y][x][2] = false;
-							ctx.fillRect(
-				 			 x*8, y*8,
-				 			 8,8
-				 		 );
-						 this.renderChar(x*8, y*8, buf[y][x][0], buf[y][x][1] );
-
-			 	}
-			 }
-			 this.bgcolLast = this.bgcol;
-		 }
-		 else {
-			 for( var y=0; y<25; y++) {
-			 	for( var x=0; x<40; x++) {
-					if( buf[y][x][2] ) {
-							buf[y][x][2] = false;
-							ctx.fillRect(
-				 			 x*8, y*8,
-				 			 8,8
-				 		 );
-						 this.renderChar(x*8, y*8, buf[y][x][0], buf[y][x][1] );
-					}
-			 	}
-			 }
-		 }
-		 bufctx.drawImage( this.canvas, 0, 0);
-
-		 for( var i = 0; i < this.sprites.length; i++ ) {
-			 var sp = this.sprites[ i ];
-				 if( sp.enabled ) {
-
-					//console.log( "Draw sprite " + i,sp.x,sp.y);
-				 	bufctx.drawImage( sp.canvas, sp.x-24, sp.y-21 );
-			 }
-		 }
-	 }
 
    _prepColor( img, col ) {
 

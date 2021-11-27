@@ -238,7 +238,6 @@ class BasicContext {
         var v = a - 1024;
         var y = Math.floor(v / 40);
         var x = v%40;
-        var c = b%256;
 
         return this.console.getChar(x,y);
       }
@@ -582,6 +581,62 @@ class BasicContext {
     }
     this.printLine( "" );
 
+  }
+
+  rebuildLineString( nr, raw, insertPadding, renumbering ) {
+
+    var p = new Parser( this.commands );
+    p.init();
+
+    var tokens = p.getTokens( raw, false, false );
+
+    var foundGoto = false;
+    for( i = 0; i<tokens.length; i++) {
+      if( tokens[i].type == "name" && tokens[i].data == "goto" ) {
+        foundGoto = true;
+      }
+      if( tokens[i].type == "num" && foundGoto ) {
+        var newLine = renumbering[ "old_" + tokens[i].data ];
+        tokens[i].data =newLine;
+        foundGoto = false;
+      }
+    }
+    tokens[0].data = nr;
+    var newString = nr + "" ;
+    for( var i = 1 ; i< tokens.length; i++) {
+      if( insertPadding ) { newString += " "; }
+      if( tokens[i].type == "str" ) {
+        newString += "\"" + tokens[i].data + "\"";
+      }
+      else {
+        newString += tokens[i].data;
+      }
+
+    }
+
+    var rec = p.parseLine( newString );
+    console.log( "Renum Tokens:" , tokens );
+    return rec;
+  }
+
+  renumberProgram( start, gap ) {
+
+    var p = this.program;
+
+    var newLineNr = start;
+    var renumbering = {};
+
+    for( var i=0; i<p.length; i++) {
+        var line = p[ i ];
+        renumbering["old_" + line[0]] = newLineNr;
+        var lRec = this.rebuildLineString( newLineNr, line[2], false, renumbering );
+
+        line[0] = newLineNr;
+        line[1] = lRec.commands;
+        line[2] = lRec.raw;
+
+        newLineNr += gap;
+    }
   }
 
   runPGM() {
