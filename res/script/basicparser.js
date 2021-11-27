@@ -839,4 +839,14 @@ class Parser {
     return lineRecord;
 
   }
+
+  getTokens( line, merge, noPadding  ) {
+
+    var toker = new Tokenizer( new StringReader ( line ), this.KEYWORDS );
+    var tokens = toker.tokenize();
+    if( noPadding) { tokens = this.removePadding( tokens ); }
+    if( merge ) {tokens = this.mergeCompTokens( tokens ); }
+    this.logTokens( tokens );
+    return tokens;
+  }
 }

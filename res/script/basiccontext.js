@@ -238,7 +238,6 @@ class BasicContext {
         var v = a - 1024;
         var y = Math.floor(v / 40);
         var x = v%40;
-        var c = b%256;
 
         return this.console.getChar(x,y);
       }
@@ -584,6 +583,62 @@ class BasicContext {
 
   }
 
+  rebuildLineString( nr, raw, insertPadding, renumbering ) {
+
+    var p = new Parser( this.commands );
+    p.init();
+
+    var tokens = p.getTokens( raw, false, false );
+
+    var foundGoto = false;
+    for( i = 0; i<tokens.length; i++) {
+      if( tokens[i].type == "name" && tokens[i].data == "goto" ) {
+        foundGoto = true;
+      }
+      if( tokens[i].type == "num" && foundGoto ) {
+        var newLine = renumbering[ "old_" + tokens[i].data ];
+        tokens[i].data =newLine;
+        foundGoto = false;
+      }
+    }
+    tokens[0].data = nr;
+    var newString = nr + "" ;
+    for( var i = 1 ; i< tokens.length; i++) {
+      if( insertPadding ) { newString += " "; }
+      if( tokens[i].type == "str" ) {
+        newString += "\"" + tokens[i].data + "\"";
+      }
+      else {
+        newString += tokens[i].data;
+      }
+
+    }
+
+    var rec = p.parseLine( newString );
+    console.log( "Renum Tokens:" , tokens );
+    return rec;
+  }
+
+  renumberProgram( start, gap ) {
+
+    var p = this.program;
+
+    var newLineNr = start;
+    var renumbering = {};
+
+    for( var i=0; i<p.length; i++) {
+        var line = p[ i ];
+        renumbering["old_" + line[0]] = newLineNr;
+        var lRec = this.rebuildLineString( newLineNr, line[2], false, renumbering );
+
+        line[0] = newLineNr;
+        line[1] = lRec.commands;
+        line[2] = lRec.raw;
+
+        newLineNr += gap;
+    }
+  }
+
   runPGM() {
     var c = this.console;
     var p = this.program;
@@ -598,7 +653,6 @@ class BasicContext {
         for( var j=0; j<commands.length; j++) {
 
           var command = commands[j];
-          console.log("command", command);
 
           if( command.type  == "control" && command.controlKW == "data") {
             for( var k=0; k<command.params.length; k++) {
@@ -693,7 +747,7 @@ class BasicContext {
           throw "Cannot find command after for, on next line";
         }
         ctxv.jumpTo.line++;
-        ctxv.cmdPointer = 0;
+        ctxv.jumpTo.cmdPointer = 0;
       }
     }
 
@@ -710,6 +764,7 @@ class BasicContext {
     this.vars[ varName ] += ctxv.step;
     if( ctxv.step > 0) {
       if(this.vars[ varName ]<=ctxv.to) {
+        console.log( "Next: " , ctxv.jumpTo );
         return ctxv.jumpTo;
       }
     }
@@ -741,6 +796,7 @@ class BasicContext {
     var i=this.runPointer2;
     while( i<end ) {
       var cmd=cmds[i];
+      console.log( cmd );
       if( cmd.type == "control" )  {
         var cn = cmd.controlKW;
         if( cn == "goto" ) {

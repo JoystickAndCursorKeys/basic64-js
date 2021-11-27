@@ -77,7 +77,7 @@ class Menu {
 
     opts.push({opt: "clipboardMenu", display: "Clipboard" });
     //opts.push({opt: "keys", display: "Keys" });
-    //opts.push({opt: "tools", display: "Tools" });
+    opts.push({opt: "basicMenu", display: "Basic" });
     opts.push({opt: "reset", display: "Reset" });
     opts.push({opt: "documentation", display: "Documentation" });
 
@@ -92,6 +92,11 @@ class Menu {
     this.menus["clipboard"] = "clipboard power menu";
     this.menuOffset["clipboard"] = 0;
 
+    opts = [];
+    opts.push({opt: "renumber", display: "Renumber Basic Program" });
+    this.options["basic"] = opts;
+    this.menus["basic"] = "basic power menu";
+    this.menuOffset["basic"] = 0;
 
     opts = [];
     opts.push({opt: "exportVDisk", display: "Export Virtual Disk" });
@@ -374,6 +379,12 @@ class Menu {
     this.rendervmState();
   }
 
+  do_basicMenu() {
+    this.menuvmState = "basic";
+    this.optSelect = 0
+    this.rendervmState();
+  }
+
   do_copyPGMtoClip() {
     navigator.clipboard.writeText( this.context.getProgramAsText() );
 
@@ -450,6 +461,25 @@ class Menu {
     this.context.printReady();
 
 
+  }
+
+  do_renumber() {
+    this.renumber(100,10);
+  }
+
+
+  renumber(x,y) {
+    this.context.renumberProgram(x,y);
+
+    this.endMenuWithMessage("import ok");
+    this.context.printLine("list");
+
+    var pgm = this.context.getProgramLines();
+    for (const l of pgm )
+      {
+        this.context.listCodeLine( l[2] );
+        console.log(l[2]);
+      }
   }
 
   do_exportVDisk() {
