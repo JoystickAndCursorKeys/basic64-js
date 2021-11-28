@@ -159,7 +159,7 @@ class BasicContext {
         this[addr](b);
       }
 */
-      if( a == 1) {
+      if( a == 1) { //Bank Switching
 
         this.console.poke( a, b);
 
@@ -178,7 +178,7 @@ class BasicContext {
         }
 
       }
-      else if( a>53247 && a<53295) {
+      else if( a>53247 && a<53295) { //VIC registers
 
         if( this.console.getCharRomVisible() == false ) {
             this.console.vpoke( a - 53248,b%256  );
@@ -477,7 +477,7 @@ class BasicContext {
       if(this.cursorCount++>15) {
         this.cursorCount = 0;
 
-        c.blinkCursor();
+        if( !this.menuFocus ) { c.blinkCursor(); }
       }
     }
     else {
@@ -583,28 +583,35 @@ class BasicContext {
 
   }
 
-  rebuildLineString( nr, raw, insertPadding, renumbering ) {
+  rebuildLineString( nr, raw, removePadding, renumbering ) {
 
     var p = new Parser( this.commands );
     p.init();
 
     var tokens = p.getTokens( raw, false, false );
 
-    var foundGoto = false;
-    for( i = 0; i<tokens.length; i++) {
-      if( tokens[i].type == "name" && tokens[i].data == "goto" ) {
-        foundGoto = true;
-      }
-      if( tokens[i].type == "num" && foundGoto ) {
-        var newLine = renumbering[ "old_" + tokens[i].data ];
-        tokens[i].data =newLine;
-        foundGoto = false;
+    if( ! ( renumbering === undefined )) {
+
+      var foundGoto = false;
+      for( i = 0; i<tokens.length; i++) {
+        if( tokens[i].type == "name" && tokens[i].data == "goto" ) {
+          foundGoto = true;
+        }
+        if( tokens[i].type == "num" && foundGoto ) {
+          var newLine = renumbering[ "old_" + tokens[i].data ];
+          tokens[i].data =newLine;
+          foundGoto = false;
+        }
       }
     }
     tokens[0].data = nr;
-    var newString = nr + "" ;
+    var newString = nr + " " ;
     for( var i = 1 ; i< tokens.length; i++) {
-      if( insertPadding ) { newString += " "; }
+      if( removePadding ) {
+         if( tokens[i].type == "pad" ) {
+           continue;
+         }
+       }
       if( tokens[i].type == "str" ) {
         newString += "\"" + tokens[i].data + "\"";
       }
@@ -629,13 +636,34 @@ class BasicContext {
     for( var i=0; i<p.length; i++) {
         var line = p[ i ];
         renumbering["old_" + line[0]] = newLineNr;
+        newLineNr += gap;
+    }
+
+    newLineNr = start;
+    for( var i=0; i<p.length; i++) {
+        var line = p[ i ];
         var lRec = this.rebuildLineString( newLineNr, line[2], false, renumbering );
 
         line[0] = newLineNr;
         line[1] = lRec.commands;
-        line[2] = lRec.raw;
+        line[2] = lRec.raw.trim();
 
         newLineNr += gap;
+    }
+  }
+
+  compressProgram() {
+    var p = this.program;
+
+
+    for( var i=0; i<p.length; i++) {
+        var line = p[ i ];
+
+        var lRec = this.rebuildLineString( line[0], line[2], true, undefined );
+
+        line[1] = lRec.commands;
+        line[2] = lRec.raw;
+
     }
   }
 
@@ -764,7 +792,7 @@ class BasicContext {
     this.vars[ varName ] += ctxv.step;
     if( ctxv.step > 0) {
       if(this.vars[ varName ]<=ctxv.to) {
-        console.log( "Next: " , ctxv.jumpTo );
+        //console.log( "Next: " , ctxv.jumpTo );
         return ctxv.jumpTo;
       }
     }
@@ -796,7 +824,7 @@ class BasicContext {
     var i=this.runPointer2;
     while( i<end ) {
       var cmd=cmds[i];
-      console.log( cmd );
+      //console.log( cmd );
       if( cmd.type == "control" )  {
         var cn = cmd.controlKW;
         if( cn == "goto" ) {

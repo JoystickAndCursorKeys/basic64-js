@@ -5,8 +5,6 @@ class Uploader {
 		this.callbackM = callbackM;
 	}
 
-
-
 	handleEvent(evt) {
 		console.log("handleEvent " + evt.type);
 		switch(evt.type) {
@@ -27,8 +25,7 @@ class Uploader {
 		var thisFileName = e.target.files[0].name;
 		var _this = this;
 
-
-			reader.onload = function(event){
+		reader.onload = function(event){
 
 				console.log("reader onload " + thisFileName);
 
@@ -37,11 +34,11 @@ class Uploader {
 
 				_this.callbackC[ _this.callbackM ]( text, thisFileName );
 
-			}
+		}
 
-			console.log("read " + e.target.files[0]);
-			console.log(e.target.files[0]);
-			reader.readAsText(e.target.files[0]);
+		console.log("read " + e.target.files[0]);
+		console.log(e.target.files[0]);
+		reader.readAsText(e.target.files[0]);
 
 	}
 }
@@ -72,31 +69,31 @@ class Menu {
     //opts.push({opt: "status", display: "Status" });
     //opts.push({opt: "loadsave", display: "Load/Save" });
 
+    opts.push({opt: "basicMenu", display: "Basic" });
     opts.push({opt: "diskMenu", display: "Disk" });
     opts.push({opt: "exportMenu", display: "Export" });
-
     opts.push({opt: "clipboardMenu", display: "Clipboard" });
     //opts.push({opt: "keys", display: "Keys" });
-    opts.push({opt: "basicMenu", display: "Basic" });
-    opts.push({opt: "reset", display: "Reset" });
     opts.push({opt: "documentation", display: "Documentation" });
+    opts.push({opt: "reset", display: "Reset" });
 
     this.options["main"] = opts;
-    this.menus["main"] = "basic power menu";
+    this.menus["main"] = "main";
     this.menuOffset["main"] = 10;
 
     opts = [];
     opts.push({opt: "copyPGMtoClip", display: "Copy Program to Clipboard" });
     opts.push({opt: "pastePGMFromClip", display: "Overwrite Program with Clipboard" });
     this.options["clipboard"] = opts;
-    this.menus["clipboard"] = "clipboard power menu";
+    this.menus["clipboard"] = "clipboard";
     this.menuOffset["clipboard"] = 0;
 
     opts = [];
     opts.push({opt: "renumber", display: "Renumber Basic Program" });
+    opts.push({opt: "compress", display: "Remove Spaces" });
     this.options["basic"] = opts;
-    this.menus["basic"] = "basic power menu";
-    this.menuOffset["basic"] = 0;
+    this.menus["basic"] = "basic";
+    this.menuOffset["basic"] = 5;
 
     opts = [];
     opts.push({opt: "exportVDisk", display: "Export Virtual Disk" });
@@ -107,7 +104,7 @@ class Menu {
     opts.push({opt: "exportSnapshot", display: "Export Snapshot" });
     opts.push({opt: "importSnapshot", display: "Import Snapshot" });
     this.options["export"] = opts;
-    this.menus["export"] = "export power menu";
+    this.menus["export"] = "export";
     this.menuOffset["export"] = 7;
 
 
@@ -115,16 +112,37 @@ class Menu {
     opts.push({opt: "listDirectory", display: "List VDisk Directory" });
     opts.push({opt: "saveSnapshot", display: "Save Snapshot" });
     this.options["disk"] = opts;
-    this.menus["disk"] = "disk power menu";
+    this.menus["disk"] = "disk";
     this.menuOffset["disk"] = 7;
+
+    //this.initLogo();
   }
 
+  initLogo() {
+
+    var context = this.context;
+
+    var logo = getMenuLogo();
+    this.logo = logo;
+
+    context.poke( 53272, 12 );
+    context.poke( 1, 0 );
+    for( var i=0; i<(64*8); i++) {
+      context.poke(12288+i, context.peek(53248+i));
+    }
+    context.poke( 1, 255 );
+
+    for( var i=0; i<this.logo.length; i++) {
+      context.poke(12288+(64*8)+i,this.logo[i]);
+    }
+
+  }
 
   rendervmStateText() {
     var t=this;
     var context = this.context;
     t.console.clearScreen();
-    t.console.setColor(1);
+    t.console.setColor(14);
 
 
     var title = t.menus[ t.menuvmState ];
@@ -132,11 +150,31 @@ class Menu {
 
     var x;
 
+    t.nl();t.nl();t.nl();t.nl();t.nl();t.nl();
+
+//this.padLine( x, t.menuvmState );
+var menuStr = "*** " + title +" ***";
+x = 20 - (Math.floor(menuStr.length / 2));
+//x=33;
+t.padLine( x, menuStr );
+
     t.nl();
-    var menuStr = "***** " + title +" *****";
-    x = 20 - (Math.floor(menuStr.length / 2));
-    t.padLine( x, menuStr );
-    t.nl();t.nl();t.nl();t.nl();
+
+    var c=64, xof = 4, yof=1;
+    var cols1=[3, 14,4, 2];
+    var cols2=[1, 1,1, 1];
+    for( var y = 0; y<4; y++) {
+      for( var x = 0; x<34; x++) {
+        var addr = 1024 + xof + x + ((y+yof)*40);
+        var caddr = 55296 + xof + x + ((y+yof)*40);
+        this.context.poke( addr, c );
+        var col = cols1[y] ;
+        //if( (x % 2) != 0 ) { col = cols2[y] ; }
+        this.context.poke( caddr, col );
+        c++;
+      }
+    }
+
 
     x=this.menuOffset[ t.menuvmState ];
 
@@ -147,7 +185,7 @@ class Menu {
           t.console.setColor(1);
         }
         else {
-          t.console.setColor(15);
+          t.console.setColor(14);
         }
         t.pad( x, " F" +(i+1)+ " - " + options[i].display );
 
@@ -174,8 +212,8 @@ class Menu {
     var context = this.context;
 
 
-    context.vpoke(53280,0);
-    context.vpoke(53281,0);
+    context.vpoke(53280,14);
+    context.vpoke(53281,6);
     context.vpoke(53269,0);
     context.vpoke(53270,200);
 
@@ -221,6 +259,7 @@ class Menu {
     }
 
     console.log( this.vmState );
+    this.initLogo();
     this.rendervmState();
 
   }
@@ -467,11 +506,24 @@ class Menu {
     this.renumber(100,10);
   }
 
+  do_compress() {
+    this.context.compressProgram();
+
+    this.endMenuWithMessage("import ok");
+    this.context.printLine("list");
+
+    var pgm = this.context.getProgramLines();
+    for (const l of pgm )
+      {
+        this.context.listCodeLine( l[2] );
+        console.log(l[2]);
+      }
+  }
 
   renumber(x,y) {
     this.context.renumberProgram(x,y);
 
-    this.endMenuWithMessage("import ok");
+    this.endMenuWithMessage("renumber ok");
     this.context.printLine("list");
 
     var pgm = this.context.getProgramLines();
