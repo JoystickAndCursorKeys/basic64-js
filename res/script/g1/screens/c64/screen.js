@@ -53,8 +53,8 @@ class C64Screen {
 				h: 64
 			}
 
-			this.WIDTH = 960 * 1.25;
-			this.HEIGHT = 600 * 1.25;
+			this.WIDTH = 960;
+			this.HEIGHT = 600;
 
 			this.FULLWIDTH = this.WIDTH + this.border.w * 2;
 			this.FULLHEIGHT = this.HEIGHT + this.border.h * 2;
@@ -712,7 +712,7 @@ this.visibleRomCharMem = false;
 
 		var buf = this.buffer;
 		var chr = buf[y][x];
-		
+
 		return chr[1];
 
 	 }
