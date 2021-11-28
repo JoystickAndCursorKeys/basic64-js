@@ -353,6 +353,7 @@ class BasicContext {
     this.vpoke(53281,6);
     this.vpoke(53269,0);
     this.vpoke(53270,200);
+    this.vpoke(53272,21);
     this.console.setColor(14);
 
     this.printLine("");
