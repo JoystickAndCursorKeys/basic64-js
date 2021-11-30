@@ -410,13 +410,16 @@ class BasicContext {
       }
       try {
         var commands = this.commands;
-        var stc = commands[ p.functionName];
+        var nFunName = p.functionName.replaceAll("$","_DLR_");
+
+        var stc = commands[ nFunName ];
         if( stc === undefined ) {
-          this.printError("syntax");
+          this.printError("no such function " + p.functionName);
+          console.log("Cannot find functionName " + nFunName );
           return null;
         }
         else {
-            val = commands[ p.functionName]( values );
+            val = commands[ nFunName ]( values );
         }
 
       }
@@ -780,8 +783,8 @@ class BasicContext {
       }
     }
 
-    console.log("ctxv:", ctxv);
-    console.log("var:"+varName + " set to " + this.vars[ varName ]);
+    //console.log("ctxv:", ctxv);
+    //console.log("var:"+varName + " set to " + this.vars[ varName ]);
   }
 
   doForNext() {
@@ -889,8 +892,7 @@ class BasicContext {
               values.push( { type: "value", value: p } );
             }
           }
-          else {
-
+          else if( pardefs[j] == PAR ) {
             var varName = cmd.params[0].parts[0].data;
             var varType = "num";
             if( varName.indexOf("$") > -1) {
@@ -898,6 +900,9 @@ class BasicContext {
             }
 
             values.push( { type: "var", value: varName, varType: varType } );
+          }
+          else { /*RAW*/
+            values.push( cmd.params[j].parts );
           }
         }
         try {
