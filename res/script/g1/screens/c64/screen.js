@@ -85,18 +85,19 @@ class C64Screen {
 			this.mcol2 = 1;
 			this.mcol2Last = 2;
 
-
 			this.spritemcol1 = 5;
 			this.spritemcol1Last = 5;
 			this.spritemcol2 = 7;
 			this.spritemcol2Last = 7;
 
-
 			this.multiColor = false;
 			this.multiColorLast = false;
 
+			this.useHires = false;
+			this.useHiresLast = false;
+
 			this.memory = new Uint8Array( 256 * 256 ); //64 KB, we're not using all
-			this.charMem = 12288;
+			this.videoRam = 12288;
 			this.useRomCharMem = true;
 			this.visibleRomCharMem = false;
 
@@ -131,7 +132,7 @@ class C64Screen {
 		 var rows = [];
 
 		 for( var y=0; y<25; y++) {
-			 var row0 = this.buffer[ y ];
+			 var row0 = this.txScBuf[ y ];
 			 var row = [];
 
 			 for( var x=0; x<40; x++) {
@@ -154,7 +155,7 @@ class C64Screen {
 				 newRow[ x ] = row[ x ];
 				 newRow[ x ][2] = true;
 			 }
-			 this.buffer[ y ] = newRow;
+			 this.txScBuf[ y ] = newRow;
 		 }
 	 }
 
@@ -392,6 +393,18 @@ class C64Screen {
 					 console.log("53269[" +j+"].enable=" + bits[j])
 				 }
 			 }
+			 else if( nr == 53265)  {
+				 // Bit 5 is bitmap mode or not
+				 // POKE 53265,PEEK(53265)OR32
+				 // this.useHires
+
+				 this.useHires = (v & 32) > 0; //bit 5
+
+				 console.log("poke 53265 -> " + v);
+				 console.log("this.useHires -> " + this.useHires);
+
+
+			 }
 			 else if( nr == 53272)  {
 				 var bits = this._getByteBits( v );
 				 var b1,b2,b3, value;
@@ -406,13 +419,18 @@ class C64Screen {
 
 				 console.log("poke 53272 -> " + value);
 /*
-this.charMem = 12288;
+this.videoRam = 12288;
 this.useRomCharMem = true;
 this.visibleRomCharMem = false;
 */
-				 if( value == 12 ) {
+
+				 if( value == 8 ) {
+					this.useRomCharMem = false;
+					this.videoRam = 8192;
+				 }
+				 else if( value == 12 ) {
 					 this.useRomCharMem = false;
-					 this.charMem = 12288;
+					 this.videoRam = 12288;
 				 } else {
 					 this.useRomCharMem = true;
 				 }
@@ -465,8 +483,6 @@ this.visibleRomCharMem = false;
 				this.spriteCol( sprno, v % 16);
 
 			 }
-
-
 		 }
 
 		 this.vicUsed = [];
@@ -474,6 +490,40 @@ this.visibleRomCharMem = false;
 
 	 poke( a, b ) {
 		 this.memory[a] = b % 256;
+
+		 if( this.useHires ) {
+
+			 if( a >= this.videoRam && a< this.videoRam + 8192 ) {
+
+				 var buf  = this.txScBuf;
+				 var addr = Math.floor  (( a-this.videoRam ) / 8 );
+				 var y = Math.floor( (addr / 40) );
+				 var x = addr % 40;
+				 buf[y][x][2] = true;
+			 }
+		 }
+		 else { //videoRam should point to ScBuffer, does it ever?
+			 /*if( a >= this.videoRam && a< this.videoRam + 1024 ) {
+
+				 var buf  = this.txScBuf;
+				 var addr = a;
+				 var y = Math.floor( (addr / 40) );
+				 var x = addr % 40;
+				 buf[y][x][2] = true;
+			 }*/
+		 }
+
+		 /*
+		 this.useHires = false;
+		 this.useHiresLast = false;
+
+		 this.memory = new Uint8Array( 256 * 256 ); //64 KB, we're not using all
+		 this.videoRam = 12288;
+		 this.hiresMem = 8192;
+		 this.useRomCharMem = true;
+		 this.visibleRomCharMem = false;
+		 */
+
 	 }
 
 	 peek( a ) {
@@ -652,7 +702,7 @@ this.visibleRomCharMem = false;
 	 }
 
 	 clearScreen() {
-		this.buffer = [];
+		this.txScBuf = [];
 		this.cursorx = 0;
 		this.cursory = 0;
 
@@ -661,13 +711,13 @@ this.visibleRomCharMem = false;
 	 		for( var x=0; x<40; x++) {
 				row[ x ] = [32,14,true];
 	 		}
-	 		this.buffer[ y ] = row;
+	 		this.txScBuf[ y ] = row;
 	 	}
 	 }
 
 	 scrollUp() {
 
-		 var buf = this.buffer;
+		 var buf = this.txScBuf;
 
 		 this.cursory=24;
 
@@ -701,7 +751,7 @@ this.visibleRomCharMem = false;
 
 	 getChar( x, y, index ) {
 
-		var buf = this.buffer;
+		var buf = this.txScBuf;
 		var chr = buf[y][x];
 
 		return chr[0];
@@ -710,7 +760,7 @@ this.visibleRomCharMem = false;
 
 	 getCharCol( x, y, index ) {
 
-		var buf = this.buffer;
+		var buf = this.txScBuf;
 		var chr = buf[y][x];
 
 		return chr[1];
@@ -719,7 +769,7 @@ this.visibleRomCharMem = false;
 
 	 setChar( x, y, index ) {
 
-		var buf = this.buffer;
+		var buf = this.txScBuf;
 		var chr = buf[y][x];
 
 		chr[2] = true;
@@ -729,7 +779,7 @@ this.visibleRomCharMem = false;
 
 	 setCharCol( x, y, index ) {
 
-		var buf = this.buffer;
+		var buf = this.txScBuf;
 		var chr = buf[y][x];
 
 		chr[2] = true;
@@ -745,7 +795,7 @@ this.visibleRomCharMem = false;
 	 }
 
 	 blinkCursor() {
-		var buf = this.buffer;
+		var buf = this.txScBuf;
 		if( !this.cursorOn ) {
 			this.cursorOn = true;
 			this.cursorChar = buf[this.cursory][this.cursorx][0];
@@ -765,7 +815,7 @@ this.visibleRomCharMem = false;
    }
 
 	 clearCursor() {
-		var buf = this.buffer;
+		var buf = this.txScBuf;
  		if( this.cursorOn ) {
  			this.cursorOn = false;
  			var index = 32;
@@ -813,7 +863,7 @@ this.visibleRomCharMem = false;
 		 var index = c.charCodeAt(0);
 		 if( index < 0 || index >255) { index = 0;}
 
-		 var buf = this.buffer;
+		 var buf = this.txScBuf;
   		if( index > -1 ) {
  			buf[this.cursory][this.cursorx][2] = true;
  			buf[this.cursory][this.cursorx][1] = this.col;
@@ -831,7 +881,7 @@ this.visibleRomCharMem = false;
 	 writeCharRev( c ) {
 		var index = (this._mapASCII2Screen( c ) + 128) % 256;
 
- 		var buf = this.buffer;
+ 		var buf = this.txScBuf;
   		if( index > -1 ) {
  			buf[this.cursory][this.cursorx][2] = true;
  			buf[this.cursory][this.cursorx][1] = this.col;
@@ -848,7 +898,7 @@ this.visibleRomCharMem = false;
 
     var index = this._mapASCII2Screen( c );
 
-		var buf = this.buffer;
+		var buf = this.txScBuf;
  		if( index > -1 ) {
 			buf[this.cursory][this.cursorx][2] = true;
 			buf[this.cursory][this.cursorx][1] = this.col;
@@ -864,7 +914,7 @@ this.visibleRomCharMem = false;
 
 	 deleteChar() {
     var index = 32;
-		var buf = this.buffer;
+		var buf = this.txScBuf;
 
 		this.cursorx--;
 		if(this.cursorx <0 ) {
@@ -886,7 +936,7 @@ this.visibleRomCharMem = false;
 
 	 getCurrentLine() {
 		 var line;
-		 var buf = this.buffer;
+		 var buf = this.txScBuf;
 
 		 line = "";
 
@@ -1474,7 +1524,7 @@ this.visibleRomCharMem = false;
 
 	 }
 
-	 _renderDirectChrMono( x, y, ch0, col0) {
+	 _renderDirectChrMono( x, y, ch0, col0, bgcol) {
 
 		 // ch0 is character code
 		 // col0 is color
@@ -1488,14 +1538,14 @@ this.visibleRomCharMem = false;
 		 }
 		 else {
 			fid = this.memory;
-			dataPtr = this.charMem;
+			dataPtr = this.videoRam;
 		 }
 
      var iDta = this.iDta;
      var pixWidthM4 = this.iwidth * 4;
 
      var fgCol = this.colors[ col0 ];
-     var bgCol = this.colors[ this.bgcol ];
+     var bgCol = this.colors[ bgcol ];
 
      var ch=ch0;
 
@@ -1615,10 +1665,18 @@ this.visibleRomCharMem = false;
    }
 
 
-	 renderChar(x, y, c, col0) {
+	 renderChar(x, y, c, col0, bgcol) {
 		 var col = col0 % 16;
 
-     this._renderDirectChrMono( x, y, c, col );
+     this._renderDirectChrMono( x, y, c, col, this.bgcol );
+	 }
+
+	 renderCharHires(x, y, c, col0, bgcol) {
+		 var col = col0 % 16;
+		 var bgcol = (col0 & 240) >> 4;
+		 //((5+128) & (128+64+32+16))>>4
+
+     this._renderDirectChrMono( x, y, c, col, bgcol );
 	 }
 
 	 renderCharMC(x, y, c, col0) {
@@ -1690,43 +1748,99 @@ this.visibleRomCharMem = false;
 	 }
 
 	 _renderBuffer() {
-		 var buf = this.buffer;
+		 var buf = this.txScBuf;
 		 var ctx = this.context;
 		 var bufctx = this.bufcontext;
 
 		 //ctx.fillStyle = this._htmlColor( this.colors[ this.bgcol ] );
 
-		 this.renderChr = this.renderChar;
-		 if( this.multiColor ) {
-			 this.renderChr = this.renderCharMC;
-		 }
 
-		 if( this.bgcolLast != this.bgcol
-		 			|| this.mcol1Last != this.mcol1
-					|| this.mcol2Last != this.mcol2
-					|| this.multiColorLast != this.multiColor
-				) {
-			 for( var y=0; y<25; y++) {
-			 	for( var x=0; x<40; x++) {
 
-							buf[y][x][2] = false;
-						 	this.renderChr(x*8, y*8, buf[y][x][0], buf[y][x][1] );
+		 if( this.useHires ) {
 
-			 	}
+
+			 this.renderChr = this.renderCharHires;
+			 if( this.multiColor ) {
+				 this.renderChr = this.renderCharMC;
 			 }
-			 this.bgcolLast = this.bgcol;
+
+
+			 if( this.bgcolLast != this.bgcol
+			 			|| this.mcol1Last != this.mcol1
+						|| this.mcol2Last != this.mcol2
+						|| this.multiColorLast != this.multiColor
+						|| this.useHiresLast != this.useHires
+					) {
+				 for( var y=0; y<25; y++) {
+				 	for( var x=0; x<40; x++) {
+
+								var chr = (y*40+x);
+								buf[y][x][2] = false;
+							 	this.renderChr(x*8, y*8, chr, buf[y][x][0] );
+
+				 	}
+				 }
+				 this.bgcolLast = this.bgcol;
+				 this.mcol1Last = this.mcol1;
+				 this.mcol2Last = this.mcol2;
+				 this.multiColorLast = this.multiColor;
+				 this.useHiresLast = this.useHires;
+
+			 }
+			 else {
+
+				 for( var y=0; y<25; y++) {
+				 	for( var x=0; x<40; x++) {
+
+						var chr = (y*40+x);
+
+						if( buf[y][x][2] ) {
+								buf[y][x][2] = false;
+							 this.renderChr(x*8, y*8, chr, buf[y][x][0] );
+						}
+				 	}
+				 }
+			 }
 		 }
 		 else {
-			 for( var y=0; y<25; y++) {
-			 	for( var x=0; x<40; x++) {
-					if( buf[y][x][2] ) {
-							buf[y][x][2] = false;
-						 this.renderChr(x*8, y*8, buf[y][x][0], buf[y][x][1] );
-					}
-			 	}
+
+			 this.renderChr = this.renderChar;
+			 if( this.multiColor ) {
+				 this.renderChr = this.renderCharMC;
+			 }
+
+
+			 if( this.bgcolLast != this.bgcol
+			 			|| this.mcol1Last != this.mcol1
+						|| this.mcol2Last != this.mcol2
+						|| this.multiColorLast != this.multiColor
+						|| this.useHiresLast != this.useHires
+					) {
+				 for( var y=0; y<25; y++) {
+				 	for( var x=0; x<40; x++) {
+
+								buf[y][x][2] = false;
+							 	this.renderChr(x*8, y*8, buf[y][x][0], buf[y][x][1] );
+
+				 	}
+				 }
+				 this.bgcolLast = this.bgcol;
+				 this.mcol1Last = this.mcol1;
+				 this.mcol2Last = this.mcol2;
+				 this.multiColorLast = this.multiColor;
+				 this.useHiresLast = this.useHires;
+			 }
+			 else {
+				 for( var y=0; y<25; y++) {
+				 	for( var x=0; x<40; x++) {
+						if( buf[y][x][2] ) {
+								buf[y][x][2] = false;
+							 this.renderChr(x*8, y*8, buf[y][x][0], buf[y][x][1] );
+						}
+				 	}
+				 }
 			 }
 		 }
-
 
 		 for( var i = this.sprites.length -1; i>=0; i-- ) {
 			 var sp = this.sprites[ i ];

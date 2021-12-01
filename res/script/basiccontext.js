@@ -12,7 +12,7 @@ class BasicContext {
     var c = this.console;
     this.commands = new BasicCommands( this );
     this.vars = [];
-
+    this.data = [];
     this.kbBuffer = [];
 
     this.forContext = {}
@@ -159,6 +159,8 @@ class BasicContext {
         this[addr](b);
       }
 */
+
+      //console.log("poke ",a,b);
       if( a == 1) { //Bank Switching
 
         this.console.poke( a, b);
@@ -354,6 +356,7 @@ class BasicContext {
     this.vpoke(53269,0);
     this.vpoke(53270,200);
     this.vpoke(53272,21);
+    this.vpoke(53265,155);
     this.console.setColor(14);
 
     this.printLine("");
@@ -918,7 +921,12 @@ class BasicContext {
         }
         catch ( e ) {
           console.log(e);
-          this.printError("unexpected");
+          if( e=="OUT OF DATA") {
+            this.printError(e);
+          }
+          else {
+              this.printError("unexpected");
+          }
           return false;
         }
       }

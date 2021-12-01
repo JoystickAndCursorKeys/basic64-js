@@ -266,6 +266,7 @@ class Menu {
     var logo = getMenuLogo();
     this.logo = logo;
 
+    context.poke( 53265, 27 );
     context.poke( 53272, 12 );
     context.poke( 1, 0 );
     for( var i=0; i<(64*8); i++) {
