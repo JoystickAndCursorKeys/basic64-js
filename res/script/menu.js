@@ -65,6 +65,8 @@ class Menu {
     this.menus = {};
     this.menuOffset = {};
 
+    this.stateMemory = new Uint8Array( 256 * 256 );
+
     var opts = [];
     //opts.push({opt: "status", display: "Status" });
     //opts.push({opt: "loadsave", display: "Load/Save" });
@@ -326,7 +328,6 @@ class Menu {
 
     var c=64, xof = 4, yof=1;
 
-
     var x,y,addr,caddr;
     for( y = 0; y<4; y++) {
       for( x = 0; x<34; x++) {
@@ -343,8 +344,6 @@ class Menu {
       var sp = theme.splotches[i];
         x=sp[0];y=sp[1];caddr = 55296 + x + ((y)*40);this.context.poke( caddr, sp[2] );
     }
-//    x=36;y=2;caddr = 55296 + x + ((y)*40);this.context.poke( caddr, theme.spark );
-//    x=36;y=3;caddr = 55296 + x + ((y)*40);this.context.poke( caddr, theme.spark );
 
     x=this.menuOffset[ t.menuvmState ];
 
@@ -357,7 +356,7 @@ class Menu {
         else {
           t.console.setColor(txtColor);
         }
-        t.pad( x, " F" +(i+1)+ " - " + options[i].display );
+        t.pad( x, " " +(i+1)+ " - " + options[i].display );
 
         this.curs.push( t.console.getCursorPos() );
 
@@ -411,7 +410,12 @@ class Menu {
     {
         console: this.console.getState(),
         pgm: this.context.getProgram(),
-        pgmState: this.context.getProgramState()
+        pgmState: this.context.getProgramState(),
+    }
+
+    var mem = this.console.getMemory();
+    for( var i=0; i<(256*256); i++) {
+      this.stateMemory[ i ] = mem[ i ];
     }
 
     console.log( this.vmState );
@@ -432,6 +436,11 @@ class Menu {
     console.log( "End menu");
 
     this.console.setState( this.vmState.console );
+
+    var mem = this.console.getMemory();
+    for( var i=0; i<(256*256); i++) {
+      mem[i] = this.stateMemory[ i ];
+    }
     this.console.clearCursor();
   }
 
@@ -498,35 +507,35 @@ class Menu {
         evt.preventDefault();
       }
     }
-    else if( evt.key == "F1") {
+    else if( evt.key == "F1" || evt.key == "1") {
       this.executeOption( 0 );
       evt.preventDefault();
     }
-    else if( evt.key == "F2") {
+    else if( evt.key == "F2" || evt.key == "2") {
       this.executeOption( 1 );
       evt.preventDefault();
     }
-    else if( evt.key == "F3") {
+    else if( evt.key == "F3" || evt.key == "3") {
       this.executeOption( 2 );
       evt.preventDefault();
     }
-    else if( evt.key == "F4") {
+    else if( evt.key == "F4" || evt.key == "4") {
       this.executeOption( 3 );
       evt.preventDefault();
     }
-    else if( evt.key == "F5") {
+    else if( evt.key == "F5" || evt.key == "5") {
       this.executeOption( 4 );
       evt.preventDefault();
     }
-    else if( evt.key == "F6") {
+    else if( evt.key == "F6" || evt.key == "6") {
       this.executeOption( 5 );
       evt.preventDefault();
     }
-    else if( evt.key == "F7") {
+    else if( evt.key == "F7" || evt.key == "7") {
       this.executeOption( 6 );
       evt.preventDefault();
     }
-    else if( evt.key == "F8") {
+    else if( evt.key == "F8" || evt.key == "8") {
       this.executeOption( 7 );
       evt.preventDefault();
     }
