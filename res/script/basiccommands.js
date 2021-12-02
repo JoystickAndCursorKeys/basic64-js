@@ -32,24 +32,71 @@ class BasicCommands {
 
   _stat_list( pars ) {
 
+    var start = 0;
+    var end   = 999999;
+    var parts = [];
+
+    var mode = "noparam";
+
+    if( pars.length==1 ) {
+      parts = pars[0];
+    }
+
+    if( parts.length == 1 && parts[0].type == "num" && parts[0].data >=0 ) {
+      start = parts[0].data;
+      end = parts[0].data;
+    }
+    else if( parts.length == 1 && parts[0].type == "num" && parts[0].data <0 ) {
+      /*NOTE, this will stop working if RAW changes to return uniop + posnum */
+      end = -parts[0].data;
+    }
+    else if( parts.length == 2
+        && parts[0].type == "num"
+        && parts[1].type == "num"
+        && parts[1].op == "-"
+          ) {
+      start = parts[0].data;
+      end = parts[1].data;
+
+    }
+    else if( parts.length == 2
+        && parts[0].type == "num"
+        && parts[1].type == "uniop"
+        && parts[1].op == "-"
+          ) {
+      start = parts[0].data;
+    }
+
     this.context.printLine( "" );
     var context = this.context;
 
     for (const l of context.program)
       {
-        this.context.listCodeLine( l[2] );
+        if( l[0] >= start && l[0]<= end ) {
+          this.context.listCodeLine( l[2] );
+        }
         console.log(l[2]);
       }
   }
 
   _if_get() {
-      var EXPR = 0, PAR = 1;
+      var EXPR = 0, PAR = 1, RAW=2;
       return [PAR];
   }
 
   _if_read() {
-      var EXPR = 0, PAR = 1;
+      var EXPR = 0, PAR = 1, RAW=2;
       return [PAR];
+  }
+
+  _if_list() {
+      var EXPR = 0, PAR = 1, RAW=2;
+      return [RAW];
+  }
+
+  _if_run() {
+      var EXPR = 0, PAR = 1, RAW=2;
+      return [RAW];
   }
 
   _stat_read( pars ) {
@@ -165,6 +212,11 @@ class BasicCommands {
   }
 
   /************************ functions ************************/
+
+  chr_DLR_( pars ) {
+    return String.fromCharCode( pars[0].value );
+  }
+
   len( pars ) {
     return pars[0].value.length;
   }

@@ -12,7 +12,7 @@ class BasicContext {
     var c = this.console;
     this.commands = new BasicCommands( this );
     this.vars = [];
-
+    this.data = [];
     this.kbBuffer = [];
 
     this.forContext = {}
@@ -159,6 +159,8 @@ class BasicContext {
         this[addr](b);
       }
 */
+
+      //console.log("poke ",a,b);
       if( a == 1) { //Bank Switching
 
         this.console.poke( a, b);
@@ -353,6 +355,8 @@ class BasicContext {
     this.vpoke(53281,6);
     this.vpoke(53269,0);
     this.vpoke(53270,200);
+    this.vpoke(53272,21);
+    this.vpoke(53265,155);
     this.console.setColor(14);
 
     this.printLine("");
@@ -409,13 +413,16 @@ class BasicContext {
       }
       try {
         var commands = this.commands;
-        var stc = commands[ p.functionName];
+        var nFunName = p.functionName.replaceAll("$","_DLR_");
+
+        var stc = commands[ nFunName ];
         if( stc === undefined ) {
-          this.printError("syntax");
+          this.printError("no such function " + p.functionName);
+          console.log("Cannot find functionName " + nFunName );
           return null;
         }
         else {
-            val = commands[ p.functionName]( values );
+            val = commands[ nFunName ]( values );
         }
 
       }
@@ -779,8 +786,8 @@ class BasicContext {
       }
     }
 
-    console.log("ctxv:", ctxv);
-    console.log("var:"+varName + " set to " + this.vars[ varName ]);
+    //console.log("ctxv:", ctxv);
+    //console.log("var:"+varName + " set to " + this.vars[ varName ]);
   }
 
   doForNext() {
@@ -888,8 +895,7 @@ class BasicContext {
               values.push( { type: "value", value: p } );
             }
           }
-          else {
-
+          else if( pardefs[j] == PAR ) {
             var varName = cmd.params[0].parts[0].data;
             var varType = "num";
             if( varName.indexOf("$") > -1) {
@@ -897,6 +903,9 @@ class BasicContext {
             }
 
             values.push( { type: "var", value: varName, varType: varType } );
+          }
+          else { /*RAW*/
+            values.push( cmd.params[j].parts );
           }
         }
         try {
@@ -912,7 +921,12 @@ class BasicContext {
         }
         catch ( e ) {
           console.log(e);
-          this.printError("unexpected");
+          if( e=="OUT OF DATA") {
+            this.printError(e);
+          }
+          else {
+              this.printError("unexpected");
+          }
           return false;
         }
       }

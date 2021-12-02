@@ -70,11 +70,11 @@ class Menu {
     //opts.push({opt: "loadsave", display: "Load/Save" });
 
     opts.push({opt: "basicMenu", display: "Basic" });
-    opts.push({opt: "diskMenu", display: "Disk" });
+    opts.push({opt: "diskMenu", display: "Virtual Disk" });
     opts.push({opt: "exportMenu", display: "Export" });
     opts.push({opt: "clipboardMenu", display: "Clipboard" });
     //opts.push({opt: "keys", display: "Keys" });
-    opts.push({opt: "documentation", display: "Documentation" });
+    opts.push({opt: "docsSettingsMenu", display: "Docs and Settings" });
     opts.push({opt: "reset", display: "Reset" });
 
     this.options["main"] = opts;
@@ -86,14 +86,14 @@ class Menu {
     opts.push({opt: "pastePGMFromClip", display: "Overwrite Program with Clipboard" });
     this.options["clipboard"] = opts;
     this.menus["clipboard"] = "clipboard";
-    this.menuOffset["clipboard"] = 0;
+    this.menuOffset["clipboard"] = 1;
 
     opts = [];
     opts.push({opt: "renumber", display: "Renumber Basic Program" });
     opts.push({opt: "compress", display: "Remove Spaces" });
     this.options["basic"] = opts;
     this.menus["basic"] = "basic";
-    this.menuOffset["basic"] = 5;
+    this.menuOffset["basic"] = 7;
 
     opts = [];
     opts.push({opt: "exportVDisk", display: "Export Virtual Disk" });
@@ -109,11 +109,152 @@ class Menu {
 
 
     opts = [];
-    opts.push({opt: "listDirectory", display: "List VDisk Directory" });
-    opts.push({opt: "saveSnapshot", display: "Save Snapshot" });
+    opts.push({opt: "changeTheme", display: "Change Menu Theme" });
+    opts.push({opt: "documentation", display: "documentation" });
+    this.options["docssettings"] = opts;
+    this.menus["docssettings"] = "docs & settings";
+    this.menuOffset["docssettings"] = 9;
+
+
+    opts = [];
+    opts.push({opt: "listDirectory", display: "Directory" });
+
+    opts.push({opt: "listDirectory", display: "Load" });
+    opts.push({opt: "listDirectory", display: "Save" });
+    opts.push({opt: "saveSnapshot", display:  "Save Snapshot" });
+    opts.push({opt: "listDirectory", display: "Format" });
+    opts.push({opt: "listDirectory", display: "Disk Swap" });
+    opts.push({opt: "listDirectory", display: "Rename Disk" });
+
     this.options["disk"] = opts;
     this.menus["disk"] = "disk";
-    this.menuOffset["disk"] = 7;
+    this.menuOffset["disk"] = 12;
+
+    this.themes =  [];
+
+    this.themes.push(
+      {
+        bg: 6,
+        border: 6,
+        fg: 14,
+        hl: 1,
+        logorows: [8,8,8,8],
+        splotches: [[36,2,7],[36,3,7]]
+      }
+    );
+
+    this.themes.push(
+      {
+        bg: 6,
+        border: 6,
+        fg: 14,
+        hl: 1,
+        logorows: [14,14,14,14],
+        splotches: [[36,2,7],[36,3,7]]
+      }
+    );
+
+    this.themes.push(
+      {
+        bg: 0,
+        border: 0,
+        fg: 8,
+        hl: 7,
+        logorows: [8,8,8,8],
+        splotches: [[36,2,7],[36,3,7]]
+      }
+    );
+
+    this.themes.push(
+      {
+        bg: 0,
+        border: 0,
+        fg: 14,
+        hl: 1,
+        logorows: [6,6,6,6],
+        splotches: [[36,2,14],[36,3,14]]
+      }
+    );
+
+    this.themes.push(
+      {
+        bg: 0,
+        border: 0,
+        fg: 5,
+        hl: 13,
+        logorows: [5,5,5,5],
+        splotches: [[36,2,13],[36,3,13]]
+      }
+    );
+
+    this.themes.push(
+      {
+        bg: 11,
+        border: 12,
+        fg: 12,
+        hl: 1,
+        logorows: [0,0,0,0],
+        splotches: [[36,2,1],[36,3,1]]
+      }
+    );
+    this.themes.push(
+      {
+        bg: 11,
+        border: 11,
+        fg: 12,
+        hl: 1,
+        logorows: [0,0,0,0],
+        splotches: [[36,2,7],[36,3,7]]
+      }
+    );
+    this.themes.push(
+      {
+        bg: 6,
+        border: 14,
+        fg: 14,
+        hl: 1,
+        logorows: [5,5,3,5],
+        splotches: [[36,2,7],[36,3,7]]
+      }
+    );
+    this.themes.push(
+      {
+        bg: 6,
+        border: 14,
+        fg: 14,
+        hl: 1,
+        logorows: [4,4,8,4],
+        splotches: [[36,2,7],[36,3,7]]
+      }
+    );
+    this.themes.push(
+      {
+        bg: 6,
+        border: 14,
+        fg: 14,
+        hl: 1,
+        logorows: [7,7,1,7],
+        splotches: [[36,2,7],[36,3,7]]
+      }
+    );
+    this.themes.push(
+      {
+        bg: 6,
+        border: 14,
+        fg: 14,
+        hl: 1,
+        logorows: [1,1,1,1],
+        splotches: [[36,2,7],[36,3,7]]
+      }
+    );
+
+    this.theme = 0;
+
+    var menuSettings = localStorage.getItem( "BJ64_Menu" );
+    if( menuSettings != null ) {
+      menuSettings = JSON.parse( menuSettings );
+      this.theme = menuSettings.theme;
+    }
 
     //this.initLogo();
   }
@@ -125,6 +266,7 @@ class Menu {
     var logo = getMenuLogo();
     this.logo = logo;
 
+    context.poke( 53265, 27 );
     context.poke( 53272, 12 );
     context.poke( 1, 0 );
     for( var i=0; i<(64*8); i++) {
@@ -138,12 +280,33 @@ class Menu {
 
   }
 
+  rendervmState() {
+
+    var t=this;
+    var context = this.context;
+    var theme = this.themes[ this.theme ];
+
+    context.vpoke(53280,theme.border);
+    context.vpoke(53281,theme.bg);
+    context.vpoke(53269,0);
+    context.vpoke(53270,200);
+
+    t.rendervmStateText() ;
+
+  }
+
+
   rendervmStateText() {
     var t=this;
     var context = this.context;
-    t.console.clearScreen();
-    t.console.setColor(14);
+    var theme = this.themes[ this.theme ];
 
+    var txtColor = theme.fg;
+    var hlColor = theme.hl;
+    var cols1= theme.logorows;
+
+    t.console.clearScreen();
+    t.console.setColor(txtColor);
 
     var title = t.menus[ t.menuvmState ];
     var options = this.options[ t.menuvmState ];
@@ -152,29 +315,36 @@ class Menu {
 
     t.nl();t.nl();t.nl();t.nl();t.nl();t.nl();
 
-//this.padLine( x, t.menuvmState );
-var menuStr = "*** " + title +" ***";
-x = 20 - (Math.floor(menuStr.length / 2));
-//x=33;
-t.padLine( x, menuStr );
+    if( title != "main" ) {
+      var menuStr = "*** " + title +" ***";
+      x = 20 - (Math.floor(menuStr.length / 2));
+      t.padLine( x, menuStr );
+    }
+
 
     t.nl();
 
     var c=64, xof = 4, yof=1;
-    var cols1=[3, 14,4, 2];
-    var cols2=[1, 1,1, 1];
-    for( var y = 0; y<4; y++) {
-      for( var x = 0; x<34; x++) {
-        var addr = 1024 + xof + x + ((y+yof)*40);
-        var caddr = 55296 + xof + x + ((y+yof)*40);
+
+
+    var x,y,addr,caddr;
+    for( y = 0; y<4; y++) {
+      for( x = 0; x<34; x++) {
+        addr = 1024 + xof + x + ((y+yof)*40);
+        caddr = 55296 + xof + x + ((y+yof)*40);
         this.context.poke( addr, c );
         var col = cols1[y] ;
-        //if( (x % 2) != 0 ) { col = cols2[y] ; }
         this.context.poke( caddr, col );
         c++;
       }
     }
 
+    for( var i=0;i<theme.splotches.length;i++) {
+      var sp = theme.splotches[i];
+        x=sp[0];y=sp[1];caddr = 55296 + x + ((y)*40);this.context.poke( caddr, sp[2] );
+    }
+//    x=36;y=2;caddr = 55296 + x + ((y)*40);this.context.poke( caddr, theme.spark );
+//    x=36;y=3;caddr = 55296 + x + ((y)*40);this.context.poke( caddr, theme.spark );
 
     x=this.menuOffset[ t.menuvmState ];
 
@@ -182,10 +352,10 @@ t.padLine( x, menuStr );
     for( var i=0; i<8 && i<options.length; i++) {
 
         if( i == this.optSelect ) {
-          t.console.setColor(1);
+          t.console.setColor(hlColor);
         }
         else {
-          t.console.setColor(14);
+          t.console.setColor(txtColor);
         }
         t.pad( x, " F" +(i+1)+ " - " + options[i].display );
 
@@ -206,20 +376,6 @@ t.padLine( x, menuStr );
     //t.padLine( x, " F5 - Settings");  t.nl();
   }
 
-  rendervmState() {
-
-    var t=this;
-    var context = this.context;
-
-
-    context.vpoke(53280,14);
-    context.vpoke(53281,6);
-    context.vpoke(53269,0);
-    context.vpoke(53270,200);
-
-    t.rendervmStateText() ;
-
-  }
 
   color(x) {
     this.console.setColor(x);
@@ -392,6 +548,13 @@ t.padLine( x, menuStr );
 
     }
 
+  }
+
+
+  do_docsSettingsMenu() {
+    this.menuvmState = "docssettings";
+    this.optSelect = 0
+    this.rendervmState();
   }
 
   do_exportMenu() {
@@ -705,6 +868,20 @@ t.padLine( x, menuStr );
     this.context.reset( true );
 
   }
+
+  do_changeTheme() {
+      this.theme++;
+      if( this.theme > (this.themes.length - 1) ) {
+        this.theme = 0;
+      }
+
+      if( this.context.confirmCookies() ) {
+        localStorage.setItem( "BJ64_Menu", JSON.stringify( { theme: this.theme } ) );
+      }
+
+      this.rendervmState();
+  }
+
 
   do_documentation() {
     window.open("https://github.com/JoystickAndCursorKeys/basic64-js/wiki",'_blank');

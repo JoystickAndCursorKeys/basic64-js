@@ -647,7 +647,9 @@ class Parser {
             endTokens.push( { type: "eq", data: "=" });
             endTokens.push( { type: "comp", data: "<" });
             endTokens.push( { type: "comp", data: ">" });
-
+            endTokens.push( { type: "comp", data: "<=" });
+            endTokens.push( { type: "comp", data: ">=" });
+            endTokens.push( { type: "comp", data: "<>" });    
 						var expr1 = this.parseExpression( context, endTokens );
 
             token = tokens.shift();
