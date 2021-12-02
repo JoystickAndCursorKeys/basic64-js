@@ -111,6 +111,9 @@ class C64Screen {
 
    }
 
+	 getMemory() {
+		 return this.memory;
+	 }
 
 	 setVicRegisters( regs ) {
 

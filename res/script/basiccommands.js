@@ -23,8 +23,6 @@ class BasicCommands {
   }
 
 
-
-
   /************************ commands ************************/
   _stat_new( pars ) {
     this.context.new();

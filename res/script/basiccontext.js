@@ -466,6 +466,57 @@ class BasicContext {
       else if( p.op == ";" ) {
         val += ("" + this.evalExpressionPart( p ));
       }
+      else if( p.op == "or"  ) {
+          val |= this.evalExpressionPart( p );
+          console.log("or");
+      }
+      else if( p.op == "and"  ) {
+          val &= this.evalExpressionPart( p );
+          console.log("and");
+      }
+      else if( p.op == "<" ) {
+        if( val < (this.evalExpressionPart( p ) ) ) {
+          val = -1;
+        } else {
+          val = 0;
+        }
+      }
+      else if( p.op == ">" ) {
+        if( val > (this.evalExpressionPart( p ) ) ) {
+          val = -1;
+        } else {
+          val = 0;
+        }
+      }
+      else if( p.op == "=" ) {
+        if( val == (this.evalExpressionPart( p ) ) ) {
+          val = -1;
+        } else {
+          val = 0;
+        }
+      }
+      else if( p.op == "<>" ) {
+        if( val != (this.evalExpressionPart( p ) ) ) {
+          val = -1;
+        } else {
+          val = 0;
+        }
+      }
+      else if( p.op == "<=" ) {
+        if( val <= (this.evalExpressionPart( p ) ) ) {
+          val = -1;
+        } else {
+          val = 0;
+        }
+      }
+      else if( p.op == ">=" ) {
+        if( val >= (this.evalExpressionPart( p ) ) ) {
+          val = -1;
+        } else {
+          val = 0;
+        }
+      }
+
       else {
         throw "unknown op '"+p.op+"'";
       }

@@ -98,7 +98,6 @@ class Parser {
 
   init() {
 
-
 	  this.CTRL_KW = ["if","then","goto","and", "not", "or",  "gosub", "return", "for", "to", "next", "step", "data" ];
     this.SHORTCUT_KW = ["?"];
     this.INT_STAT =
@@ -191,6 +190,12 @@ class Parser {
 
   			}
 			}
+
+      if( ( token.type == "name"  && token.data == "or" ) ||
+        ( token.type == "name"  && token.data == "and" ) ||
+        ( token.type == "name"  && token.data == "not" )) {
+          token.type = "bop";
+        }
 
 		}
 
@@ -453,7 +458,7 @@ class Parser {
 			}
 			else {
 
-				if( token.type == "op") {
+				if( token.type == "op" || token.type == "comp" || token.type == "eq" || token.type == "bop" ) {
 					op = token.data;
 				}
 				else {
@@ -649,7 +654,7 @@ class Parser {
             endTokens.push( { type: "comp", data: ">" });
             endTokens.push( { type: "comp", data: "<=" });
             endTokens.push( { type: "comp", data: ">=" });
-            endTokens.push( { type: "comp", data: "<>" });    
+            endTokens.push( { type: "comp", data: "<>" });
 						var expr1 = this.parseExpression( context, endTokens );
 
             token = tokens.shift();
