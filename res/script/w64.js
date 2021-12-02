@@ -157,7 +157,7 @@ class Program {
     evt.k_alt = this.k_alt;
 
 
-    if( evt.key == "F9" ) {
+    if( evt.key == "F9" || evt.key=="Tab") {
       bcontext.toggleMenu();
       console.log("Menu");
       evt.preventDefault();
@@ -221,9 +221,12 @@ class Program {
       else if( evt.key == "Pause" && evt.ctrlKey) {
         this.basiccontext.reset( false );
       }
-      else if( evt.key == "Backspace") {
+      else if( evt.key == "Backspace"  && !evt.ctrlKey) {
           c.clearCursor();
           c.deleteChar();
+      }
+      else if( evt.key == "Backspace" && evt.ctrlKey) {
+          this.basiccontext.reset( false );
       }
       else if( evt.key == "ArrowLeft") {
 
