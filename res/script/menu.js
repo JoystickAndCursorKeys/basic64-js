@@ -640,7 +640,7 @@ class Menu {
 
     }
     catch (e) {
-      this.endMenuWithError("sytax");
+      this.endMenuWithError("syntax");
     }
 
 
