@@ -386,14 +386,14 @@ class C64Screen {
 				 var spr = this.sprites;
 				 for( var j=0; j<8; j++) {
 					 spr[ j ].enabled = bits[j];
-					 console.log("Sprite[" +j+"].enable=" + bits[j])
+					 //console.log("Sprite[" +j+"].enable=" + bits[j])
 				 }
 			 }
 			 else if( nr == 53270)  {
 				 var bits = this._getByteBits( v );
 				 this.multiColor = bits[4];
 				 for( var j=0; j<8; j++) {
-					 console.log("53269[" +j+"].enable=" + bits[j])
+					 //console.log("53269[" +j+"].enable=" + bits[j])
 				 }
 			 }
 			 else if( nr == 53265)  {
@@ -403,8 +403,8 @@ class C64Screen {
 
 				 this.useHires = (v & 32) > 0; //bit 5
 
-				 console.log("poke 53265 -> " + v);
-				 console.log("this.useHires -> " + this.useHires);
+				 //console.log("poke 53265 -> " + v);
+				 //console.log("this.useHires -> " + this.useHires);
 
 
 			 }
@@ -420,7 +420,7 @@ class C64Screen {
 				 if( b2 ) { value += 4; }
 				 if( b3 ) { value += 8; }
 
-				 console.log("poke 53272 -> " + value);
+				 //console.log("poke 53272 -> " + value);
 /*
 this.videoRam = 12288;
 this.useRomCharMem = true;
@@ -444,7 +444,7 @@ this.visibleRomCharMem = false;
 				 var spr = this.sprites;
 				 for( var j=0; j<8; j++) {
 					 spr[ j ].multiCol = bits[j];
-					 console.log("Sprite[" +j+"].multiCol=" + bits[j])
+					 //console.log("Sprite[" +j+"].multiCol=" + bits[j])
 				 }
 			 }
 			 else if(nr == 53277) {
@@ -452,7 +452,7 @@ this.visibleRomCharMem = false;
 				 var spr = this.sprites;
 				 for( var j=0; j<8; j++) {
 					 spr[ j ].fat = bits[j];
-					 console.log("Sprite[" +j+"].fat=" + bits[j])
+					 //console.log("Sprite[" +j+"].fat=" + bits[j])
 				 }
 			 }
 			 else if(nr == 53271) {
@@ -460,7 +460,7 @@ this.visibleRomCharMem = false;
 				 var spr = this.sprites;
 				 for( var j=0; j<8; j++) {
 					 spr[ j ].long = bits[j];
-					 console.log("Sprite[" +j+"].long=" + bits[j])
+					 //console.log("Sprite[" +j+"].long=" + bits[j])
 				 }
 			 }
 			 else if( nr>53247 && nr < 53264 ) { //sprite pos
