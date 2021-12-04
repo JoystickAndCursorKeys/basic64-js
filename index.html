@@ -8,6 +8,17 @@
 	<link rel="icon" href="res/img/fav.png">
 	<style>
 
+	input[type=button], input[type=submit], input[type=reset] {
+	  background-color: #0000aa;
+	  border: none;
+	  color: #0088ff;
+	  padding: 16px 32px;
+	  font-family: "Lucida Console", "Courier New", monospace;
+	  font-weight: 900;
+	   font-size: large;
+	  margin: 4px 2px;
+	  cursor: pointer;
+	}
 		.outer {
 		  display: table;
 		  position: absolute;
@@ -51,7 +62,7 @@
 	<script src="res/script/basicparser.js"></script>
 	<script src="res/script/vdisk.js"></script>
 	<script src="res/script/basiccommands.js"></script>
-	<script src="res/script/menu_images.js"></script>	
+	<script src="res/script/menu_images.js"></script>
 	<script src="res/script/menu.js"></script>
 	<script src="res/script/basiccontext.js"></script>
 	<script src="res/script/w64.js"></script>
@@ -133,9 +144,13 @@
 
 		<a width=100% hidden href=# name="imageSaver" id="imageSaver">Save</a>
 		<input hidden name="imageLoader" id="imageLoader" type="file" onclick="this.value=null;"></input>
-		<div id=exporttxt hidden ><input value="Ready" type=button
+		<div id=exporttxt hidden >
+			<br>&nbsp;
+			<input value="READY" type=button
 				onclick="clipboardCallback();">
+				<br>&nbsp;
 				<textarea width=100% id=exporttxtdata></textarea>
+
 		</div>
     </div>
 

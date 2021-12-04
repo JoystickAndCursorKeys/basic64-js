@@ -84,7 +84,7 @@ class Tokenizer {
 	}
 
 	isNumChar( ctx  ) {
-		return ctx.c.match("[0-9]") != null;
+		return ctx.c.match("[0-9\.]") != null;
 	}
 
 	isPadChar( ctx  ) {

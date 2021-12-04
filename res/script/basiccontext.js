@@ -390,7 +390,12 @@ class BasicContext {
     var val=0;
 
     if( p.type=="num" ) {
-      val = parseInt(p.data);
+      if((""+p.data).indexOf(".") >= 0) {
+        val = parseFloat(p.data);
+      }
+      else {
+        val = parseInt(p.data);
+      }
     }
     else if( p.type=="str" ) {
       val = p.data;

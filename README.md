@@ -1,5 +1,5 @@
 # basic64-js
-Commodore 64 Basic Emulator
+Commodore 64 Basic Emulator for in the Browser
 
 Please check the Wiki (https://github.com/JoystickAndCursorKeys/basic64-js/wiki) for more information
 
