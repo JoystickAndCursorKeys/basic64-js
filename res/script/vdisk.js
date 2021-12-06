@@ -40,9 +40,30 @@ class VDisk {
 
   }
 
+  selectDisk( diskId ) {
+    this.currentDisk = diskId;
+    localStorage.setItem( "BJ64_disk_current", diskId );
+  }
+
   ready() {
     return this.initialized;
   }
+
+
+  getDisks() {
+
+    if( !this.initialized ) {
+      return {files:[], title: "null" };
+    }
+
+    var storageName =  "BJ64_disks_list";
+    var json = localStorage.getItem( storageName );
+    var disks = JSON.parse( json );
+
+    return disks;
+
+  }
+
 
   getDir() {
 
@@ -51,6 +72,28 @@ class VDisk {
     }
 
     var storageName =  "BJ64_" + this.currentDisk + "_dir";
+    var json = localStorage.getItem( storageName );
+    var dir = JSON.parse( json );
+
+    //var title = "0 \u0012\""+dir.title+"          \"\u0092 00 2A";
+    var title = dir.title;
+
+    if(!json) {
+      return {files:[], title: title };
+    }
+    dir.title = title;
+    dir.free = 32-dir.files.length;
+    return dir;
+
+  }
+
+  getSelectedDir( x ) {
+
+    if( !this.initialized ) {
+      return {files:[], title: "null" };
+    }
+
+    var storageName =  "BJ64_" + x + "_dir";
     var json = localStorage.getItem( storageName );
     var dir = JSON.parse( json );
 

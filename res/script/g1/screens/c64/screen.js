@@ -84,6 +84,7 @@ class C64Screen {
 			this.mcol1Last = 2;
 			this.mcol2 = 1;
 			this.mcol2Last = 2;
+			this.screenRefresh = false;
 
 			this.spritemcol1 = 5;
 			this.spritemcol1Last = 5;
@@ -506,14 +507,9 @@ this.visibleRomCharMem = false;
 			 }
 		 }
 		 else { //videoRam should point to ScBuffer, does it ever?
-			 /*if( a >= this.videoRam && a< this.videoRam + 1024 ) {
-
-				 var buf  = this.txScBuf;
-				 var addr = a;
-				 var y = Math.floor( (addr / 40) );
-				 var x = addr % 40;
-				 buf[y][x][2] = true;
-			 }*/
+			 if( a >= this.videoRam && a< (this.videoRam + (256*8)) ) {
+				 this.screenRefresh = true;
+			 }
 		 }
 
 		 /*
@@ -1773,6 +1769,7 @@ this.visibleRomCharMem = false;
 						|| this.mcol2Last != this.mcol2
 						|| this.multiColorLast != this.multiColor
 						|| this.useHiresLast != this.useHires
+
 					) {
 				 for( var y=0; y<25; y++) {
 				 	for( var x=0; x<40; x++) {
@@ -1818,6 +1815,7 @@ this.visibleRomCharMem = false;
 						|| this.mcol2Last != this.mcol2
 						|| this.multiColorLast != this.multiColor
 						|| this.useHiresLast != this.useHires
+						|| this.screenRefresh
 					) {
 				 for( var y=0; y<25; y++) {
 				 	for( var x=0; x<40; x++) {
@@ -1832,6 +1830,7 @@ this.visibleRomCharMem = false;
 				 this.mcol2Last = this.mcol2;
 				 this.multiColorLast = this.multiColor;
 				 this.useHiresLast = this.useHires;
+				 this.screenRefresh = false;				 
 			 }
 			 else {
 				 for( var y=0; y<25; y++) {

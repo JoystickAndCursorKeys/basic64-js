@@ -1026,6 +1026,22 @@ class BasicContext {
 
   }
 
+  getDisks() {
+    if( !this.confirmCookies() ) {
+      return null;
+    }
+
+    return this.vDisks.getDisks();
+  }
+
+  selectDisk( id ) {
+    if( !this.confirmCookies() ) {
+      return null;
+    }
+
+    this.vDisks.selectDisk( id );
+  }
+
   getDir() {
     if( !this.confirmCookies() ) {
       return null;
