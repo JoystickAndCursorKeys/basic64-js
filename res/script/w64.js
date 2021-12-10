@@ -250,17 +250,17 @@ class Program {
           evt.preventDefault();
       }
       else if( evt.key == "F1") {
-        c.writeString('list');
+        c.writeString('LIST');
       }
       else if( evt.key == "F2") {
-        c.writeString('run');
+        c.writeString('RUN');
       }
       else if( evt.key == "F5") {
-        c.writeString('load "$":list');
+        c.writeString('LOAD "$":LIST');
         evt.preventDefault();
       }
       else if( evt.key == "F6") {
-        c.writeString('load "*"');
+        c.writeString('LOAD "*"');
         evt.preventDefault();
       }
       else if( evt.key == "I") {
@@ -327,7 +327,8 @@ class Program {
 
         if( evt.key.length == 1) {
             c.clearCursor();
-            this.basiccontext.sendChars( evt.key, false );
+            //console.log("key=",evt);
+            this.basiccontext.sendChars( evt.key.toUpperCase(), false );
             evt.preventDefault();
         }
 

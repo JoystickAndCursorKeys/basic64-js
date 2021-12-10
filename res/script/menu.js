@@ -120,14 +120,13 @@ class Menu {
 
 
     opts = [];
-    opts.push({opt: "listDirectory", display: "Directory" });
-    opts.push({opt: "listDisks",    display: "Disks" });
-    opts.push({opt: "listDirectory", display: "Load" });
-    opts.push({opt: "listDirectory", display: "Save" });
+    opts.push({opt: "listDirectory", display: "Dir & Load" });
+    opts.push({opt: "listDisks",    display: "Swap Disks" });
+//    opts.push({opt: "listDirectory", display: "Save" });
     opts.push({opt: "saveSnapshot", display:  "Save Snapshot" });
-    opts.push({opt: "listDirectory", display: "Format" });
-    opts.push({opt: "listDirectory", display: "Disk Swap" });
-    opts.push({opt: "listDirectory", display: "Rename Disk" });
+//    opts.push({opt: "listDirectory", display: "Format" });
+//    opts.push({opt: "listDirectory", display: "Disk Swap" });
+//    opts.push({opt: "listDirectory", display: "Rename Disk" });
 
     this.options["disk"] = opts;
     this.menus["disk"] = "disk";
@@ -387,8 +386,6 @@ class Menu {
 
     t.nl();t.nl();t.nl();t.nl();t.nl();t.nl();
 
-
-
 		if( !this.selectList ) { //menu
 			if( title != "main" ) {
 	      var menuStr = "*** " + title +" ***";
@@ -437,8 +434,31 @@ class Menu {
 
 			t.nl();
 
+			this.listPage = Math.floor((this.optSelect-2) / 4);
+			if( this.listPage < 0) {
+				this.listPage = 0;
+			}
+			var offset = this.listPage * 4;
+			var printCount = 0;
 			this.curs = [];
-			for( var i=0; i<8 && i<this.listItems.length; i++) {
+			var more = false;
+
+			if( offset > 0 ) {
+				t.pad( x, "..." );
+				t.nl();
+				t.nl();
+			}
+
+			for( var i=0; i<this.listItems.length; i++) {
+
+					if( i< offset ) {
+						continue;
+					}
+
+					if( printCount >= 8 ) {
+						more = true;
+						break;
+					}
 
 					if( i == this.optSelect ) {
 						t.console.setColor(hlColor);
@@ -452,8 +472,12 @@ class Menu {
 
 					t.nl();
 					t.nl();
-			}
 
+					printCount++;
+			}
+			if( more ) {
+				t.pad( x, "..." );
+			}
 			//var selectCursor = this.curs[ this.optSelect ];
 
 			//t.console.setCursorX( selectCursor[0]);
@@ -517,6 +541,7 @@ class Menu {
     this.selectList = true;
 		this.oldOptSelect = this.optSelect;
 		this.optSelect = 0;
+		this.listPage = 0;
 	  this.listTitle = l.title;
 		this.listItems = l.items;
 		this.listResult = -1;
@@ -575,7 +600,7 @@ class Menu {
 
 			if( this.selectList == true ) {
         	this.selectList = false;
-					
+
 					var listIndex = this.optSelect;
 					this.optSelect = this.oldOptSelect;
 
@@ -616,7 +641,7 @@ class Menu {
     else if( evt.key == "Pause" && evt.ctrlKey) {
     }
     else if( evt.key == "ArrowUp") {
-      var options = this.options[ this.menuvmState ];
+      //var options = this.options[ this.menuvmState ];
       if( (this.optSelect) >0 ) {
         this.optSelect--;
         this.rendervmStateText();
@@ -624,12 +649,22 @@ class Menu {
       }
     }
     else if( evt.key == "ArrowDown") {
-      var options = this.options[ this.menuvmState ];
-      if( (this.optSelect+1) < options.length ) {
-        this.optSelect++;
-        this.rendervmStateText();
-        evt.preventDefault();
-      }
+
+			if( this.selectList == true ) {
+				if( (this.optSelect+1) < this.listItems.length ) {
+	        this.optSelect++;
+	        this.rendervmStateText();
+	      }
+			}
+			else
+			{
+				var options = this.options[ this.menuvmState ];
+	      if( (this.optSelect+1) < options.length ) {
+	        this.optSelect++;
+	        this.rendervmStateText();
+	      }
+			}
+			evt.preventDefault();
     }
     else if( evt.key == "F1" || evt.key == "1") {
       this.executeOption( 0 );
@@ -794,8 +829,43 @@ class Menu {
 		this.context.selectDisk( id );
 	}
 
+	select_File( id ) {
+
+		this.endMenu();
+		console.log( id );
+		this.context.load( id );
+
+		this.context.printLine("list");
+
+		var pgm = this.context.getProgramLines();
+		for (const l of pgm )
+			{
+				this.context.listCodeLine( l[2] );
+				console.log(l[2]);
+			}
+	}
+
   do_listDirectory() {
 
+		if( !this.context.confirmCookies() ) {
+      return;
+    }
+
+		var list = { title: "Directory", items: [] };
+		var dir = this.context.getDir();
+		var row;
+
+		for( var i=0; i<dir.files.length; i++) {
+			list.items.push( { name: dir.files[i].fname, id:  dir.files[i].fname } );
+
+		}
+
+		list.callback = "select_File";
+
+		console.log("list dir");
+		this.startList( list );
+
+		/*
 
     if( !this.context.confirmCookies() ) {
       return;
@@ -817,7 +887,7 @@ class Menu {
     this.context.listCodeLine( row );
 
     this.context.printReady();
-
+		*/
 
   }
 

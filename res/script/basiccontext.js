@@ -270,17 +270,17 @@ class BasicContext {
 
   printError( s ) {
 
-    this.console.writeString( "?" + s + " error" + this.onLineStr(), true );
+    this.console.writeString( ("?" + s + " error" + this.onLineStr()).toUpperCase(), true );
 
   }
 
   printLine( s ) {
-    this.sendChars(s, true);
+    this.sendChars(s.toUpperCase(), true);
     this.reverseOn = false;
   }
 
   print( s ) {
-    this.sendChars(s, false);
+    this.sendChars(s.toUpperCase(), false);
     this.reverseOn = false;
   }
 
@@ -289,7 +289,7 @@ class BasicContext {
     for( var i=0; i< s.length; i++) {
       var c=s.charCodeAt( i );
 
-      if( c<32 || c>128) {
+      if( c<32 || (c>128 && c<160)) {
         var col = this.code2colMap[ c ];
         if( !(col===undefined)) {
           this.console.setColor(col);
@@ -376,9 +376,78 @@ class BasicContext {
         if( text != "") {
           text += "\n";
         }
-        text +=  l[2].trim() ;
+        text +=  this.prepareLineForExport( l[2].trim() );
       }
     return text;
+  }
+
+  prepareLineForExport( txt0 ) {
+    var txt;
+    txt = txt0.trim();
+    var dst = "";
+
+    for( var i=0; i<txt.length; i++) {
+      //var c = txt.charAt( i );
+      var c = txt.charCodeAt( i );
+      if( c<31 || c==92 || c>=94 ) {
+        dst += "{"+c+"}"
+      }
+      else {
+        dst += txt.charAt( i );
+      }
+    }
+
+    /*
+      escape 0-31
+      escape 92
+      escape 94 - 255
+      {}  123 + 125
+    */
+    return dst.toLowerCase();
+  }
+
+
+  prepareLineForImport( txt0 ) {
+    var txt;
+    txt = txt0.trim().toUpperCase();
+    var dst = "";
+
+    var i=0; while( i<txt.length ) {
+      //var c = txt.charAt( i );
+      var c = txt.charCodeAt( i );
+      if( c == 123 ) {
+        i++;
+        var num = "";
+        while( i < txt.length ) {
+            c = txt.charCodeAt( i );
+            if( c == 125 ) {
+              i++;
+              break;
+            }
+            num += String.fromCharCode( c );
+            console.log("found ESC seq char " + String.fromCharCode( c ) );
+            console.log("found ESC seq char code " + c);
+            i++;
+        }
+
+        console.log("found ESC seq " + num);
+
+        dst += String.fromCharCode( parseInt( num, 10) );
+      }
+      else {
+        dst += txt.charAt( i );
+        i++;
+      }
+    }
+
+    /*
+      escape 0-31
+      escape 92
+      escape 94 - 255
+      {}  123 + 125
+    */
+    console.log("dst:" + dst);
+    return dst;
   }
 
   getProgramLines() {
@@ -418,7 +487,7 @@ class BasicContext {
       }
       try {
         var commands = this.commands;
-        var nFunName = p.functionName.replaceAll("$","_DLR_");
+        var nFunName = p.functionName.toLowerCase().replaceAll("$","_DLR_");
 
         var stc = commands[ nFunName ];
         if( stc === undefined ) {
@@ -903,6 +972,9 @@ class BasicContext {
         else if( cn == "data" ) {
           //Nothing
         }
+        else if( cn == "rem" ) {
+          //Nothing
+        }
         else if( cn == "for:init" ) {
           this.doForInit( cmd.params[0], cmd.params[1], cmd.params[2], cmd.variable, i, cmds.length );
         }
@@ -933,9 +1005,9 @@ class BasicContext {
         var values = [];
         var pardefs = [];
 
-        var intf = commands[ "_if_" + cmd.statementName];
+        var intf = commands[ "_if_" + cmd.statementName.toLowerCase()];
         if( !( intf === undefined ) ) {
-            pardefs = commands[ "_if_" + cmd.statementName]();
+            pardefs = commands[ "_if_" + cmd.statementName.toLowerCase()]();
         }
         else {
           for( var j=0; j<cmd.params.length; j++) {
@@ -945,7 +1017,8 @@ class BasicContext {
 
         for( var j=0; j<cmd.params.length; j++) {
           if( pardefs[j] == EXPR ) {
-            var p = this.evalExpression( cmd.params[j] );
+
+            var p = this.evalExpression( cmd.params[j] );  //NOTE this one gets the trailing ;, from a "PRINT ;" command
             //console.log("p",p);
             if( p != null ) {
               values.push( { type: "value", value: p } );
@@ -965,13 +1038,13 @@ class BasicContext {
           }
         }
         try {
-          var stc = commands[ "_stat_" + cmd.statementName];
+          var stc = commands[ "_stat_" + cmd.statementName.toLowerCase()];
           if( stc === undefined ) {
             this.printError("syntax");
             return false;
           }
           else {
-              commands[ "_stat_" + cmd.statementName]( values );
+              commands[ "_stat_" + cmd.statementName.toLowerCase()]( values );
           }
 
         }
@@ -1273,14 +1346,14 @@ class BasicContext {
 
     var myProgram = [];
 
-    for( var i = 0; i<lines.length; i++ ) {''
+    for( var i = 0; i<lines.length; i++ ) {
 
-      var line = lines[ i ];
+      var line = this.prepareLineForImport( lines[ i ] );
       var p = new Parser( this.commands );
       p.init();
-      if( line.length > 80 ) {
-        throw "Line to long " + line;
-      }
+      //if( line.length > 80 ) {  TODO move this check into the parser
+      //  throw "Line to long " + line;
+      //}
       var l = p.parseLine( line );
       if( l == null ) {
         continue;
@@ -1309,6 +1382,8 @@ class BasicContext {
   }
 
   handleLineInput( str ) {
+
+    console.log( str );
     var p = new Parser( this.commands );
     p.init();
     try {

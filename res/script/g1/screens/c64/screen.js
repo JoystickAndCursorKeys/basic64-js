@@ -232,32 +232,32 @@ class C64Screen {
 
 
 		 map['@'] = 0;
-		 map['a'] = 1;
-		 map['b'] = 2;
-		 map['c'] = 3;
-		 map['d'] = 4;
-		 map['e'] = 5;
-		 map['f'] = 6;
-		 map['g'] = 7;
-		 map['h'] = 8;
-		 map['i'] = 9;
-		 map['j'] = 10;
-		 map['k'] = 11;
-		 map['l'] = 12;
-		 map['m'] = 13;
-		 map['n'] = 14;
-		 map['o'] = 15;
-		 map['p'] = 16;
-		 map['q'] = 17;
-		 map['r'] = 18;
-		 map['s'] = 19;
-		 map['t'] = 20;
-		 map['u'] = 21;
-		 map['v'] = 22;
-		 map['w'] = 23;
-		 map['x'] = 24;
-		 map['y'] = 25;
-		 map['z'] = 26;
+		 map['A'] = 1;
+		 map['B'] = 2;
+		 map['C'] = 3;
+		 map['D'] = 4;
+		 map['E'] = 5;
+		 map['F'] = 6;
+		 map['G'] = 7;
+		 map['H'] = 8;
+		 map['I'] = 9;
+		 map['J'] = 10;
+		 map['K'] = 11;
+		 map['L'] = 12;
+		 map['M'] = 13;
+		 map['N'] = 14;
+		 map['O'] = 15;
+		 map['P'] = 16;
+		 map['Q'] = 17;
+		 map['R'] = 18;
+		 map['S'] = 19;
+		 map['T'] = 20;
+		 map['U'] = 21;
+		 map['V'] = 22;
+		 map['W'] = 23;
+		 map['X'] = 24;
+		 map['Y'] = 25;
+		 map['Z'] = 26;
 
 		 map['['] = 27;
 		 map[']'] = 29;
@@ -387,15 +387,14 @@ class C64Screen {
 				 var spr = this.sprites;
 				 for( var j=0; j<8; j++) {
 					 spr[ j ].enabled = bits[j];
+					 this.screenRefresh = true;
 					 //console.log("Sprite[" +j+"].enable=" + bits[j])
 				 }
 			 }
 			 else if( nr == 53270)  {
 				 var bits = this._getByteBits( v );
 				 this.multiColor = bits[4];
-				 for( var j=0; j<8; j++) {
-					 //console.log("53269[" +j+"].enable=" + bits[j])
-				 }
+
 			 }
 			 else if( nr == 53265)  {
 				 // Bit 5 is bitmap mode or not
@@ -447,6 +446,7 @@ this.visibleRomCharMem = false;
 					 spr[ j ].multiCol = bits[j];
 					 //console.log("Sprite[" +j+"].multiCol=" + bits[j])
 				 }
+				 this.screenRefresh = true;
 			 }
 			 else if(nr == 53277) {
 				 var bits = this._getByteBits( v );
@@ -455,6 +455,7 @@ this.visibleRomCharMem = false;
 					 spr[ j ].fat = bits[j];
 					 //console.log("Sprite[" +j+"].fat=" + bits[j])
 				 }
+				 this.screenRefresh = true;
 			 }
 			 else if(nr == 53271) {
 				 var bits = this._getByteBits( v );
@@ -463,6 +464,7 @@ this.visibleRomCharMem = false;
 					 spr[ j ].long = bits[j];
 					 //console.log("Sprite[" +j+"].long=" + bits[j])
 				 }
+				 this.screenRefresh = true;
 			 }
 			 else if( nr>53247 && nr < 53264 ) { //sprite pos
 				var sprno = Math.floor((nr -53248) / 2);
@@ -477,7 +479,7 @@ this.visibleRomCharMem = false;
 				else {
 					this.spriteYPos( sprno, v );
 				}
-
+				this.screenRefresh = true;
 			 }
 			 else if( nr>53286 && nr < 53295 ) {
 				var sprno = nr - 53287;
@@ -487,6 +489,7 @@ this.visibleRomCharMem = false;
 				this.spriteCol( sprno, v % 16);
 
 			 }
+			 this.screenRefresh = true;
 		 }
 
 		 this.vicUsed = [];
@@ -960,9 +963,21 @@ this.visibleRomCharMem = false;
 		 }
 	 }
 
-	 _mapASCII2Screen( c0 ) {
+	 _mapASCII2Screen( c ) {
+//https://sta.c64.org/cbm64pettoscr.html
+		 var c0 = c.charCodeAt(0);
+		 if( c0 < 32) { return c0+128; }
+		 else if( c0 >= 32 && c0<64) { return c0; }
+		 else if( c0 >= 64 && c0<96) { return c0-64; }
+		 else if( c0 >= 96 && c0<128) { return c0-32; }
+		 else if( c0 >= 128 && c0<160) { return c0+64; }
+		 else if( c0 >= 160 && c0<192) { return c0-64; }
+		 else if( c0 >= 192 && c0<224) { return c0-128; }
+		 else if( c0 >= 224 && c0<255) { return c0-128; }
+		 else if( c0 == 255 ) { return 94; }
 
-     var c = c0.toLowerCase();
+/*
+     var c = c0; //.toLowerCase();
 
      var map = this.map;
      var index;
@@ -972,10 +987,11 @@ this.visibleRomCharMem = false;
  			if( c == ' ' ) {
  				return -1;
  			}
-       index = 49;
+       index = 63;
      }
 
      return  index;
+		 */
    }
 
 	 setSpriteAddress( no, addr ) {
@@ -1830,7 +1846,7 @@ this.visibleRomCharMem = false;
 				 this.mcol2Last = this.mcol2;
 				 this.multiColorLast = this.multiColor;
 				 this.useHiresLast = this.useHires;
-				 this.screenRefresh = false;				 
+				 this.screenRefresh = false;
 			 }
 			 else {
 				 for( var y=0; y<25; y++) {
