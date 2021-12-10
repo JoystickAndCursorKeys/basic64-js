@@ -190,15 +190,38 @@ class BasicCommands {
     context.runPGM();
   }
 
+  _if_print() {
+      var EXPR = 0, PAR = 1, RAW=2;
+      return [RAW];
+  }
+
   _stat_print( pars ) {
-    //console.log(pars);
+    console.log(pars);
     var context = this.context;
 
+    var lastSemi = false;
+    var value;
+    for( var i=0; i<1; i++) {
+      var exparts = pars[i];
+      var exparts2=[];
+      for( var j=0; j<exparts.length; j++) {
+        if( exparts[j].type == "uniop" && exparts[j].op == ";" && j==(exparts.length-1)) {
+          lastSemi = true;
+        }
+        else {
+          exparts2.push( exparts[j] );
+        }
+      }
+      value = context.evalExpression( { parts: exparts2 } );
+    }
+
+
+
     if( pars.length != 0 ) {
-        context.sendChars( "" + pars[0].value, true );
+        context.sendChars( "" + value, !lastSemi );
     }
     else {
-      context.sendChars( "", true );
+      context.sendChars( "", !lastSemi );
     }
   }
 

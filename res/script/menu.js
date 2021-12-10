@@ -59,6 +59,7 @@ class Menu {
 		uploadElement.addEventListener('change', this.uploader, true);
 
     this.menuvmState = "main";
+		this.listSelector = false;
     this.optSelect = 0;
 
     this.options = {};
@@ -119,20 +120,42 @@ class Menu {
 
 
     opts = [];
-    opts.push({opt: "listDirectory", display: "Directory" });
-
-    opts.push({opt: "listDirectory", display: "Load" });
-    opts.push({opt: "listDirectory", display: "Save" });
+    opts.push({opt: "listDirectory", display: "Dir & Load" });
+    opts.push({opt: "listDisks",    display: "Swap Disks" });
+//    opts.push({opt: "listDirectory", display: "Save" });
     opts.push({opt: "saveSnapshot", display:  "Save Snapshot" });
-    opts.push({opt: "listDirectory", display: "Format" });
-    opts.push({opt: "listDirectory", display: "Disk Swap" });
-    opts.push({opt: "listDirectory", display: "Rename Disk" });
+//    opts.push({opt: "listDirectory", display: "Format" });
+//    opts.push({opt: "listDirectory", display: "Disk Swap" });
+//    opts.push({opt: "listDirectory", display: "Rename Disk" });
 
     this.options["disk"] = opts;
     this.menus["disk"] = "disk";
     this.menuOffset["disk"] = 12;
 
     this.themes =  [];
+
+
+		this.themes.push(
+      {
+        bg: 2,
+        border: 2,
+        fg: 0,
+        hl: 7,
+        logorows: [8,8,7,4],
+        splotches: [[36,2,7],[36,3,7]]
+      }
+    );
+
+		this.themes.push(
+      {
+        bg: 6,
+        border: 6,
+        fg: 14,
+        hl: 1,
+        logorows: [3,3,3,3],
+        splotches: [[36,2,7],[36,3,7]]
+      }
+    );
 
     this.themes.push(
       {
@@ -189,6 +212,17 @@ class Menu {
       }
     );
 
+		this.themes.push(
+			{
+				bg: 11,
+				border: 11,
+				fg: 12,
+				hl: 1,
+				logorows: [0,0,0,0],
+				splotches: [[36,2,7],[36,3,7]]
+			}
+		);
+
     this.themes.push(
       {
         bg: 11,
@@ -199,16 +233,29 @@ class Menu {
         splotches: [[36,2,1],[36,3,1]]
       }
     );
-    this.themes.push(
+
+		this.themes.push(
       {
-        bg: 11,
-        border: 11,
-        fg: 12,
-        hl: 1,
-        logorows: [0,0,0,0],
+        bg: 14,
+        border: 6,
+        fg: 6,
+        hl: 0,
+        logorows: [0,6,3,1],
         splotches: [[36,2,7],[36,3,7]]
       }
     );
+
+		this.themes.push(
+      {
+        bg: 0,
+        border: 5,
+        fg: 13,
+        hl: 1,
+        logorows: [1,1,7,13],
+        splotches: [[36,2,8],[36,3,8]]
+      }
+    );
+
     this.themes.push(
       {
         bg: 6,
@@ -299,6 +346,7 @@ class Menu {
 
 
   rendervmStateText() {
+
     var t=this;
     var context = this.context;
     var theme = this.themes[ this.theme ];
@@ -313,21 +361,11 @@ class Menu {
     var title = t.menus[ t.menuvmState ];
     var options = this.options[ t.menuvmState ];
 
-    var x;
 
-    t.nl();t.nl();t.nl();t.nl();t.nl();t.nl();
+		var x;
 
-    if( title != "main" ) {
-      var menuStr = "*** " + title +" ***";
-      x = 20 - (Math.floor(menuStr.length / 2));
-      t.padLine( x, menuStr );
-    }
-
-
-    t.nl();
-
-    var c=64, xof = 4, yof=1;
-
+		//draw logo
+		var c=64, xof = 4, yof=1;
     var x,y,addr,caddr;
     for( y = 0; y<4; y++) {
       for( x = 0; x<34; x++) {
@@ -344,35 +382,108 @@ class Menu {
       var sp = theme.splotches[i];
         x=sp[0];y=sp[1];caddr = 55296 + x + ((y)*40);this.context.poke( caddr, sp[2] );
     }
+		//end draw logo
 
-    x=this.menuOffset[ t.menuvmState ];
+    t.nl();t.nl();t.nl();t.nl();t.nl();t.nl();
 
-    this.curs = [];
-    for( var i=0; i<8 && i<options.length; i++) {
+		if( !this.selectList ) { //menu
+			if( title != "main" ) {
+	      var menuStr = "*** " + title +" ***";
+	      x = 20 - (Math.floor(menuStr.length / 2));
+	      t.padLine( x, menuStr );
+	    }
 
-        if( i == this.optSelect ) {
-          t.console.setColor(hlColor);
-        }
-        else {
-          t.console.setColor(txtColor);
-        }
-        t.pad( x, " " +(i+1)+ " - " + options[i].display );
+	    t.nl();
 
-        this.curs.push( t.console.getCursorPos() );
+	    x=this.menuOffset[ t.menuvmState ];
 
-        t.nl();
-        t.nl();
-    }
+	    this.curs = [];
+	    for( var i=0; i<8 && i<options.length; i++) {
 
-    var selectCursor = this.curs[ this.optSelect ];
+	        if( i == this.optSelect ) {
+	          t.console.setColor(hlColor);
+	        }
+	        else {
+	          t.console.setColor(txtColor);
+	        }
+	        t.pad( x, " " +(i+1)+ " - " + options[i].display );
 
-    t.console.setCursorX( selectCursor[0]);
-    t.console.setCursorY( selectCursor[1]);
+	        this.curs.push( t.console.getCursorPos() );
 
-    //t.padLine( x, " F2 - Load/Save"); t.nl();
-    //t.padLine( x, " F3 - Clipboard"); t.nl();
-    //t.padLine( x, " F4 - Snapshot");  t.nl();
-    //t.padLine( x, " F5 - Settings");  t.nl();
+	        t.nl();
+	        t.nl();
+	    }
+
+	    //var selectCursor = this.curs[ this.optSelect ];
+	    //t.console.setCursorX( selectCursor[0]);
+	    //t.console.setCursorY( selectCursor[1]);
+
+		}
+		else { //list
+
+
+
+	    /*this.selectList = true;
+			this.oldOptSelect = this.optSelect;
+			this.items = l.items;
+			this.listResult = -1;*/
+
+			var menuStr = "*** " + this.listTitle +" ***";
+			x = 20 - (Math.floor(menuStr.length / 2));
+			t.padLine( x, menuStr );
+
+			t.nl();
+
+			this.listPage = Math.floor((this.optSelect-2) / 4);
+			if( this.listPage < 0) {
+				this.listPage = 0;
+			}
+			var offset = this.listPage * 4;
+			var printCount = 0;
+			this.curs = [];
+			var more = false;
+
+			if( offset > 0 ) {
+				t.pad( x, "..." );
+				t.nl();
+				t.nl();
+			}
+
+			for( var i=0; i<this.listItems.length; i++) {
+
+					if( i< offset ) {
+						continue;
+					}
+
+					if( printCount >= 8 ) {
+						more = true;
+						break;
+					}
+
+					if( i == this.optSelect ) {
+						t.console.setColor(hlColor);
+					}
+					else {
+						t.console.setColor(txtColor);
+					}
+					t.pad( x, " " +(i+1)+ " - " + this.listItems[i].id );
+
+					this.curs.push( t.console.getCursorPos() );
+
+					t.nl();
+					t.nl();
+
+					printCount++;
+			}
+			if( more ) {
+				t.pad( x, "..." );
+			}
+			//var selectCursor = this.curs[ this.optSelect ];
+
+			//t.console.setCursorX( selectCursor[0]);
+			//t.console.setCursorY( selectCursor[1]);
+
+		}
   }
 
 
@@ -424,6 +535,22 @@ class Menu {
 
   }
 
+
+	startList( l ) {
+
+    this.selectList = true;
+		this.oldOptSelect = this.optSelect;
+		this.optSelect = 0;
+		this.listPage = 0;
+	  this.listTitle = l.title;
+		this.listItems = l.items;
+		this.listResult = -1;
+		this.listCallback = l.callback;
+
+		this.rendervmStateText();
+  }
+
+
   message( m ) {
     this.context.printLine("*** " + m);
   }
@@ -470,18 +597,40 @@ class Menu {
   handleKey( evt ) {
 
     if( evt.key == "Enter") {
-      var options = this.options[ this.menuvmState ];
 
-      console.log( this.optSelect );
+			if( this.selectList == true ) {
+        	this.selectList = false;
 
-      var opt = options[ this.optSelect ];
+					var listIndex = this.optSelect;
+					this.optSelect = this.oldOptSelect;
 
-      console.log( opt );
-      this[ "do_" +  opt.opt ]();
+					this.rendervmStateText();
+
+					console.log("List selected " + listIndex );
+					console.log("List selected item " + this.listItems[listIndex].id );
+
+					this[ this.listCallback ]( this.listItems[listIndex].id );
+
+      }
+			else {
+				var options = this.options[ this.menuvmState ];
+
+	      console.log( this.optSelect );
+
+	      var opt = options[ this.optSelect ];
+
+	      console.log( opt );
+	      this[ "do_" +  opt.opt ]();
+			}
     }
     if( evt.key == "Escape") {
 
-      if( this.menuvmState == "main" ) {
+			if( this.selectList == true ) {
+        this.selectList = false;
+				this.optSelect = this.oldOptSelect;
+				this.rendervmStateText();
+      }
+      else if( this.menuvmState == "main" ) {
         this.endMenu();
       }
       else {
@@ -492,7 +641,7 @@ class Menu {
     else if( evt.key == "Pause" && evt.ctrlKey) {
     }
     else if( evt.key == "ArrowUp") {
-      var options = this.options[ this.menuvmState ];
+      //var options = this.options[ this.menuvmState ];
       if( (this.optSelect) >0 ) {
         this.optSelect--;
         this.rendervmStateText();
@@ -500,12 +649,22 @@ class Menu {
       }
     }
     else if( evt.key == "ArrowDown") {
-      var options = this.options[ this.menuvmState ];
-      if( (this.optSelect+1) < options.length ) {
-        this.optSelect++;
-        this.rendervmStateText();
-        evt.preventDefault();
-      }
+
+			if( this.selectList == true ) {
+				if( (this.optSelect+1) < this.listItems.length ) {
+	        this.optSelect++;
+	        this.rendervmStateText();
+	      }
+			}
+			else
+			{
+				var options = this.options[ this.menuvmState ];
+	      if( (this.optSelect+1) < options.length ) {
+	        this.optSelect++;
+	        this.rendervmStateText();
+	      }
+			}
+			evt.preventDefault();
     }
     else if( evt.key == "F1" || evt.key == "1") {
       this.executeOption( 0 );
@@ -646,9 +805,67 @@ class Menu {
 
   }
 
+	do_listDisks() {
+
+    if( !this.context.confirmCookies() ) {
+      return;
+    }
+
+		var list = { title: "Select Disk", items: [] };
+
+		var disks = this.context.getDisks();
+		for( var i=0; i<disks.length; i++) {
+			list.items.push( { name: disks[i], id:  disks[i] } );
+		}
+
+		list.callback = "select_Disk";
+
+		this.startList( list );
+
+	}
+
+	select_Disk( id ) {
+
+		this.context.selectDisk( id );
+	}
+
+	select_File( id ) {
+
+		this.endMenu();
+		console.log( id );
+		this.context.load( id );
+
+		this.context.printLine("list");
+
+		var pgm = this.context.getProgramLines();
+		for (const l of pgm )
+			{
+				this.context.listCodeLine( l[2] );
+				console.log(l[2]);
+			}
+	}
 
   do_listDirectory() {
 
+		if( !this.context.confirmCookies() ) {
+      return;
+    }
+
+		var list = { title: "Directory", items: [] };
+		var dir = this.context.getDir();
+		var row;
+
+		for( var i=0; i<dir.files.length; i++) {
+			list.items.push( { name: dir.files[i].fname, id:  dir.files[i].fname } );
+
+		}
+
+		list.callback = "select_File";
+
+		console.log("list dir");
+		this.startList( list );
+
+		/*
 
     if( !this.context.confirmCookies() ) {
       return;
@@ -670,7 +887,7 @@ class Menu {
     this.context.listCodeLine( row );
 
     this.context.printReady();
-
+		*/
 
   }
 

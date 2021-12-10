@@ -98,25 +98,8 @@ class Parser {
 
   init() {
 
-	  this.CTRL_KW = ["if","then","goto","and", "not", "or",  "gosub", "return", "for", "to", "next", "step", "data" ];
+	  this.CTRL_KW = ["IF","THEN","GOTO","AND", "NOT", "OR",  "GOSUB", "RETURN", "FOR", "TO", "NEXT", "STEP", "DATA", "REM" ];
     this.SHORTCUT_KW = ["?"];
-    this.INT_STAT =
-     {
-       "print": {
-          params: {
-            0: { type: "int", mandatory: true, keyword: null },
-            1: { type: "int", mandatory: true, keyword: "to" }
-          }
-        },
-				"color": {
-           params: {
-             0: { type: "int", mandatory: true, keyword: null },
-             1: { type: "int", mandatory: false, keyword: "," },
-						 2: { type: "int", mandatory: false, keyword: "," }
-           }
-         },
-       "input": { parse: 'parseInput' },
-     };
 
      this.KEYWORDS = this.commands.getStatements();
      for( var i=0; i<this.CTRL_KW.length; i++) {
@@ -191,9 +174,9 @@ class Parser {
   			}
 			}
 
-      if( ( token.type == "name"  && token.data == "or" ) ||
-        ( token.type == "name"  && token.data == "and" ) ||
-        ( token.type == "name"  && token.data == "not" )) {
+      if( ( token.type == "name"  && token.data == "OR" ) ||
+        ( token.type == "name"  && token.data == "AND" ) ||
+        ( token.type == "name"  && token.data == "NOT" )) {
           token.type = "bop";
         }
 
@@ -554,7 +537,7 @@ class Parser {
 					}
 
 
-          if( command.controlKW == "goto") {
+          if( command.controlKW == "GOTO") {
             var num = -1;
 
             token = tokens.shift();
@@ -574,7 +557,7 @@ class Parser {
             commands.push( command );
 
           }
-          else if( command.controlKW == "for") {
+          else if( command.controlKW == "FOR") {
 
             var variable, expr_from, expr_to, expr_step;
             var endTokens = [];
@@ -594,25 +577,25 @@ class Parser {
             }
 
             endTokens = [];
-            endTokens.push( { type: "name", data: "to" });
+            endTokens.push( { type: "name", data: "TO" });
 
 						expr_from = this.parseExpression( context, endTokens );
 
             token = tokens.shift();
-            if( !( token.type == "name" && token.data == "to" ) ) {
+            if( !( token.type == "name" && token.data == "TO" ) ) {
               this.Exception( context, "For expects 'to', not found, found " + token.type+"/"+token.data);
             }
 
             endTokens = [];
             endTokens.push( { type: "cmdsep", data: ":" });
-            endTokens.push( { type: "name", data: "step" });
+            endTokens.push( { type: "name", data: "STEP" });
 
 						expr_to = this.parseExpression( context, endTokens );
             expr_step = { parts: [ { data: "1", op: null, type: "num"} ] };
 
             token = tokens.shift();
             if( !( token === undefined ) ) {
-              if( token.type == "name" && token.data == "step") {
+              if( token.type == "name" && token.data == "STEP") {
 
                   endTokens = [];
                   endTokens.push( { type: "cmdsep", data: ":" });
@@ -635,7 +618,7 @@ class Parser {
             console.log("command=", command);
 
           }
-          else if( command.controlKW == "next") {
+          else if( command.controlKW == "NEXT") {
 
             var variable;
             //var endTokens = [];
@@ -645,7 +628,7 @@ class Parser {
             commands.push( command );
 
           }
-          else if( command.controlKW == "if") {
+          else if( command.controlKW == "IF") {
 
             var expr1, expr2, comp;
             var endTokens = [];
@@ -664,7 +647,7 @@ class Parser {
             comp = token.data;
 
             endTokens = [];
-            endTokens.push( { type: "name", data: "then" });
+            endTokens.push( { type: "name", data: "THEN" });
 
             var expr2 = this.parseExpression( context, endTokens );
             token = tokens.shift();
@@ -680,7 +663,7 @@ class Parser {
             commands.push( command );
 
           }
-          else if( command.controlKW == "data") {
+          else if( command.controlKW == "DATA") {
 
             var dataArray = [];
             var endTokens;
@@ -719,6 +702,10 @@ class Parser {
             command.params=dataArray;
             commands.push( command );
 
+          }
+          else if( command.controlKW == "REM") {
+            commands.push( command );
+            tokens = [];
           }
           else {
             this.Exception( context, command.controlKW + " not implemented");
