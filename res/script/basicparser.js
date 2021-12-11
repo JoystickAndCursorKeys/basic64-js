@@ -531,13 +531,14 @@ class Parser {
 				if( cmdType == "control" ) {
 					cmdType = "control";
 					command.type = cmdType;
-					command.controlKW = nameToken;
+          var controlToken = nameToken;
+					command.controlKW = nameToken.toLowerCase();
           if( token.type != "@@@notoken") {
 						tokens.unshift( token );
 					}
 
 
-          if( command.controlKW == "GOTO") {
+          if( controlToken == "GOTO") {
             var num = -1;
 
             token = tokens.shift();
@@ -557,7 +558,7 @@ class Parser {
             commands.push( command );
 
           }
-          else if( command.controlKW == "FOR") {
+          else if( controlToken == "FOR") {
 
             var variable, expr_from, expr_to, expr_step;
             var endTokens = [];
@@ -618,17 +619,55 @@ class Parser {
             console.log("command=", command);
 
           }
-          else if( command.controlKW == "NEXT") {
+          else if( controlToken == "NEXT") {
 
             var variable;
-            //var endTokens = [];
-            //endTokens.push( { type: "cmdsep", data: "@@@all" });
 
-            command.controlKW = "for:next";
-            commands.push( command );
+            var explicit = false;
+            while( true ) {
+
+              var token = tokens.shift();
+              if( ! token ) {
+                break;
+              }
+              if( token.type == "cmdsep" ) {
+                break;
+              }
+
+              if( token.type != "name" ) {
+                throw "next expected var or nothing";
+              }
+
+              var nextcommand = {
+                controlKW: "for:next",
+                nextVar: token.data,
+                lineNumber: command.lineNumber,
+                type: command.type
+              };
+
+              commands.push( nextcommand );
+              explicit = true;
+
+              var token = tokens.shift();
+              if( ! token ) {
+                break;
+              }
+              if( token.type == "cmdsep" ) {
+                break;
+              }
+              if( !( token.type == "sep" && token.data == "," )) {
+                throw "expected comma, found " + token.type + "/"+token.data;
+              }
+            }
+
+            if( ! explicit ) {
+              command.controlKW = "for:next";
+              command.nextVar = null;
+              commands.push( command );
+            }
 
           }
-          else if( command.controlKW == "IF") {
+          else if( controlToken == "IF") {
 
             var expr1, expr2, comp;
             var endTokens = [];
@@ -663,7 +702,7 @@ class Parser {
             commands.push( command );
 
           }
-          else if( command.controlKW == "DATA") {
+          else if( controlToken == "DATA") {
 
             var dataArray = [];
             var endTokens;
@@ -703,7 +742,7 @@ class Parser {
             commands.push( command );
 
           }
-          else if( command.controlKW == "REM") {
+          else if( controlToken == "REM") {
             commands.push( command );
             tokens = [];
           }

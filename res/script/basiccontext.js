@@ -15,7 +15,7 @@ class BasicContext {
     this.data = [];
     this.kbBuffer = [];
 
-    this.forContext = {}
+    this.forContext = { default:[] }
 
     this.vDisks = new VDisk( );
 
@@ -881,7 +881,7 @@ class BasicContext {
     }
     this.vars[ varName ] = this.evalExpression( from );
 
-    ctx.default = varName;
+    ctx.default.push( varName );
     ctx[varName] = {};
 
     var ctxv = ctx[varName];
@@ -915,9 +915,16 @@ class BasicContext {
     //console.log("var:"+varName + " set to " + this.vars[ varName ]);
   }
 
-  doForNext() {
+  doForNext( nextVarName ) {
     var ctx = this.forContext;
-    var varName = ctx.default;
+    if( ctx.default.length == 0 ) {
+      this.printError("next without for");
+    }
+    var varName = ctx.default[ctx.default.length-1];
+    if( nextVarName  != null ) {
+      varName = nextVarName;
+    }
+
 
     var ctxv = ctx[varName];
 
@@ -936,6 +943,8 @@ class BasicContext {
         return ctxv.jumpTo;
       }
     }
+
+    ctx.default.pop();
     return -1;
   }
 
@@ -979,7 +988,9 @@ class BasicContext {
           this.doForInit( cmd.params[0], cmd.params[1], cmd.params[2], cmd.variable, i, cmds.length );
         }
         else if( cn == "for:next" ) {
-          var jump = this.doForNext();
+          
+          var jump = this.doForNext( cmd.nextVar );
+
           if( !(jump === -1 ) ) {
 
             if( jump.line != -1 ) {
