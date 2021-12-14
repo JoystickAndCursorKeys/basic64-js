@@ -357,7 +357,8 @@ class Parser {
     }
 
 		var expression = {
-					parts: []
+					parts: [],
+          negate: false
 		};
 
 		var index = 0;
@@ -463,6 +464,43 @@ class Parser {
 			return null;
 		}
 
+    for( var i=0; i<expression.parts.length; i++ ) {
+
+      var part = expression.parts[ i ];
+      if( i>0 && (part.op == "*" || part.op == "/" ) ) {
+        var prevPart = expression.parts[ i-1 ];
+
+        var subExpr = {
+          negate: false,
+          type: "expr",
+          parts: [],
+          op: prevPart.op
+        };
+
+        subExpr.parts[ 0 ] = prevPart;
+        subExpr.parts[ 0 ].op = null;
+        subExpr.parts[ 1 ] = part;
+
+        expression.parts[i-1] = null;
+        expression.parts[ i ] = subExpr;
+
+      }
+    }
+
+    var expression2 = expression;
+    expression = {
+          parts: [],
+          negate: false
+    };
+    for( var i=0; i<expression2.parts.length; i++ ) {
+
+      var part = expression2.parts[ i ];
+      if( part != null ) {
+        expression.parts.push( part );
+      }
+    }
+
+//    console.log(expression);
 		return expression;
 	}
 
@@ -531,13 +569,14 @@ class Parser {
 				if( cmdType == "control" ) {
 					cmdType = "control";
 					command.type = cmdType;
-					command.controlKW = nameToken;
+          var controlToken = nameToken;
+					command.controlKW = nameToken.toLowerCase();
           if( token.type != "@@@notoken") {
 						tokens.unshift( token );
 					}
 
 
-          if( command.controlKW == "GOTO") {
+          if( controlToken == "GOTO") {
             var num = -1;
 
             token = tokens.shift();
@@ -557,7 +596,7 @@ class Parser {
             commands.push( command );
 
           }
-          else if( command.controlKW == "FOR") {
+          else if( controlToken == "FOR") {
 
             var variable, expr_from, expr_to, expr_step;
             var endTokens = [];
@@ -618,17 +657,55 @@ class Parser {
             console.log("command=", command);
 
           }
-          else if( command.controlKW == "NEXT") {
+          else if( controlToken == "NEXT") {
 
             var variable;
-            //var endTokens = [];
-            //endTokens.push( { type: "cmdsep", data: "@@@all" });
 
-            command.controlKW = "for:next";
-            commands.push( command );
+            var explicit = false;
+            while( true ) {
+
+              var token = tokens.shift();
+              if( ! token ) {
+                break;
+              }
+              if( token.type == "cmdsep" ) {
+                break;
+              }
+
+              if( token.type != "name" ) {
+                throw "next expected var or nothing";
+              }
+
+              var nextcommand = {
+                controlKW: "for:next",
+                nextVar: token.data,
+                lineNumber: command.lineNumber,
+                type: command.type
+              };
+
+              commands.push( nextcommand );
+              explicit = true;
+
+              var token = tokens.shift();
+              if( ! token ) {
+                break;
+              }
+              if( token.type == "cmdsep" ) {
+                break;
+              }
+              if( !( token.type == "sep" && token.data == "," )) {
+                throw "expected comma, found " + token.type + "/"+token.data;
+              }
+            }
+
+            if( ! explicit ) {
+              command.controlKW = "for:next";
+              command.nextVar = null;
+              commands.push( command );
+            }
 
           }
-          else if( command.controlKW == "IF") {
+          else if( controlToken == "IF") {
 
             var expr1, expr2, comp;
             var endTokens = [];
@@ -663,7 +740,7 @@ class Parser {
             commands.push( command );
 
           }
-          else if( command.controlKW == "DATA") {
+          else if( controlToken == "DATA") {
 
             var dataArray = [];
             var endTokens;
@@ -703,7 +780,7 @@ class Parser {
             commands.push( command );
 
           }
-          else if( command.controlKW == "REM") {
+          else if( controlToken == "REM") {
             commands.push( command );
             tokens = [];
           }

@@ -122,6 +122,7 @@ class Program {
     var bcontext = this.basiccontext;
     var running = bcontext.isRunning();
     var menuScreen = bcontext.isMenu();
+    var input = bcontext.isInput();
     var modifierKey = false;
 
     //console.log( evt );
@@ -164,12 +165,15 @@ class Program {
     }
 
     if( ! running && !menuScreen ) {
-      this.handleScrEditKeys( evt, bcontext );
+      this.handleScrEditKeys( evt, bcontext, false );
+      return;
+    }
+    if( running && !menuScreen && input ) {
+      this.handleScrEditKeys( evt, bcontext, true );
       return;
     }
     else if( menuScreen ) {
       bcontext.handleMenuKey( evt );
-
       return;
     }
 
@@ -197,7 +201,7 @@ class Program {
   }
 
 
-  handleScrEditKeys( evt, bcontext ) {
+  handleScrEditKeys( evt, bcontext, isInputCommand ) {
 
     if( evt.type == 'keydown' ) {
 
@@ -208,6 +212,7 @@ class Program {
 
       if( evt.key == "Enter") {
 
+
           c.clearCursor();
           var line=c.getCurrentLine();
 
@@ -215,7 +220,8 @@ class Program {
           stringMode = false;
 
           c.writeString("", true);
-          bcontext.handleLineInput( line );
+
+          bcontext.handleLineInput( line, isInputCommand );
 
       }
       else if( evt.key == "Pause" && evt.ctrlKey) {

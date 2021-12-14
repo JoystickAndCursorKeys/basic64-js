@@ -87,6 +87,11 @@ class BasicCommands {
       return [PAR];
   }
 
+  _if_input() {
+      var EXPR = 0, PAR = 1, RAW=2;
+      return [PAR, PAR, PAR, PAR, PAR, PAR, PAR, PAR, PAR, PAR];
+  }
+
   _if_list() {
       var EXPR = 0, PAR = 1, RAW=2;
       return [RAW];
@@ -117,9 +122,9 @@ class BasicCommands {
       }
   }
 
-
   _stat_get( pars ) {
     var p0 = pars[ 0 ];
+
     if( p0.type != "var" ) {
       throw "GET: Param 0 is not a var";
     }
@@ -127,6 +132,23 @@ class BasicCommands {
     var k = this.context.pullKeyBuffer();
     if( k<0 ) { this.context.setVar(p0.value, ""); }
     else { this.context.setVar(p0.value, String.fromCharCode( k ) ); }
+  }
+
+  _stat_input( pars ) {
+
+    var vars = [];
+
+    for( var i=0; i<pars.length; i++) {
+      console.log( "PARS["+i+"]", pars[i] );
+      if( pars[i].type != "var" ) {
+
+        throw "INPUT: Param " + i +" is not a var";
+      }
+      vars.push( pars[i].value );
+    }
+
+    this.context.startConsoleDataInput( vars );
+
   }
 
   _stat_load( pars ) {
@@ -195,34 +217,62 @@ class BasicCommands {
       return [RAW];
   }
 
-  _stat_print( pars ) {
-    console.log(pars);
-    var context = this.context;
+  isNumber(value) {
+    return typeof value === 'number' && isFinite(value);
+  }
+  normalizeIfNumber( x )  {
+    if( this.isNumber( x ) ) {
+      if ( x > 0 ) {
+        return " " + x;
+      }
+    }
+    return "" + x;
+  }
 
-    var lastSemi = false;
+  _stat_print( pars ) {
+
+    var context = this.context;
+    if( pars.length == 0 ) {
+      context.sendChars( "", true );
+      return;
+    }
+    console.log(pars);
+
+    var newLine = true;
     var value;
-    for( var i=0; i<1; i++) {
+    for( var i=0; i<pars.length; i++) {
+
+      newLine = true;
+      if( i<(pars.length-1)) {
+        newLine = false;
+      }
+
+      console.log( "i=" +i+ " newline: " + newLine);
+      if( i>0) { context.sendChars( "         " , false ); }
+
       var exparts = pars[i];
       var exparts2=[];
       for( var j=0; j<exparts.length; j++) {
-        if( exparts[j].type == "uniop" && exparts[j].op == ";" && j==(exparts.length-1)) {
-          lastSemi = true;
+        if( exparts[j].type == "uniop" && exparts[j].op == ";" && j==(exparts.length-1)
+            && (i == pars.length-1)) {
+              console.log( "i="+i+" newline: set to false");
+          newLine = false;
         }
         else {
           exparts2.push( exparts[j] );
         }
       }
       value = context.evalExpression( { parts: exparts2 } );
+      console.log( " newline: " + newLine);
+      if( i == 0) {
+        context.sendChars( this.normalizeIfNumber( value ), newLine );
+      }
+      else {
+        context.sendChars( "" + value , newLine );
+      }
+
     }
 
-
-
-    if( pars.length != 0 ) {
-        context.sendChars( "" + value, !lastSemi );
-    }
-    else {
-      context.sendChars( "", !lastSemi );
-    }
   }
 
   _stat_poke( pars ) {
