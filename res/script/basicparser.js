@@ -357,7 +357,8 @@ class Parser {
     }
 
 		var expression = {
-					parts: []
+					parts: [],
+          negate: false
 		};
 
 		var index = 0;
@@ -463,6 +464,43 @@ class Parser {
 			return null;
 		}
 
+    for( var i=0; i<expression.parts.length; i++ ) {
+
+      var part = expression.parts[ i ];
+      if( i>0 && (part.op == "*" || part.op == "/" ) ) {
+        var prevPart = expression.parts[ i-1 ];
+
+        var subExpr = {
+          negate: false,
+          type: "expr",
+          parts: [],
+          op: prevPart.op
+        };
+
+        subExpr.parts[ 0 ] = prevPart;
+        subExpr.parts[ 0 ].op = null;
+        subExpr.parts[ 1 ] = part;
+
+        expression.parts[i-1] = null;
+        expression.parts[ i ] = subExpr;
+
+      }
+    }
+
+    var expression2 = expression;
+    expression = {
+          parts: [],
+          negate: false
+    };
+    for( var i=0; i<expression2.parts.length; i++ ) {
+
+      var part = expression2.parts[ i ];
+      if( part != null ) {
+        expression.parts.push( part );
+      }
+    }
+
+//    console.log(expression);
 		return expression;
 	}
 
