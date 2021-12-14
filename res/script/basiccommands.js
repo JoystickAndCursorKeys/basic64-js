@@ -87,6 +87,11 @@ class BasicCommands {
       return [PAR];
   }
 
+  _if_input() {
+      var EXPR = 0, PAR = 1, RAW=2;
+      return [PAR, PAR, PAR, PAR, PAR, PAR, PAR, PAR, PAR, PAR];
+  }
+
   _if_list() {
       var EXPR = 0, PAR = 1, RAW=2;
       return [RAW];
@@ -117,9 +122,9 @@ class BasicCommands {
       }
   }
 
-
   _stat_get( pars ) {
     var p0 = pars[ 0 ];
+
     if( p0.type != "var" ) {
       throw "GET: Param 0 is not a var";
     }
@@ -127,6 +132,23 @@ class BasicCommands {
     var k = this.context.pullKeyBuffer();
     if( k<0 ) { this.context.setVar(p0.value, ""); }
     else { this.context.setVar(p0.value, String.fromCharCode( k ) ); }
+  }
+
+  _stat_input( pars ) {
+
+    var vars = [];
+
+    for( var i=0; i<pars.length; i++) {
+      console.log( "PARS["+i+"]", pars[i] );
+      if( pars[i].type != "var" ) {
+
+        throw "INPUT: Param " + i +" is not a var";
+      }
+      vars.push( pars[i].value );
+    }
+
+    this.context.startConsoleDataInput( vars );
+
   }
 
   _stat_load( pars ) {

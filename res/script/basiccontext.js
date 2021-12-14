@@ -7,6 +7,7 @@ class BasicContext {
     this.program = [];
     this.cursorCount = 0;
     this.runFlag = false;
+    this.inputFlag = false;
 
     var ctx = this.context;
     var c = this.console;
@@ -56,6 +57,7 @@ class BasicContext {
   setProgram( pgm ) {
     this.program = pgm;
     this.runFlag = false;
+    this.inputFlag = false;
     this.console.clearCursor();
   }
 
@@ -66,6 +68,7 @@ class BasicContext {
   getProgramState() {
     return {
       runFlag: this.runFlag,
+      inputFlag: this.inputFlag,
       vars: this.vars,
       forContext: this.forContext,
       runPointer: this.runPointer,
@@ -75,6 +78,7 @@ class BasicContext {
 
   setProgramState( pgmState ) {
       this.runFlag = pgmState.runFlag;
+      this.inputFlag = pgmState.inputFlag;
       this.vars = pgmState.vars;
       this.forContext = pgmState.forContext;
       this.runPointer = pgmState.runPointer;
@@ -358,6 +362,9 @@ class BasicContext {
     this.vpoke(53272,21);
     this.vpoke(53265,155);
     this.console.setColor(14);
+    this.inputFlag = false;
+    this.runFlag = false;
+
 
     this.printLine("");
     if( hard ) {
@@ -602,10 +609,22 @@ class BasicContext {
     return val;
   }
 
+  cycleToNext() {
+    var c = this.console;
+    var p = this.program;
+
+    this.runPointer ++;
+    if( this.runPointer >=  p.length ) {
+      this.runFlag = false;
+      c.clearCursor();
+      this.printLine("ready.");
+    }
+  }
+
   cycle() {
     var c = this.console;
 
-    if( !this.runFlag || this.menuFocus ) {
+    if( !this.runFlag || this.menuFocus || this.inputFlag  ) {
       if(this.cursorCount++>15) {
         this.cursorCount = 0;
 
@@ -628,6 +647,11 @@ class BasicContext {
           this.printLine("ready.");
           return;
         }
+
+        if( this.inputFlag ) {
+            break;
+        }
+
         if( !this.gotoFlag) {
           this.runPointer ++;
           if( this.runPointer >=  p.length ) {
@@ -678,6 +702,11 @@ class BasicContext {
   isRunning() {
     return this.runFlag;
   }
+
+  isInput() {
+    return this.inputFlag;
+  }
+
 
 
   readData() {
@@ -825,6 +854,7 @@ class BasicContext {
 
     if( this.program.length > 0) {
       this.runFlag = true;
+      this.inputFlag = false;
       c.clearCursor();
       this.runPointer = 0;
       this.runPointer2 = 0;
@@ -988,7 +1018,7 @@ class BasicContext {
           this.doForInit( cmd.params[0], cmd.params[1], cmd.params[2], cmd.variable, i, cmds.length );
         }
         else if( cn == "for:next" ) {
-          
+
           var jump = this.doForNext( cmd.nextVar );
 
           if( !(jump === -1 ) ) {
@@ -1036,7 +1066,7 @@ class BasicContext {
             }
           }
           else if( pardefs[j] == PAR ) {
-            var varName = cmd.params[0].parts[0].data;
+            var varName = cmd.params[j].parts[0].data;
             var varType = "num";
             if( varName.indexOf("$") > -1) {
               varType = "str";
@@ -1392,7 +1422,55 @@ class BasicContext {
     this.printLine("ready.");
   }
 
-  handleLineInput( str ) {
+
+  startConsoleDataInput( vars ) {
+    console.log("inputvars=",vars);
+    this.inputFlag = true;
+    this.inputVars = vars;
+    this.inputVarsPointer = 0;
+    this.sendChars( "? " , false);
+  }
+
+
+
+  handleLineInput( str, isInputCommand ) {
+
+    if( isInputCommand ) {
+        var input = str.substr(2);
+
+        console.log("INPUT: input, name");
+        console.log( this.inputVarsPointer );
+        console.log( this.inputVars );
+
+        console.log( input );
+        console.log( this.inputVars[ this.inputVarsPointer ] );
+
+        var vName = this.inputVars[ this.inputVarsPointer ];
+        if( vName.indexOf("$") >-1 ) {
+            this.setVar( this.inputVars[ this.inputVarsPointer ], input.trim() );
+        }
+        else {
+          var num = parseFloat( input.trim() );
+
+          if( isNaN( num ) ) {
+            this.printLine("?redo from start");
+            this.sendChars( "? " , false);
+            return;
+          }
+          this.setVar( this.inputVars[ this.inputVarsPointer ], num );
+        }
+
+        this.inputVarsPointer++;
+        if( this.inputVarsPointer >= this.inputVars.length ) {
+          this.inputFlag = false;
+          this.cycleToNext();
+        }
+        else {
+          this.sendChars( "?? " , false);
+        }
+
+        return;
+    }
 
     console.log( str );
     var p = new Parser( this.commands );
