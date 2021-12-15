@@ -53,7 +53,7 @@ class Menu {
     this.uploader = new Uploader( );
 
     var uploadElement = document.getElementById( "imageLoader" );
-    this.run = false;
+    this.runImportedPGMFlag = false;
     this.uploader.setCallback( this, "notset" );
 
 		uploadElement.addEventListener('change', this.uploader, true);
@@ -86,6 +86,7 @@ class Menu {
 
     opts = [];
     opts.push({opt: "copyPGMtoClip", display: "Copy Program to Clipboard" });
+	  opts.push({opt: "copyPGMURLtoClip", display: "Copy Program URL to Clipboard" });
     opts.push({opt: "pastePGMFromClip", display: "Overwrite Program with Clipboard" });
     this.options["clipboard"] = opts;
     this.menus["clipboard"] = "clipboard";
@@ -99,13 +100,14 @@ class Menu {
     this.menuOffset["basic"] = 7;
 
     opts = [];
-    opts.push({opt: "exportVDisk", display: "Export Virtual Disk" });
-    opts.push({opt: "importVDisk", display: "Import Virtual Disk" });
-    opts.push({opt: "exportBas", display: "Export Basic Program" });
-    opts.push({opt: "importBas", display: "Import Basic Program" });
+		opts.push({opt: "importBas", display: "Import Basic Program" });
     opts.push({opt: "importBasRun", display: "Import/Run Basic Program" });
-    opts.push({opt: "exportSnapshot", display: "Export Snapshot" });
+    opts.push({opt: "exportBas", display: "Export Basic Program" });
     opts.push({opt: "importSnapshot", display: "Import Snapshot" });
+    opts.push({opt: "exportSnapshot", display: "Export Snapshot" });
+    opts.push({opt: "importVDisk", display: "Import Virtual Disk" });
+		opts.push({opt: "exportVDisk", display: "Export Virtual Disk" });
+
     this.options["export"] = opts;
     this.menus["export"] = "export";
     this.menuOffset["export"] = 7;
@@ -556,7 +558,7 @@ class Menu {
   }
 
   errorMessage( m ) {
-    this.context.printLine("?" + m + " error");
+    this.context.printLine("??" + m + " error");
   }
 
   stop() {
@@ -755,6 +757,28 @@ class Menu {
     this.rendervmState();
   }
 
+
+	do_copyPGMURLtoClip() {
+
+		var text = this.context.getProgramAsText();
+
+		console.log( text );
+
+		var url = window.location +
+							"?pgm=" +
+							encodeURIComponent(btoa( text ));
+
+	  console.log( url );
+		console.log( btoa( text ) );
+
+		console.log( atob( btoa( text ) ) );
+
+		navigator.clipboard.writeText( url );
+
+		this.endMenuWithMessage("url to clip");
+	}
+
+
   do_copyPGMtoClip() {
     navigator.clipboard.writeText( this.context.getProgramAsText() );
 
@@ -765,7 +789,7 @@ class Menu {
 
     registerClipboardCallback( this, "do_pastePGMFromClipCallback" );
     enableClipBoardWidget();
-    this.run = false;
+    this.runImportedPGMFlag = false;
   }
 
   do_pastePGMFromClipCallback( text ) {
@@ -775,11 +799,10 @@ class Menu {
 
     try {
       var bas = this.context.textLinesToBas( lines );
-      //this.context.saveSerializedData( "import", JSON.stringify( bas ), "bas", bas.length );
       this.context.setProgram( bas );
 
-      if( this.run ) {
-        this.run = false;
+      if( this.runImportedPGMFlag ) {
+        this.runImportedPGMFlag = false;
         this.endMenu();
         this.context.printLine("run");
         this.context.runPGM();
@@ -944,7 +967,7 @@ class Menu {
   do_importVDisk() {
     var uploadElement = document.getElementById( "imageLoader" );
 
-    this.run = true;
+    this.runImportedPGMFlag = true;
     this.uploader.setCallback( this, "do_importVDiskCallBack" );
 
 		uploadElement.click();
@@ -990,7 +1013,7 @@ class Menu {
 
 		var uploadElement = document.getElementById( "imageLoader" );
 
-    this.run = true;
+    this.runImportedPGMFlag = true;
     this.uploader.setCallback( this, "do_importBasCallBack" );
 
 		uploadElement.click();
@@ -1001,7 +1024,7 @@ class Menu {
   do_importBas() {
 
 		var uploadElement = document.getElementById( "imageLoader" );
-    this.run = false;
+    this.runImportedPGMFlag = false;
 
     this.uploader.setCallback( this, "do_importBasCallBack" );
 
@@ -1013,12 +1036,27 @@ class Menu {
   do_importBasCallBack( text, fName ) {
 
     var lines = text.split(/\r?\n/);
-    var bas = this.context.textLinesToBas( lines );
-    //this.context.saveSerializedData( "import", JSON.stringify( bas ), "bas", bas.length );
-    this.context.setProgram( bas );
+		try {
+    	var bas = this.context.textLinesToBas( lines );
+		}
+		catch (e) {
+			this.endMenuWithMessage("syntax on import");
+			console.log( e );
+			return;
+		}
 
-    if( this.run ) {
-      this.run = false;
+		try {
+    	this.context.setProgram( bas );
+		}
+		catch (e) {
+			this.endMenuWithMessage("setpgm on import");
+			console.log( e );
+			console.log( text );
+			return;
+		}
+
+    if( this.runImportedPGMFlag ) {
+      this.runImportedPGMFlag = false;
       this.endMenu();
       this.context.printLine("run");
       this.context.runPGM();
@@ -1057,7 +1095,7 @@ class Menu {
   do_importSnapshot() {
 
 		var uploadElement = document.getElementById( "imageLoader" );
-    this.run = false;
+    this.runImportedPGMFlag = false;
 
     this.uploader.setCallback( this, "do_importSnapshotCallBack" );
 

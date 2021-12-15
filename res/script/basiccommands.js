@@ -15,13 +15,26 @@ class BasicCommands {
 
     for( var i=0;i<stats.length;i++) {
       if( stats[i].startsWith("_stat_")) {
-        stats2.push( stats[i].substr(6 ) );
+        stats2.push( stats[i].substr(6 ).toUpperCase() );
       }
     }
 
     return stats2;
   }
 
+  getFunctions() {
+    var stats = Object.getOwnPropertyNames( BasicCommands.prototype );
+
+    var stats2 = [];
+
+    for( var i=0;i<stats.length;i++) {
+      if( stats[i].startsWith("_fun_")) {
+        stats2.push( stats[i].substr(5 ).toUpperCase() );
+      }
+    }
+
+    return stats2;
+  }
 
   /************************ commands ************************/
   _stat_new( pars ) {
@@ -109,7 +122,7 @@ class BasicCommands {
     }
 
     var data = this.context.readData();
-    if( data === undefined ) { throw "OUT OF DATA"; }
+    if( data === undefined ) { throw "@out of data"; }
     else {
       if( data.type =="num" ) {
         this.context.setVar(
@@ -222,7 +235,7 @@ class BasicCommands {
   }
   normalizeIfNumber( x )  {
     if( this.isNumber( x ) ) {
-      if ( x > 0 ) {
+      if ( x >= 0 ) {
         return " " + x;
       }
     }
@@ -284,43 +297,43 @@ class BasicCommands {
 
   /************************ functions ************************/
 
-  chr_DLR_( pars ) {
+  _fun_chr_DLR_( pars ) {
     return String.fromCharCode( pars[0].value );
   }
 
-  len( pars ) {
+  _fun_len( pars ) {
     return pars[0].value.length;
   }
 
-  val( pars ) {
+  _fun_val( pars ) {
     return parseInt( pars[0].value );
   }
 
-  exp( pars ) {
+  _fun_exp( pars ) {
     return Math.exp( pars[0].value );
   }
 
-  rnd( pars ) {
+  _fun_rnd( pars ) {
     return Math.random();
   }
 
-  sqr( pars ) {
+  _fun_sqr( pars ) {
     return Math.sqrt( pars[0].value);
   }
 
-  log( pars ) {
+  _fun_log( pars ) {
     return Math.log( pars[0].value);
   }
 
-  sin( pars ) {
+  _fun_sin( pars ) {
     return Math.sin( pars[0].value);
   }
 
-  cos( pars ) {
+  _fun_cos( pars ) {
     return Math.cos( pars[0].value);
   }
 
-  spc( pars ) {
+  _fun_spc( pars ) {
     var out="";
     for( var i=0; i<pars[0].value; i++) {
       out+=" ";
@@ -328,28 +341,26 @@ class BasicCommands {
     return out;
   }
 
-
-
   _max(x,m) {
     if( x<m ) {  return x; }
     return m;
   }
 
-  usr() {
+  _fun_usr() {
     return 0;
   }
 
-  int( pars ) {
+  _fun_int( pars ) {
     return Math.floor( pars[0].value );
   }
 
-  tab( pars ) {
+  _fun_tab( pars ) {
     var context = this.context;
     context.setCursXPos( _max( pars[0].value, 39) );
     return "";
   }
 
-  sgn( pars ) {
+  _fun_sgn( pars ) {
     var x = pars[0].value;
 
     if( x<0 ) { return -1; }
@@ -357,7 +368,7 @@ class BasicCommands {
     return 0;
   }
 
-  peek( pars ) {
+  _fun_peek( pars ) {
 
     var context = this.context;
     return context.peek( pars[0].value );
