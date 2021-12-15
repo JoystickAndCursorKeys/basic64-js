@@ -98,25 +98,47 @@ class Parser {
 
   init() {
 
-	  this.CTRL_KW = ["IF","THEN","GOTO","AND", "NOT", "OR",  "GOSUB", "RETURN", "FOR", "TO", "NEXT", "STEP", "DATA", "REM" ];
+	  this.CTRL_KW = ["IF","THEN","GOTO","AND", "NOT", "OR",  "GOSUB", "RETURN", "FOR", "TO", "NEXT", "STEP", "DATA", "REM", "GOSUB" ];
     this.SHORTCUT_KW = ["?"];
 
-     this.KEYWORDS = this.commands.getStatements();
+    this.KEYWORDS = this.commands.getStatements();
+    this.KWCODES = this.commands.getStatements();
+    this.padArray( this.KWCODES, 64 );
+
+    var fun = this.commands.getFunctions();
+    for( var i=0; i<fun.length; i++) {
+      this.KWCODES.push( fun[ i ] );
+    }
+    this.padArray( this.KWCODES, 128 );
+
      for( var i=0; i<this.CTRL_KW.length; i++) {
        this.KEYWORDS.push( this.CTRL_KW[ i ] );
+       this.KWCODES.push( this.CTRL_KW[ i ] );
      }
+     this.padArray( this.KWCODES, 192 );
 
      for( var i=0; i<this.SHORTCUT_KW.length; i++) {
        this.KEYWORDS.push( this.SHORTCUT_KW[ i ] );
+       this.KWCODES.push( this.SHORTCUT_KW[ i ] );
      }
+     this.padArray( this.KWCODES, 256 );
 
      console.log("KEYWORDS:" , this.KEYWORDS );
+     console.log("KWCODES:" , this.KWCODES );
 
      this.screenCodes2CTRLTable = [];
      var tab = this.screenCodes2CTRLTable;
 
      tab['\x93'] = '\x13';
      tab['\xd3'] = '\x93';
+  }
+
+  padArray( arr, nr ) {
+    var missing = nr - arr.length;
+    while( missing > 0) {
+      arr.push( null );
+      missing--;
+    }
   }
 
   Exception( ctx, x ) {
@@ -596,6 +618,33 @@ class Parser {
             commands.push( command );
 
           }
+          else if( controlToken == "GOSUB") {
+            var num = -1;
+
+            token = tokens.shift();
+            if( token.type != "num") {
+              this.Exception( context, "GOSUB expects number");
+            }
+            num = parseInt(token.data);
+            token = tokens.shift();
+            if( token !== undefined ) {
+              if( token.type != "cmdsep") {
+                this.Exception( context, "expected cmdsep, instead of "+token.type+"/"+token.data);
+              }
+            }
+
+            command.params=[];
+            command.params[0] = num;
+            commands.push( command );
+
+          }
+          else if( controlToken == "RETURN") {
+            var num = -1;
+
+            command.params=[];
+            commands.push( command );
+
+          }
           else if( controlToken == "FOR") {
 
             var variable, expr_from, expr_to, expr_step;
@@ -881,10 +930,9 @@ class Parser {
 
 		var toker = new Tokenizer( new StringReader ( line ), this.KEYWORDS );
 		var tokens = toker.tokenize();
-    this.logTokens( tokens );
+    //this.logTokens( tokens );
     tokens = this.removePadding( tokens );
     tokens = this.mergeCompTokens( tokens );
-    //tokens = this.handleStringsCTRLChars( tokens );
 
     this.logTokens( tokens );
 

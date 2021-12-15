@@ -8,6 +8,7 @@ class BasicContext {
     this.cursorCount = 0;
     this.runFlag = false;
     this.inputFlag = false;
+    this.gosubReturn = [];
 
     var ctx = this.context;
     var c = this.console;
@@ -494,12 +495,13 @@ class BasicContext {
       }
       try {
         var commands = this.commands;
-        var nFunName = p.functionName.toLowerCase().replaceAll("$","_DLR_");
+        var nFunName = "_fun_" + p.functionName.toLowerCase().replaceAll("$","_DLR_");
 
         var stc = commands[ nFunName ];
         if( stc === undefined ) {
           this.printError("no such function " + p.functionName);
           console.log("Cannot find functionName " + nFunName );
+          throw "no such function " + p.functionName;
           return null;
         }
         else {
@@ -542,6 +544,9 @@ class BasicContext {
         val *= this.evalExpressionPart( p );
       }
       else if( p.op == "/" ) {
+        if( this.evalExpressionPart( p ) == 0) {
+          throw "@division by zero  ";
+        }
         val /= this.evalExpressionPart( p );
       }
       else if( p.op == ";" ) {
@@ -670,6 +675,29 @@ class BasicContext {
 
   }
 
+  doReturn() {
+
+    var oldLine = this.gosubReturn.pop();
+    if( oldLine === undefined ) {
+      throw "return without gosub  ";
+    }
+    console.log( oldLine );
+    this.goto( oldLine );
+  }
+
+  gosub( line ) {
+
+    var pgm = this.program;
+    var len=this.program.length;
+    var nextLine = null;
+    if( (this.runPointer+1) < len ) {
+      nextLine = this.program[ this.runPointer+1 ][0];
+    }
+
+    this.gosubReturn.push( nextLine );
+    this.goto( line );
+  }
+
   goto( line ) {
 
     var pgm = this.program;
@@ -706,8 +734,6 @@ class BasicContext {
   isInput() {
     return this.inputFlag;
   }
-
-
 
   readData() {
 
@@ -833,6 +859,7 @@ class BasicContext {
     var p = this.program;
     this.data = [];
     this.dataPointer = 0;
+    this.gosubReturn = [];
 
     for( var i=0; i<p.length; i++) {
 
@@ -1001,6 +1028,12 @@ class BasicContext {
         if( cn == "goto" ) {
           this.goto( cmd.params[0] );
         }
+        else if( cn == "gosub" ) {
+          this.gosub( cmd.params[0] );
+        }
+        else if( cn == "return" ) {
+          this.doReturn();
+        }
         else if( cn == "if" ) {
           var rv = this.doIf( cmd.params[0], cmd.params[1], cmd.comp, cmd.block );
           if( !rv ) {
@@ -1091,8 +1124,8 @@ class BasicContext {
         }
         catch ( e ) {
           console.log(e);
-          if( e=="OUT OF DATA") {
-            this.printError(e);
+          if( e.startsWith("@") ) {
+            this.printError(e.substr(1));
           }
           else {
               this.printError("unexpected");

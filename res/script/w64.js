@@ -96,7 +96,23 @@ class Program {
 
         basiccontext.reset( true );
 
-        this.x=0; this.y=21;
+        //get basic code from url here:
+        // https://www.sitepoint.com/get-url-parameters-with-javascript/
+
+        const queryString = window.location.search;
+        const urlParams = new URLSearchParams(queryString);
+        var pgm = urlParams.get('pgm');
+        if( pgm != null ) {
+          console.log("URL Program detected");
+          console.log(pgm);
+          pgm = atob( pgm );
+          console.log(pgm);
+          var regExp=/\r\n|\n\r|\n|\r/g;
+          var lines = pgm.replace(regExp,"\n").split("\n");
+          var bas = basiccontext.textLinesToBas( lines );
+          basiccontext.setProgram( bas );
+          basiccontext.runPGM();
+        }
 
     }
   }
@@ -178,7 +194,11 @@ class Program {
     }
 
     if( evt.key.length == 1) {
-        bcontext.pushKeyBuffer( evt.key.charCodeAt(0) );
+        var code = evt.key.charCodeAt(0);
+        if( (code >96 && code <123)) {
+          code -=32;
+        }
+        bcontext.pushKeyBuffer( code );
     }
     else if( evt.key == "Home") {
         if( evt.k_shift ) {
