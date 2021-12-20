@@ -133,6 +133,10 @@ class Parser {
      tab['\xd3'] = '\x93';
   }
 
+  getKeyWordCodes() {
+    return this.KWCODES;
+  }
+
   padArray( arr, nr ) {
     var missing = nr - arr.length;
     while( missing > 0) {

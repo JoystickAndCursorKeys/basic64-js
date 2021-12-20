@@ -62,6 +62,38 @@ class BasicContext {
     this.console.clearCursor();
   }
 
+  appendProgram( pgm ) {
+
+    for(var i=0; i<pgm.length; i++) {
+      var exists = -1;
+
+      for(var j=0; j<this.program.length; j++) {
+        if( this.program[j][0] == pgm[i][0] ) {
+          exists = j;
+        }
+      }
+
+      if( exists>-1 ) {
+        this.program[ exists ] = pgm[ i ];
+      }
+      else {
+        this.program.push( pgm[ i ] );
+      }
+    }
+
+
+    var sortF = function compare( a, b ) {
+      return a[0] - b[0];
+    }
+
+    this.program.sort( sortF );
+
+    this.runFlag = false;
+    this.inputFlag = false;
+    this.console.clearCursor();
+  }
+
+
   getProgram() {
     return this.program;
   }
@@ -377,6 +409,24 @@ class BasicContext {
     this.printLine("ready.");
   }
 
+  compressPGMText( pgmTxt ) {
+
+    var p = new Parser( this.commands );
+    p.init();
+    var kws = p.getKeyWordCodes();
+    var txt2 = pgmTxt;
+
+    for( var i=0; i<kws.length; i++) {
+      var kw = kws[i];
+      //console.log(i, kw);
+      if( !(kw===undefined || kw === null )) {
+          txt2 = txt2.replaceAll( kw.toLowerCase() , String.fromCharCode(i));
+      }
+    }
+
+    return txt2;
+  }
+
   getProgramAsText() {
     var text = "";
     for (const l of this.program)
@@ -552,11 +602,11 @@ class BasicContext {
       else if( p.op == ";" ) {
         val += ("" + this.evalExpressionPart( p ));
       }
-      else if( p.op == "or"  ) {
+      else if( p.op == "OR"  ) {
           val |= this.evalExpressionPart( p );
           console.log("or");
       }
-      else if( p.op == "and"  ) {
+      else if( p.op == "AND"  ) {
           val &= this.evalExpressionPart( p );
           console.log("and");
       }
@@ -841,7 +891,6 @@ class BasicContext {
 
   compressProgram() {
     var p = this.program;
-
 
     for( var i=0; i<p.length; i++) {
         var line = p[ i ];
