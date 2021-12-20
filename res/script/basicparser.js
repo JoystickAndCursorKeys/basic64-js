@@ -450,12 +450,37 @@ class Parser {
 							var parameters = this.parseFunParList( context );
               tokens.shift();
 
-							part = { type: "funCall", params: parameters, op: op, functionName: name };
-							parts.push ( part );
+              part = { type: "funCall", params: parameters, op: op, functionName: name };
+
+              if( op == null && negate ) {
+                var subExpression = {
+                      parts: [part],
+                      negate: true,
+                      binaryNegate: false,
+                      type: "expr"
+                };
+                parts.push ( subExpression );
+              }
+							else {
+                parts.push ( part );
+              }
+
 						}
 						else {
 							part = { type: "var", data: token.data, op: op };
-							parts.push ( part );
+              if( op == null && negate ) {
+                var subExpression = {
+                      parts: [part],
+                      negate: true,
+                      binaryNegate: false,
+                      type: "expr"
+                };
+                parts.push ( subExpression );
+              }
+              else {
+                parts.push ( part );
+              }
+
 						}
             first = false;
 				}
