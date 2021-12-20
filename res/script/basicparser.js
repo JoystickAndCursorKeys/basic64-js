@@ -384,7 +384,8 @@ class Parser {
 
 		var expression = {
 					parts: [],
-          negate: false
+          negate: false,
+          binaryNegate: false
 		};
 
 		var index = 0;
@@ -393,6 +394,7 @@ class Parser {
 		var parts = expression.parts;
     var first = true;
     var negate = false;
+    var binaryNegate = false;
 
 
 		while( true ) {
@@ -434,6 +436,7 @@ class Parser {
 						var expr = this.parseSubExpression( context, subEndTokens );
             expr.op = op;
             expr.negate = negate;
+            expr.binaryNegate = binaryNegate;
 						parts.push ( expr );
             first = false;
 				}
@@ -459,6 +462,12 @@ class Parser {
         else if( token.type=="op" && token.data=="-" && first ) {
           negate = ! negate;
 
+          continue;
+        }
+        else if( token.type=="bop" && token.data=="NOT" && first ) {
+          binaryNegate = ! binaryNegate;
+          expression.binaryNegate = binaryNegate;
+          console.log("NOT")
           continue;
         }
 				else {
@@ -498,6 +507,7 @@ class Parser {
 
         var subExpr = {
           negate: false,
+          binaryNegate: false,
           type: "expr",
           parts: [],
           op: prevPart.op
@@ -516,7 +526,8 @@ class Parser {
     var expression2 = expression;
     expression = {
           parts: [],
-          negate: false
+          negate: expression2.negate,
+          binaryNegate: expression2.binaryNegate
     };
     for( var i=0; i<expression2.parts.length; i++ ) {
 

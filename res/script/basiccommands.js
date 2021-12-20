@@ -50,7 +50,7 @@ class BasicCommands {
     var mode = "noparam";
 
     if( pars.length==1 ) {
-      parts = pars[0];
+      parts = pars[0].parts;
     }
 
     if( parts.length == 1 && parts[0].type == "num" && parts[0].data >=0 ) {
@@ -83,10 +83,10 @@ class BasicCommands {
 
     for (const l of context.program)
       {
-        if( l[0] >= start && l[0]<= end ) {
+        var lineNr = parseInt(l[0]);
+        if(  lineNr>= start && lineNr<= end ) {
           this.context.listCodeLine( l[2] );
         }
-        console.log(l[2]);
       }
   }
 
@@ -243,6 +243,7 @@ class BasicCommands {
   }
 
   _stat_print( pars ) {
+    //TODO also fix RUN and LIST
 
     var context = this.context;
     if( pars.length == 0 ) {
@@ -264,18 +265,23 @@ class BasicCommands {
       if( i>0) { context.sendChars( "         " , false ); }
 
       var exparts = pars[i];
-      var exparts2=[];
-      for( var j=0; j<exparts.length; j++) {
-        if( exparts[j].type == "uniop" && exparts[j].op == ";" && j==(exparts.length-1)
+      var exparts2=
+        { parts: [],
+          binaryNegate: exparts.binaryNegate,
+          negate: exparts.negate  };
+
+      for( var j=0; j<exparts.parts.length; j++) {
+        if( exparts.parts[j].type == "uniop" &&
+            exparts.parts[j].op == ";" && j==(exparts.parts.length-1)
             && (i == pars.length-1)) {
               console.log( "i="+i+" newline: set to false");
           newLine = false;
         }
         else {
-          exparts2.push( exparts[j] );
+          exparts2.parts.push( exparts.parts[j] );
         }
       }
-      value = context.evalExpression( { parts: exparts2 } );
+      value = context.evalExpression( exparts2 );
       console.log( " newline: " + newLine);
       if( i == 0) {
         context.sendChars( this.normalizeIfNumber( value ), newLine );

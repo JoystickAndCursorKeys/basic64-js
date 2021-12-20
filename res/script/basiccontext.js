@@ -661,6 +661,12 @@ class BasicContext {
     if( expr.negate ) {
       return -val;
     }
+    if( expr.binaryNegate ) {
+      if( val == 0 ) {
+        return -1;
+      }
+      return 0;
+    }
     return val;
   }
 
@@ -1157,7 +1163,9 @@ class BasicContext {
             values.push( { type: "var", value: varName, varType: varType } );
           }
           else { /*RAW*/
-            values.push( cmd.params[j].parts );
+            //values.push( cmd.params[j].parts );
+            values.push( cmd.params[j] );
+            
           }
         }
         try {
