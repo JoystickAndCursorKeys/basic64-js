@@ -109,6 +109,11 @@ class Tokenizer {
 			return false;
 	}
 
+	isAnyChar( ctx  ) {
+			return  true; /* Will be executed last */
+	}
+
+
 	isBracket( ctx  ) {
 		if( ctx.c == "(" || ctx.c == ")" || ctx.c == "[" || ctx.c == "]") {
 			return true;
@@ -201,6 +206,7 @@ class Tokenizer {
 		parseRules.push(["bracket", "isBracket"   , "chr"] );
 		parseRules.push(["sep", 		"isSepChar"   , "chr"] );
 		parseRules.push(["cmdsep", 	"isCommandSepChar"   , "chr"] );
+		parseRules.push(["trash", 	"isAnyChar"   , "chr"] );
 
 		while( !read.EOF() ) {
 			var c = read.peek();

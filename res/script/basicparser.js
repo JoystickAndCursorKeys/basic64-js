@@ -92,39 +92,49 @@
 
 class Parser {
 
-  constructor( cmds ) {
+  constructor( cmds, ecmds ) {
     this.commands = cmds;
+    this.extendedcommands = ecmds;
+    this.errorHandler = new ErrorHandler();
   }
 
   init() {
 
-	  this.CTRL_KW = ["IF","THEN","GOTO","AND", "NOT", "OR",  "GOSUB", "RETURN", "FOR", "TO", "NEXT", "STEP", "DATA", "REM", "GOSUB" ];
+	  this.CTRL_KW = ["IF","THEN","GOTO","AND", "NOT", "OR",  "GOSUB", "RETURN", "FOR", "TO", "NEXT", "STEP", "DATA", "REM", "GOSUB", "DIM", "END" ];
     this.SHORTCUT_KW = ["?"];
 
     this.KEYWORDS = this.commands.getStatements();
-    this.KWCODES = this.commands.getStatements();
-    this.padArray( this.KWCODES, 64 );
+    var extended = this.extendedcommands.getStatements();
 
-    var fun = this.commands.getFunctions();
-    for( var i=0; i<fun.length; i++) {
-      this.KWCODES.push( fun[ i ] );
+    for( var i=0; i<extended.length; i++) {
+      this.KEYWORDS.push( extended[ i ] );
+      //this.KWCODES.push( this.CTRL_KW[ i ] );
     }
-    this.padArray( this.KWCODES, 128 );
+
+    //this.KWCODES = this.commands.getStatements();
+
+    //this.padArray( this.KWCODES, 64 );
+
+    //var fun = this.commands.getFunctions();
+    //for( var i=0; i<fun.length; i++) {
+//      this.KWCODES.push( fun[ i ] );
+    //}
+    //this.padArray( this.KWCODES, 128 );
 
      for( var i=0; i<this.CTRL_KW.length; i++) {
        this.KEYWORDS.push( this.CTRL_KW[ i ] );
-       this.KWCODES.push( this.CTRL_KW[ i ] );
+       //this.KWCODES.push( this.CTRL_KW[ i ] );
      }
-     this.padArray( this.KWCODES, 192 );
+     //this.padArray( this.KWCODES, 192 );
 
      for( var i=0; i<this.SHORTCUT_KW.length; i++) {
        this.KEYWORDS.push( this.SHORTCUT_KW[ i ] );
-       this.KWCODES.push( this.SHORTCUT_KW[ i ] );
+       //this.KWCODES.push( this.SHORTCUT_KW[ i ] );
      }
-     this.padArray( this.KWCODES, 256 );
+     //this.padArray( this.KWCODES, 256 );
 
      console.log("KEYWORDS:" , this.KEYWORDS );
-     console.log("KWCODES:" , this.KWCODES );
+     //console.log("KWCODES:" , this.KWCODES );
 
      this.screenCodes2CTRLTable = [];
      var tab = this.screenCodes2CTRLTable;
@@ -134,6 +144,7 @@ class Parser {
   }
 
   getKeyWordCodes() {
+    throw "(Extended) Keywords not yet supported";
     return this.KWCODES;
   }
 
@@ -145,11 +156,13 @@ class Parser {
     }
   }
 
-  Exception( ctx, x ) {
+  Exception( ctx, x ) { /*old*/
     console.log( ctx );
     console.log(" Exception " + x + " at line " + ctx.lineNumber);
     throw x + " at line " + ctx.lineNumber;
   }
+
+
 
 	removePadding( tokens ) {
 		var tokens2 = [];
@@ -575,7 +588,6 @@ class Parser {
 
 	parseLineCommands( context ) {
 
-
 		var tokens = context.tokens;
 		var commands = [];
 
@@ -611,7 +623,6 @@ class Parser {
 			if( token === undefined ) {
 				token = { type: "@@@notoken" };
 			}
-
 
 			if( token.type == "eq") {
 				if( cmdType == "control" ) {
@@ -679,6 +690,13 @@ class Parser {
 
           }
           else if( controlToken == "RETURN") {
+            var num = -1;
+
+            command.params=[];
+            commands.push( command );
+
+          }
+          else if( controlToken == "END") {
             var num = -1;
 
             command.params=[];
@@ -814,6 +832,7 @@ class Parser {
 
             endTokens = [];
             endTokens.push( { type: "name", data: "THEN" });
+            endTokens.push( { type: "name", data: "GOTO" });
 
             var expr2 = this.parseExpression( context, endTokens );
             token = tokens.shift();
@@ -823,9 +842,21 @@ class Parser {
             command.params[1] = expr2;
             command.comp = comp;
 
+            if( token.type == "name" && token.data == "GOTO") {
+                token = tokens.shift();
+                command.block = [{}];
+                command.block[0].controlKW = "goto";
+                command.block[0].type = "control";
+                command.block[0].lineNumber = context.lineNumber;
+                command.block[0].params = [];
+                command.block[0].params[0] = token.data;
+            }
+            else {
+              command.block = this.parseLineCommands( context );
 
-            command.block = this.parseLineCommands( context );
+            }
 
+            console.log( command.block );
             commands.push( command );
 
           }
@@ -968,44 +999,72 @@ class Parser {
       commands: []
     };
 
-		var toker = new Tokenizer( new StringReader ( line ), this.KEYWORDS );
-		var tokens = toker.tokenize();
-    //this.logTokens( tokens );
-    tokens = this.removePadding( tokens );
-    tokens = this.mergeCompTokens( tokens );
+    var errContext, detail, lineNr=-1;
+    try {
+      errContext="TOKENIZER";
+      detail="INIT";
+  		var toker = new Tokenizer( new StringReader ( line ), this.KEYWORDS );
 
-    this.logTokens( tokens );
+      detail="PARSING TOKENS";
+      var tokens = toker.tokenize();
+      //this.logTokens( tokens );
+
+      detail="INTERNAL";
+      tokens = this.removePadding( tokens );
+      tokens = this.mergeCompTokens( tokens );
+
+      this.logTokens( tokens );
 
 
-    if( tokens.length == 0 ) {
-			return null;
-		}
+      if( tokens.length == 0 ) {
+  			return null;
+  		}
 
-		if( tokens[0].type == "num" ) {
-			lineRecord.lineNumber = tokens[0].data;
-      tokens.shift();
+  		if( tokens[0].type == "num" ) {
+  			lineRecord.lineNumber = tokens[0].data;
+        lineNr = tokens[0].data;
+        tokens.shift();
+      }
+
+  		var context = {
+        tokens: tokens,
+        lineNumber: lineRecord.lineNumber
+      }
+
+      errContext = "PARSER";
+      detail="PARSING COMMANDS";
+      var commands = this.parseLineCommands( context );
+      lineRecord.commands = commands;
+      lineRecord.raw = line;
+      return lineRecord;
     }
+    catch ( e ) {
 
-		var context = {
-      tokens: tokens,
-      lineNumber: lineRecord.lineNumber
+      if( this.errorHandler.isError( e ) ) {
+        if( e.lineNr == -1 ) {
+          if( lineNr != -1 ) {
+            e.lineNr = lineNr;
+          }
+        }
+        return e;
+      }
+      this.errorHandler.throwError( errContext, detail, lineNr );
     }
-
-    //context.tokens = this.removePadding( context.tokens );
-    var commands = this.parseLineCommands( context );
-    lineRecord.commands = commands;
-    lineRecord.raw = line;
-    return lineRecord;
-
   }
 
   getTokens( line, merge, noPadding  ) {
 
-    var toker = new Tokenizer( new StringReader ( line ), this.KEYWORDS );
-    var tokens = toker.tokenize();
-    if( noPadding) { tokens = this.removePadding( tokens ); }
-    if( merge ) {tokens = this.mergeCompTokens( tokens ); }
-    this.logTokens( tokens );
-    return tokens;
+    try {
+      var toker = new Tokenizer( new StringReader ( line ), this.KEYWORDS );
+      var tokens = toker.tokenize();
+      if( noPadding) { tokens = this.removePadding( tokens ); }
+      if( merge ) {tokens = this.mergeCompTokens( tokens ); }
+      this.logTokens( tokens );
+      return tokens;
+    }
+    catch ( e ) {
+      console.log( e );
+      this.errorHandler.throwError("TOKEN","TOKEN",-1);
+    }
   }
 }

@@ -621,7 +621,6 @@ class Menu {
 
 	      var opt = options[ this.optSelect ];
 
-	      console.log( opt );
 	      this[ "do_" +  opt.opt ]();
 			}
     }

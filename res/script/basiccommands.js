@@ -83,8 +83,9 @@ class BasicCommands {
 
     for (const l of context.program)
       {
+
         var lineNr = parseInt(l[0]);
-        if(  lineNr>= start && lineNr<= end ) {
+        if(  l[0] == null || (lineNr>= start && lineNr<= end) ) {
           this.context.listCodeLine( l[2] );
         }
       }
@@ -102,7 +103,7 @@ class BasicCommands {
 
   _if_input() {
       var EXPR = 0, PAR = 1, RAW=2;
-      return [PAR, PAR, PAR, PAR, PAR, PAR, PAR, PAR, PAR, PAR];
+      return [RAW, RAW, RAW, RAW, RAW, RAW, RAW, RAW, RAW, RAW];
   }
 
   _if_list() {
@@ -152,12 +153,30 @@ class BasicCommands {
     var vars = [];
 
     for( var i=0; i<pars.length; i++) {
-      console.log( "PARS["+i+"]", pars[i] );
-      if( pars[i].type != "var" ) {
+      if( i == 0 ) {
+        var par = pars[0];
 
-        throw "INPUT: Param " + i +" is not a var";
+        if( par.parts.length == 2 ) {
+          if( par.parts[0].type == "str" ) {
+            this.context.sendChars( par.parts[0].data, false );
+            if( par.parts[1].type == "var" && par.parts[1].op == ";" ) {
+              vars.push( par.parts[1].data );
+            }
+          }
+        }
+        else if( par.parts.length == 1 ) {
+          vars.push( par.parts[0].data );
+        }
+
       }
-      vars.push( pars[i].value );
+      else {
+        console.log( "PARS["+i+"]", pars[i] );
+        if( pars[i].parts[0].type != "var" ) {
+
+          throw "INPUT: Param " + i +" is not a var";
+        }
+        vars.push( pars[i].parts[0].data );
+      }
     }
 
     this.context.startConsoleDataInput( vars );
@@ -243,12 +262,18 @@ class BasicCommands {
   }
 
   _stat_print( pars ) {
-    //TODO also fix RUN and LIST
+
 
     var context = this.context;
     if( pars.length == 0 ) {
       context.sendChars( "", true );
       return;
+    }
+    else if( pars.length == 1 ) {
+      if( pars[0].parts.length == 0 ) {
+        context.sendChars( "", true );
+        return;
+      }
     }
     console.log(pars);
 
