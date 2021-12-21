@@ -74,7 +74,7 @@ class Menu {
 
     opts.push({opt: "basicMenu", display: "Basic" });
     opts.push({opt: "diskMenu", display: "Virtual Disk" });
-    opts.push({opt: "exportMenu", display: "Export" });
+    opts.push({opt: "exportMenu", display: "Import" });
     opts.push({opt: "clipboardMenu", display: "Clipboard" });
     //opts.push({opt: "keys", display: "Keys" });
     opts.push({opt: "docsSettingsMenu", display: "Docs and Settings" });
@@ -87,7 +87,8 @@ class Menu {
     opts = [];
     opts.push({opt: "copyPGMtoClip", display: "Copy Program to Clipboard" });
 	  opts.push({opt: "copyPGMURLtoClip", display: "Copy Program URL to Clipboard" });
-    opts.push({opt: "pastePGMFromClip", display: "Overwrite Program with Clipboard" });
+    opts.push({opt: "pastePGMFromClip", display: "New Program from Clipboard" });
+		opts.push({opt: "pastePGMFromClipAppend", display: "Merge Clipboard with Program" });
     this.options["clipboard"] = opts;
     this.menus["clipboard"] = "clipboard";
     this.menuOffset["clipboard"] = 1;
@@ -537,7 +538,6 @@ class Menu {
 
   }
 
-
 	startList( l ) {
 
     this.selectList = true;
@@ -621,7 +621,6 @@ class Menu {
 
 	      var opt = options[ this.optSelect ];
 
-	      console.log( opt );
 	      this[ "do_" +  opt.opt ]();
 			}
     }
@@ -761,8 +760,13 @@ class Menu {
 	do_copyPGMURLtoClip() {
 
 		var text = this.context.getProgramAsText();
+		//console.log( text.length );
+		//console.log( text );
 
-		console.log( text );
+		//text = this.context.compressPGMText( text );
+
+		//console.log( text.length );
+		//console.log( text );
 
 		var url = window.location +
 							"?pgm=" +
@@ -785,11 +789,43 @@ class Menu {
     this.endMenuWithMessage("copied to clip");
   }
 
+	do_pastePGMFromClipAppend() {
+
+    registerClipboardCallback( this, "do_pastePGMFromClipAppendCallback" );
+    enableClipBoardWidget();
+    this.runImportedPGMFlag = false;
+  }
+
   do_pastePGMFromClip() {
 
     registerClipboardCallback( this, "do_pastePGMFromClipCallback" );
     enableClipBoardWidget();
     this.runImportedPGMFlag = false;
+  }
+
+	do_pastePGMFromClipAppendCallback( text ) {
+
+    console.log("callback3");
+    var lines = text.split(/\r?\n/);
+
+    try {
+      var bas = this.context.textLinesToBas( lines );
+      this.context.appendProgram( bas );
+
+        this.endMenuWithMessage("paste ok");
+        this.context.printLine("list");
+
+        var pgm = this.context.getProgramLines();
+        for (const l of pgm )
+          {
+            this.context.listCodeLine( l[2] );
+            console.log(l[2]);
+          }
+
+    }
+    catch (e) {
+      this.endMenuWithError("syntax");
+    }
   }
 
   do_pastePGMFromClipCallback( text ) {
@@ -801,31 +837,18 @@ class Menu {
       var bas = this.context.textLinesToBas( lines );
       this.context.setProgram( bas );
 
-      if( this.runImportedPGMFlag ) {
-        this.runImportedPGMFlag = false;
-        this.endMenu();
-        this.context.printLine("run");
-        this.context.runPGM();
+      this.endMenuWithMessage("paste ok");
+      this.context.printLine("list");
 
+      var pgm = this.context.getProgramLines();
+      for (const l of pgm )   {
+          this.context.listCodeLine( l[2] );
+          console.log(l[2]);
       }
-      else {
-        this.endMenuWithMessage("import ok");
-        this.context.printLine("list");
-
-        var pgm = this.context.getProgramLines();
-        for (const l of pgm )
-          {
-            this.context.listCodeLine( l[2] );
-            console.log(l[2]);
-          }
-      }
-
     }
     catch (e) {
       this.endMenuWithError("syntax");
     }
-
-
   }
 
 	do_listDisks() {
@@ -1130,7 +1153,6 @@ class Menu {
   do_reset() {
     this.endMenu();
     this.context.reset( true );
-
   }
 
   do_changeTheme() {

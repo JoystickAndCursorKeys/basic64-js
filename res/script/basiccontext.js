@@ -13,6 +13,8 @@ class BasicContext {
     var ctx = this.context;
     var c = this.console;
     this.commands = new BasicCommands( this );
+    this.extendedcommands = new ExtendedCommands( this );
+    this.errorHandler = new ErrorHandler();
     this.vars = [];
     this.data = [];
     this.kbBuffer = [];
@@ -61,6 +63,38 @@ class BasicContext {
     this.inputFlag = false;
     this.console.clearCursor();
   }
+
+  appendProgram( pgm ) {
+
+    for(var i=0; i<pgm.length; i++) {
+      var exists = -1;
+
+      for(var j=0; j<this.program.length; j++) {
+        if( this.program[j][0] == pgm[i][0] ) {
+          exists = j;
+        }
+      }
+
+      if( exists>-1 ) {
+        this.program[ exists ] = pgm[ i ];
+      }
+      else {
+        this.program.push( pgm[ i ] );
+      }
+    }
+
+
+    var sortF = function compare( a, b ) {
+      return a[0] - b[0];
+    }
+
+    this.program.sort( sortF );
+
+    this.runFlag = false;
+    this.inputFlag = false;
+    this.console.clearCursor();
+  }
+
 
   getProgram() {
     return this.program;
@@ -354,7 +388,7 @@ class BasicContext {
     this.console.cursorX( p );
   }
 
-  reset( hard ) {
+  reset( hard, muteReady ) {
     this.console.clearScreen();
     this.vpoke(53280,14);
     this.vpoke(53281,6);
@@ -366,7 +400,6 @@ class BasicContext {
     this.inputFlag = false;
     this.runFlag = false;
 
-
     this.printLine("");
     if( hard ) {
       this.printLine(" **** commodore 64 basic emulator ****");
@@ -374,7 +407,27 @@ class BasicContext {
       this.printLine("  **** basic64/js - f9 = menu ****");
       this.printLine("");
     }
-    this.printLine("ready.");
+    if( !muteReady ) {
+      this.printLine("ready.");
+    }
+  }
+
+  compressPGMText( pgmTxt ) {
+
+    var p = new Parser( this.commands, this.extendedcommands );
+    p.init();
+    var kws = p.getKeyWordCodes();
+    var txt2 = pgmTxt;
+
+    for( var i=0; i<kws.length; i++) {
+      var kw = kws[i];
+      //console.log(i, kw);
+      if( !(kw===undefined || kw === null )) {
+          txt2 = txt2.replaceAll( kw.toLowerCase() , String.fromCharCode(i));
+      }
+    }
+
+    return txt2;
   }
 
   getProgramAsText() {
@@ -552,11 +605,11 @@ class BasicContext {
       else if( p.op == ";" ) {
         val += ("" + this.evalExpressionPart( p ));
       }
-      else if( p.op == "or"  ) {
+      else if( p.op == "OR"  ) {
           val |= this.evalExpressionPart( p );
           console.log("or");
       }
-      else if( p.op == "and"  ) {
+      else if( p.op == "AND"  ) {
           val &= this.evalExpressionPart( p );
           console.log("and");
       }
@@ -610,6 +663,12 @@ class BasicContext {
 
     if( expr.negate ) {
       return -val;
+    }
+    if( expr.binaryNegate ) {
+      if( val == 0 ) {
+        return -1;
+      }
+      return 0;
     }
     return val;
   }
@@ -681,7 +740,6 @@ class BasicContext {
     if( oldLine === undefined ) {
       throw "return without gosub  ";
     }
-    console.log( oldLine );
     this.goto( oldLine );
   }
 
@@ -772,7 +830,7 @@ class BasicContext {
 
   rebuildLineString( nr, raw, removePadding, renumbering ) {
 
-    var p = new Parser( this.commands );
+    var p = new Parser( this.commands, this.extendedcommands );
     p.init();
 
     var tokens = p.getTokens( raw, false, false );
@@ -841,7 +899,6 @@ class BasicContext {
 
   compressProgram() {
     var p = this.program;
-
 
     for( var i=0; i<p.length; i++) {
         var line = p[ i ];
@@ -1006,16 +1063,23 @@ class BasicContext {
   }
 
   onLineStr() {
-    if( this.runPointer > -1 ) {
+    if( this.runFlag ) {
+      if( this.runPointer > -1 ) {
 
-      var line = this.program[this.runPointer];
-      return " in " + line[0];
+        var line = this.program[this.runPointer];
+        return " in " + line[0];
+      }
+    }
+    else {
+      if( this.parseLineNumber == -1 ) { return ""; }
+      return " in " + this.parseLineNumber;
     }
     return "";
   }
 
   runCommands( cmds ) {
     var commands = this.commands;
+    var ecommands = this.extendedcommands;
     var EXPR = 0, PAR = 1;
 
     var end = cmds.length;
@@ -1027,6 +1091,10 @@ class BasicContext {
         var cn = cmd.controlKW;
         if( cn == "goto" ) {
           this.goto( cmd.params[0] );
+        }
+        else if( cn == "end" ) {
+          return false;
+          break;
         }
         else if( cn == "gosub" ) {
           this.gosub( cmd.params[0] );
@@ -1078,10 +1146,20 @@ class BasicContext {
       else if( cmd.type == "call" )  {
         var values = [];
         var pardefs = [];
+        var mycommands = commands;
+        if( cmd.statementName.toLowerCase().startsWith("x") ) {
+          mycommands = ecommands;
 
-        var intf = commands[ "_if_" + cmd.statementName.toLowerCase()];
+          if( mycommands.enabled == false &&
+              cmd.statementName.toLowerCase() != "xon" ) {
+                this.printError( "extended not enabled" );
+                return false;
+              }
+        }
+
+        var intf = mycommands[ "_if_" + cmd.statementName.toLowerCase()];
         if( !( intf === undefined ) ) {
-            pardefs = commands[ "_if_" + cmd.statementName.toLowerCase()]();
+            pardefs = mycommands[ "_if_" + cmd.statementName.toLowerCase()]();
         }
         else {
           for( var j=0; j<cmd.params.length; j++) {
@@ -1108,17 +1186,19 @@ class BasicContext {
             values.push( { type: "var", value: varName, varType: varType } );
           }
           else { /*RAW*/
-            values.push( cmd.params[j].parts );
+            //values.push( cmd.params[j].parts );
+            values.push( cmd.params[j] );
+
           }
         }
         try {
-          var stc = commands[ "_stat_" + cmd.statementName.toLowerCase()];
+          var stc = mycommands[ "_stat_" + cmd.statementName.toLowerCase()];
           if( stc === undefined ) {
             this.printError("syntax");
             return false;
           }
           else {
-              commands[ "_stat_" + cmd.statementName.toLowerCase()]( values );
+              mycommands[ "_stat_" + cmd.statementName.toLowerCase()]( values );
           }
 
         }
@@ -1128,7 +1208,7 @@ class BasicContext {
             this.printError(e.substr(1));
           }
           else {
-              this.printError("unexpected");
+            this.printError("unexpected");
           }
           return false;
         }
@@ -1152,10 +1232,12 @@ class BasicContext {
     this.vars[ a ] = b;
   }
 
-
+  old( linenr ) {
+    this.program = this.oldProgram;
+  }
 
   new( linenr ) {
-
+    this.oldProgram = this.program ;
     this.program = [];
   }
 
@@ -1237,6 +1319,13 @@ class BasicContext {
     return s;
   }
 
+  padSpaces8( no ) {
+    var s = no + "";
+    for(var i=s.length; i<8; i++) {
+      s+=" ";
+    }
+    return s;
+  }
 
   updateDir( fileName, programLen ) {
 
@@ -1423,7 +1512,7 @@ class BasicContext {
     for( var i = 0; i<lines.length; i++ ) {
 
       var line = this.prepareLineForImport( lines[ i ] );
-      var p = new Parser( this.commands );
+      var p = new Parser( this.commands, this.extendedcommands );
       p.init();
       //if( line.length > 80 ) {  TODO move this check into the parser
       //  throw "Line to long " + line;
@@ -1469,7 +1558,13 @@ class BasicContext {
   handleLineInput( str, isInputCommand ) {
 
     if( isInputCommand ) {
-        var input = str.substr(2);
+
+        var input=str;
+        var qMark = input.indexOf("?");
+        while( qMark > -1 ) {
+          input = input.substr(qMark+2);
+          qMark = input.indexOf("?");
+        }
 
         console.log("INPUT: input, name");
         console.log( this.inputVarsPointer );
@@ -1506,12 +1601,17 @@ class BasicContext {
     }
 
     console.log( str );
-    var p = new Parser( this.commands );
+    var p = new Parser( this.commands, this.extendedcommands );
     p.init();
     try {
       var l = p.parseLine( str );
     }
     catch( e ) {
+
+      this.parseLineNumber = -1;
+      if( this.errorHandler.isError( e ) ) {
+        this.parseLineNumber = e.lineNr;
+      }
       this.printError( "syntax" );
       this.printLine("ready.");
     }

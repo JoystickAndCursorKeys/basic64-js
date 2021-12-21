@@ -1539,10 +1539,107 @@ this.visibleRomCharMem = false;
 
 	 }
 
+	 _renderDirectChrMultiHres( x, y, ch0, colRam, chRamLoCol, chRamHiCol) {
+
+		 var fid;
+		 var dataPtr;
+
+		 if( this.useRomCharMem ) {
+			fid = this.fontImageRom;
+			dataPtr = 0;
+		 }
+		 else {
+			fid = this.memory;
+			dataPtr = this.videoRam;
+		 }
+
+
+	 	var iDta = this.iDta;
+	 	var pixWidthM4 = this.iwidth * 4;
+
+		//( x, y, charIndex, colRam, chRamLoCol, chRamHiCol )
+	 	var bgCol = this.colors[ this.bgcol ];
+		var fgCol = this.colors[ colRam ];
+	 	var mcCol1 = this.colors[ chRamLoCol ];
+	 	var mcCol2 = this.colors[ chRamHiCol ];
+
+
+	 	var ch=ch0;
+
+	 	var row = ch >> 4 /* div 16*/ ;
+	 	var column = ch % 16;
+
+	 	var xd0 = x << 2 /* multiply 4 */;
+	 	var yd= pixWidthM4 * y;
+
+	 	var chM8 = dataPtr + (ch*8);
+
+	 	for( var yC = 0; yC<8; yC++) {
+	 		var xd = xd0;
+
+	 		var byte = fid[ chM8 + yC ];
+	 		var mask = 0b10000000;
+	 		var mask2 = 0b01000000;
+
+	 		for( var xC = 0; xC<4; xC+=1) { /*4 thick pixels */
+
+	 			var col = bgCol;
+	 			var val = 0;
+
+	 			if ( (byte & mask ) > 0 ) {
+	 					val=1;
+	 			}
+	 			if ( (byte & mask2 ) > 0 ) {
+	 					val+=2;
+	 			}
+
+	 			switch (val){
+	 					case 1:
+	 							col = mcCol1;
+	 							break;
+	 					case 2:
+	 							col = mcCol2;
+	 							break;
+	 					case 3:
+	 							col = fgCol;
+	 							break;
+	 					default:
+
+	 			 }
+
+	 			var dBase = xd + yd;
+
+	 			iDta[ dBase + 0 ] = col.r;
+	 			iDta[ dBase + 1 ] = col.g;
+	 			iDta[ dBase + 2 ] = col.b;
+	 			iDta[ dBase + 3 ] = 255;
+
+	 			iDta[ dBase + 4 ] = col.r;
+	 			iDta[ dBase + 5 ] = col.g;
+	 			iDta[ dBase + 6 ] = col.b;
+	 			iDta[ dBase + 7 ] = 255;
+
+	 			xd+=8;
+	 			mask = mask >> 2;
+	 			mask2 = mask2 >> 2;
+	 		}
+	 		yd += pixWidthM4;
+	 	}
+
+	 }
+
 	 _renderDirectChrMono( x, y, ch0, col0, bgcol) {
 
 		 // ch0 is character code
 		 // col0 is color
+/*
+		 try  {
+			this._renderDirectChrMono( x, y, c, col0 );
+		}
+		catch (e) {
+			var tmp = 1;
+		}
+*/
 
      var fid;
 		 var dataPtr;
@@ -1686,12 +1783,19 @@ this.visibleRomCharMem = false;
      this._renderDirectChrMono( x, y, c, col, this.bgcol );
 	 }
 
-	 renderCharHires(x, y, c, col0, bgcol) {
+	 renderCharHires(x, y, c, col0, dummy) {
 		 var col = col0 % 16;
 		 var bgcol = (col0 & 240) >> 4;
-		 //((5+128) & (128+64+32+16))>>4
 
      this._renderDirectChrMono( x, y, c, col, bgcol );
+	 }
+
+	 renderCharHiresMC(x, y, charIndex, charMem, colMem) {
+
+		 var chRamLoCol = charMem % 16;
+		 var chRamHiCol = (charMem & 240) >> 4;
+		 var colRam = colMem % 16;
+     this._renderDirectChrMultiHres( x, y, charIndex, colRam, chRamLoCol, chRamHiCol );
 	 }
 
 	 renderCharMC(x, y, c, col0) {
@@ -1700,7 +1804,8 @@ this.visibleRomCharMem = false;
        this._renderDirectChrMulti( x, y, c, col0 % 8);
      }
      else {
-       this._renderDirectChrMono( x, y, c, col0 );
+
+       this._renderDirectChrMono( x, y, c, col0, bgcol );
      }
 	 }
 
@@ -1769,16 +1874,12 @@ this.visibleRomCharMem = false;
 
 		 //ctx.fillStyle = this._htmlColor( this.colors[ this.bgcol ] );
 
-
-
 		 if( this.useHires ) {
-
 
 			 this.renderChr = this.renderCharHires;
 			 if( this.multiColor ) {
-				 this.renderChr = this.renderCharMC;
+				 this.renderChr = this.renderCharHiresMC;
 			 }
-
 
 			 if( this.bgcolLast != this.bgcol
 			 			|| this.mcol1Last != this.mcol1
@@ -1792,7 +1893,7 @@ this.visibleRomCharMem = false;
 
 								var chr = (y*40+x);
 								buf[y][x][2] = false;
-							 	this.renderChr(x*8, y*8, chr, buf[y][x][0] );
+							 	this.renderChr(x*8, y*8, chr, buf[y][x][0], buf[y][x][1] );
 
 				 	}
 				 }
@@ -1812,7 +1913,7 @@ this.visibleRomCharMem = false;
 
 						if( buf[y][x][2] ) {
 								buf[y][x][2] = false;
-							 this.renderChr(x*8, y*8, chr, buf[y][x][0] );
+							 this.renderChr(x*8, y*8, chr, buf[y][x][0], buf[y][x][1] );
 						}
 				 	}
 				 }
