@@ -586,7 +586,7 @@ class Parser {
     return x;
   }
 
-	parseLineCommands( context ) {
+	parseLineCommands( context, preTokens ) {
 
 		var tokens = context.tokens;
 		var commands = [];
@@ -842,6 +842,32 @@ class Parser {
             command.params[1] = expr2;
             command.comp = comp;
 
+//------------------
+
+            if( token.type == "name" && token.data == "GOTO") {
+              var insert = {};
+              insert.data = "GOTO";
+              insert.type = "name";
+              tokens.unshift( insert );
+            } else {
+              if( tokens.length > 0 ) {
+                if( tokens[0].type == "num" ) {
+                  var insert = {};
+                  insert.data = "GOTO";
+                  insert.type = "name";
+                  tokens.unshift( insert );
+                }
+              }
+            }
+
+            command.block = this.parseLineCommands( context );
+
+            console.log( command.block );
+            commands.push( command );
+
+//------------------
+/*            var goto = false;
+
             if( token.type == "name" && token.data == "GOTO") {
                 token = tokens.shift();
                 command.block = [{}];
@@ -850,14 +876,32 @@ class Parser {
                 command.block[0].lineNumber = context.lineNumber;
                 command.block[0].params = [];
                 command.block[0].params[0] = token.data;
+                goto = true;
             }
             else {
-              command.block = this.parseLineCommands( context );
-
+              var implicitGoto = false;
+              if( tokens.length > 0 ) {
+                if( tokens[0].type == "num" ) {
+                  token = tokens.shift();
+                  command.block = [{}];
+                  command.block[0].controlKW = "goto";
+                  command.block[0].type = "control";
+                  command.block[0].lineNumber = context.lineNumber;
+                  command.block[0].params = [];
+                  command.block[0].params[0] = token.data;
+                  implicitGoto = true;
+                  goto = true;
+                }
+              }
+              if( !implicitGoto ) {
+                  command.block = this.parseLineCommands( context );
+              }
             }
 
             console.log( command.block );
             commands.push( command );
+*/
+            //if( goto ) { break; }
 
           }
           else if( controlToken == "DATA") {
