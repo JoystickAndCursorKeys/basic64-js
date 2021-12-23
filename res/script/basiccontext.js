@@ -973,6 +973,7 @@ class BasicContext {
     this.data = [];
     this.dataPointer = 0;
     this.gosubReturn = [];
+    this.vars = [];
 
     for( var i=0; i<p.length; i++) {
 
