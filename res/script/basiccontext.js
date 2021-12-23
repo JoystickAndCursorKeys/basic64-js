@@ -412,6 +412,10 @@ class BasicContext {
     }
   }
 
+  clearScreen( ) {
+    this.console.clearScreen();
+  }
+
   compressPGMText( pgmTxt ) {
 
     var p = new Parser( this.commands, this.extendedcommands );

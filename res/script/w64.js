@@ -105,13 +105,24 @@ class Program {
         if( pgm != null ) {
           console.log("URL Program detected");
           console.log(pgm);
-          pgm = atob( pgm );
-          console.log(pgm);
-          var regExp=/\r\n|\n\r|\n|\r/g;
-          var lines = pgm.replace(regExp,"\n").split("\n");
-          var bas = basiccontext.textLinesToBas( lines );
-          basiccontext.setProgram( bas );
-          basiccontext.runPGM();
+          this.basiccontext.clearScreen();
+          this.basiccontext.printLine("load \"*\",99");
+          this.basiccontext.printLine("");
+          this.basiccontext.printLine("searching for *");
+          try {
+            pgm = atob( pgm );
+            console.log(pgm);
+            var regExp=/\r\n|\n\r|\n|\r/g;
+            var lines = pgm.replace(regExp,"\n").split("\n");
+            var bas = basiccontext.textLinesToBas( lines );
+            basiccontext.setProgram( bas );
+            basiccontext.runPGM();
+          }
+          catch ( e ) {
+            this.basiccontext.runStop();
+            this.basiccontext.printError("load");
+            this.basiccontext.printReady();
+          }
         }
 
     }
