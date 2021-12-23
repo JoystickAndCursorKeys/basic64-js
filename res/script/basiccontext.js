@@ -688,49 +688,60 @@ class BasicContext {
   cycle() {
     var c = this.console;
 
-    if( !this.runFlag || this.menuFocus || this.inputFlag  ) {
-      if(this.cursorCount++>15) {
-        this.cursorCount = 0;
+    try {
 
-        if( !this.menuFocus ) { c.blinkCursor(); }
+      if( !this.runFlag || this.menuFocus || this.inputFlag  ) {
+        if(this.cursorCount++>15) {
+          this.cursorCount = 0;
+
+          if( !this.menuFocus ) { c.blinkCursor(); }
+        }
       }
-    }
-    else {
+      else {
 
-      var p = this.program;
+        var p = this.program;
 
-      for( var cyc=0; cyc<5; cyc++) {
+        for( var cyc=0; cyc<5; cyc++) {
 
-        var l = p[ this.runPointer ];
+          var l = p[ this.runPointer ];
 
-        //console.log("line:",l);
-        var rv = this.runCommands( l[1] );
-        //console.log("rv:",rv);
-        if( !rv ) {
-          this.runFlag = false;
-          this.printLine("ready.");
-          return;
-        }
-
-        if( this.inputFlag ) {
-            break;
-        }
-
-        if( !this.gotoFlag) {
-          this.runPointer ++;
-          if( this.runPointer >=  p.length ) {
-            console.log( "end program");
+          //console.log("line:",l);
+          var rv = this.runCommands( l[1] );
+          //console.log("rv:",rv);
+          if( !rv ) {
             this.runFlag = false;
-            c.clearCursor();
             this.printLine("ready.");
-            break;
+            return;
+          }
+
+          if( this.inputFlag ) {
+              break;
+          }
+
+          if( !this.gotoFlag) {
+            this.runPointer ++;
+            if( this.runPointer >=  p.length ) {
+              console.log( "end program");
+              this.runFlag = false;
+              c.clearCursor();
+              this.printLine("ready.");
+              break;
+            }
+          }
+          else {
+            this.gotoFlag = false;
           }
         }
-        else {
-          this.gotoFlag = false;
-        }
       }
+
     }
+    catch (e) {
+      this.runFlag = false;
+      c.clearCursor();
+      this.printLine("ready.");
+    }
+
+
 
   }
 
@@ -760,6 +771,7 @@ class BasicContext {
 
     var pgm = this.program;
     var len=this.program.length;
+    var found = false;
 
     for( var i=0; i<len; i++) {
       var l = pgm[i];
@@ -767,10 +779,19 @@ class BasicContext {
       if( l[0] == line ) {
         this.runPointer = i;
         this.runPointer2 = 0;
-
+        found = true;
         this.gotoFlag = true;
-        return;
       }
+    }
+
+    if(!found ) {
+      this.printError("UNDEF'D STATEMENT");
+      throw "GOTO line not found";
+    }
+
+    if(!this.runFlag ) {
+      this.startAsGoto = true;
+      this.runPGM();
     }
   }
 
@@ -839,18 +860,36 @@ class BasicContext {
 
       var foundGoto = false;
       for( i = 0; i<tokens.length; i++) {
-        if( tokens[i].type == "name" && tokens[i].data == "goto" ) {
+        if( tokens[i].type == "name" && tokens[i].data == "GOTO" ) {
           foundGoto = true;
+        } else {
+          if( i>1 ) {
+            if( tokens[i].type == "num" &&
+                tokens[i-1].type == "pad" &&
+                tokens[i-2].type == "name" && tokens[i-2].data == "THEN" ) {
+              foundGoto = true;
+            }
+            else if( tokens[i].type == "num" && tokens[i-1].type == "name" && tokens[i-1].data == "THEN" ) {
+              foundGoto = true;
+            }
+          }
         }
+
         if( tokens[i].type == "num" && foundGoto ) {
           var newLine = renumbering[ "old_" + tokens[i].data ];
+          if( newLine == undefined ) { newLine = 99999;}
           tokens[i].data =newLine;
           foundGoto = false;
         }
       }
     }
     tokens[0].data = nr;
-    var newString = nr + " " ;
+    var newString;
+
+    newString = nr;
+    if( removePadding ) {
+      newString = nr + " " ;
+    }
     for( var i = 1 ; i< tokens.length; i++) {
       if( removePadding ) {
          if( tokens[i].type == "pad" ) {
@@ -912,11 +951,29 @@ class BasicContext {
   }
 
   runPGM() {
+
+    if( this.startAsGoto ) {
+        this.startAsGoto = false;
+
+        var bak1 = this.runPointer;
+        var bak2 = this.runPointer2;
+
+        this.runPGM();
+
+        this.runPointer = bak1;
+        this.runPointer2 = bak2;
+
+
+        return;
+    }
+
+
     var c = this.console;
     var p = this.program;
     this.data = [];
     this.dataPointer = 0;
     this.gosubReturn = [];
+    this.vars = [];
 
     for( var i=0; i<p.length; i++) {
 
@@ -1071,7 +1128,10 @@ class BasicContext {
       }
     }
     else {
-      if( this.parseLineNumber == -1 ) { return ""; }
+      if( this["parseLineNumber"] === undefined ) {
+        return "";
+      }
+      if( this.parseLineNumber == -1) { return ""; }
       return " in " + this.parseLineNumber;
     }
     return "";
@@ -1091,6 +1151,7 @@ class BasicContext {
         var cn = cmd.controlKW;
         if( cn == "goto" ) {
           this.goto( cmd.params[0] );
+          break;
         }
         else if( cn == "end" ) {
           return false;
