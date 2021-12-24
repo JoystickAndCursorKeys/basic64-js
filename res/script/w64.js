@@ -109,13 +109,22 @@ class Program {
           this.basiccontext.printLine("load \"*\",99");
           this.basiccontext.printLine("");
           this.basiccontext.printLine("searching for *");
+          this.basiccontext.printLine("loading");
+
           try {
             pgm = atob( pgm );
+
+            this.basiccontext.printReady();
+            this.basiccontext.printLine("run");
+
             console.log(pgm);
             var regExp=/\r\n|\n\r|\n|\r/g;
             var lines = pgm.replace(regExp,"\n").split("\n");
             var bas = basiccontext.textLinesToBas( lines );
             basiccontext.setProgram( bas );
+
+            this.basiccontext.clearScreen();
+
             basiccontext.runPGM();
           }
           catch ( e ) {
