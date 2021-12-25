@@ -3,12 +3,9 @@ class Program {
 
   constructor( console ) {
     this.console = console;
-
     this.basiccontext = new BasicContext( this.console );
 
     this.stringMode = false;
-
-    this.console.reset();
 
     this.keyToCode = [];
     var k2c = this.keyToCode;
@@ -67,6 +64,9 @@ class Program {
   initPlayBook( properties ) {
     this.width = properties.w;
     this.height = properties.h;
+
+    this.console.reset();
+
   }
 
   /*
