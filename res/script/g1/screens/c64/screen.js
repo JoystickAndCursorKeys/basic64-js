@@ -44,6 +44,7 @@ class C64Screen {
 
 			this.bufcanvas =  document.createElement('canvas');
       this.bufcontext = this.bufcanvas.getContext('2d');
+			this.bufcontext.imageSmoothingEnabled= false;
 			this.bufcanvas.width = this.iwidth;
 			this.bufcanvas.height = this.iheight;
 
@@ -63,6 +64,7 @@ class C64Screen {
       this.rcanvas.height=this.FULLHEIGHT;
 
 
+			this.rcanvas.imageSmoothingEnabled= false;
 			this.context.imageSmoothingEnabled= false;
 
 			this._setCharMapping();
@@ -1849,8 +1851,6 @@ this.visibleRomCharMem = false;
 		var dw = this.WIDTH;
 		var dh = this.HEIGHT;
 		var b = this.border;
-
-		//dCtx.globalAlpha = 0.01;
 
 		dCtx.drawImage( sCvs, b.w, b.h, dw, dh);
 	 }

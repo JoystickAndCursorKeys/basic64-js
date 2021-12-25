@@ -227,7 +227,7 @@ class GameState {
       }
 
       this.loadResources( data.urls );
-      return;
+      //return;
     }
 
     if( this.state.__typedef.INI == true ) {
