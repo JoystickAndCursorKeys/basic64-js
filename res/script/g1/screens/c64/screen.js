@@ -54,8 +54,8 @@ class C64Screen {
 				h: 64
 			}
 
-			this.WIDTH = 960;
-			this.HEIGHT = 600;
+			this.WIDTH = 320*2.5;
+			this.HEIGHT = 200*2.5;
 
 			this.FULLWIDTH = this.WIDTH + this.border.w * 2;
 			this.FULLHEIGHT = this.HEIGHT + this.border.h * 2;
@@ -101,6 +101,7 @@ class C64Screen {
 
 			this.memory = new Uint8Array( 256 * 256 ); //64 KB, we're not using all
 			this.videoRam = 12288;
+			this.videoBMRam = 0;
 			this.useRomCharMem = true;
 			this.visibleRomCharMem = false;
 
@@ -410,7 +411,9 @@ class C64Screen {
 
 
 			 }
-			 else if( nr == 53272)  {
+			 else if( nr == 53272)  { /*$D018*/
+				 //http://www.devili.iki.fi/Computers/Commodore/C64/Programmers_Reference/Chapter_3/page_104.html
+
 				 var bits = this._getByteBits( v );
 				 var b1,b2,b3, value;
 				 b1 = bits[1];
@@ -418,16 +421,11 @@ class C64Screen {
 				 b3 = bits[3];
 
 				 value = 0;
+
+
 				 if( b1 ) { value += 2; }
 				 if( b2 ) { value += 4; }
 				 if( b3 ) { value += 8; }
-
-				 //console.log("poke 53272 -> " + value);
-/*
-this.videoRam = 12288;
-this.useRomCharMem = true;
-this.visibleRomCharMem = false;
-*/
 
 				 if( value == 8 ) {
 					this.useRomCharMem = false;
@@ -438,6 +436,12 @@ this.visibleRomCharMem = false;
 					 this.videoRam = 12288;
 				 } else {
 					 this.useRomCharMem = true;
+				 }
+
+				 if( b3 ) {
+					this.videoBMRam = 8192;
+				 } else {
+					 this.videoBMRam = 0;
 				 }
 
 			 }
@@ -502,10 +506,10 @@ this.visibleRomCharMem = false;
 
 		 if( this.useHires ) {
 
-			 if( a >= this.videoRam && a< this.videoRam + 8192 ) {
+			 if( a >= this.videoBMRam && a< this.videoBMRam + 8192 ) {
 
 				 var buf  = this.txScBuf;
-				 var addr = Math.floor  (( a-this.videoRam ) / 8 );
+				 var addr = Math.floor  (( a-this.videoBMRam ) / 8 );
 				 var y = Math.floor( (addr / 40) );
 				 var x = addr % 40;
 				 buf[y][x][2] = true;
@@ -1543,18 +1547,11 @@ this.visibleRomCharMem = false;
 
 	 _renderDirectChrMultiHres( x, y, ch0, colRam, chRamLoCol, chRamHiCol) {
 
-		 var fid;
-		 var dataPtr;
+		var fid;
+		var dataPtr;
 
-		 if( this.useRomCharMem ) {
-			fid = this.fontImageRom;
-			dataPtr = 0;
-		 }
-		 else {
-			fid = this.memory;
-			dataPtr = this.videoRam;
-		 }
-
+		fid = this.memory;
+		dataPtr = this.videoBMRam;
 
 	 	var iDta = this.iDta;
 	 	var pixWidthM4 = this.iwidth * 4;
@@ -1646,13 +1643,19 @@ this.visibleRomCharMem = false;
      var fid;
 		 var dataPtr;
 
-		 if( this.useRomCharMem ) {
-			fid = this.fontImageRom;
-			dataPtr = 0;
+		 if( this.useHires ) {
+			 fid = this.memory;
+	 		 dataPtr = this.videoBMRam;
 		 }
 		 else {
-			fid = this.memory;
-			dataPtr = this.videoRam;
+			 if( this.useRomCharMem ) {
+				fid = this.fontImageRom;
+				dataPtr = 0;
+			 }
+			 else {
+				fid = this.memory;
+				dataPtr = this.videoRam;
+			 }
 		 }
 
      var iDta = this.iDta;

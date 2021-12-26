@@ -76,8 +76,8 @@ class Menu {
     opts.push({opt: "diskMenu", display: "Virtual Disk" });
     opts.push({opt: "exportMenu", display: "Import" });
     opts.push({opt: "clipboardMenu", display: "Clipboard" });
-    //opts.push({opt: "keys", display: "Keys" });
     opts.push({opt: "docsSettingsMenu", display: "Docs and Settings" });
+		opts.push({opt: "toolsMenu", display: "Tools" });
     opts.push({opt: "reset", display: "Reset" });
 
     this.options["main"] = opts;
@@ -85,13 +85,19 @@ class Menu {
     this.menuOffset["main"] = 10;
 
     opts = [];
-    opts.push({opt: "copyPGMtoClip", display: "Copy Program to Clipboard" });
-	  opts.push({opt: "copyPGMURLtoClip", display: "Copy Program URL to Clipboard" });
-    opts.push({opt: "pastePGMFromClip", display: "New Program from Clipboard" });
-		opts.push({opt: "pastePGMFromClipAppend", display: "Merge Clipboard with Program" });
+    opts.push({opt: "copyPGMtoClip", display: "Copy program" });
+    opts.push({opt: "pastePGMFromClip", display: "Paste Program" });
+		opts.push({opt: "pastePGMFromClipAppend", display: "Paste and Merge" });
     this.options["clipboard"] = opts;
     this.menus["clipboard"] = "clipboard";
-    this.menuOffset["clipboard"] = 1;
+    this.menuOffset["clipboard"] = 10;
+
+		opts = [];
+    opts.push({opt: "generatePGMUrl",   display: "Generate Program URL" });
+	  opts.push({opt: "copyPGMURLtoClip", display: "Generate Inline Program URL" });
+    this.options["tools"] = opts;
+    this.menus["tools"] = "tools";
+    this.menuOffset["tools"] = 3;
 
     opts = [];
     opts.push({opt: "renumber", display: "Renumber Basic Program" });
@@ -738,6 +744,12 @@ class Menu {
     this.rendervmState();
   }
 
+	do_toolsMenu() {
+    this.menuvmState = "tools";
+    this.optSelect = 0
+    this.rendervmState();
+  }
+
   do_clipboardMenu() {
     this.menuvmState = "clipboard";
     this.optSelect = 0
@@ -760,13 +772,6 @@ class Menu {
 	do_copyPGMURLtoClip() {
 
 		var text = this.context.getProgramAsText();
-		//console.log( text.length );
-		//console.log( text );
-
-		//text = this.context.compressPGMText( text );
-
-		//console.log( text.length );
-		//console.log( text );
 
 		var url = window.location +
 							"?pgm=" +
@@ -781,6 +786,19 @@ class Menu {
 
 		this.endMenuWithMessage("url to clip");
 	}
+
+	do_generatePGMUrl() {
+
+    registerClipboardCallback( this, "do_generatePGMUrlCallBack" );
+    enableConvertLinkWidget();
+    this.runImportedPGMFlag = false;
+  }
+
+	do_generatePGMUrlCallBack( text ) {
+
+		var encodedLink = encodeURIComponent( text );
+		setLinkCallbackText( document.URL +  "?linkpgm=" + encodedLink );
+  }
 
 
   do_copyPGMtoClip() {
@@ -802,6 +820,7 @@ class Menu {
     enableClipBoardWidget();
     this.runImportedPGMFlag = false;
   }
+
 
 	do_pastePGMFromClipAppendCallback( text ) {
 
