@@ -275,7 +275,6 @@ class BasicCommands {
         return;
       }
     }
-    console.log(pars);
 
     var newLine = true;
     var value;
@@ -286,7 +285,6 @@ class BasicCommands {
         newLine = false;
       }
 
-      console.log( "i=" +i+ " newline: " + newLine);
       if( i>0) { context.sendChars( "         " , false ); }
 
       var exparts = pars[i];
@@ -307,7 +305,7 @@ class BasicCommands {
         }
       }
       value = context.evalExpression( exparts2 );
-      console.log( " newline: " + newLine);
+
       if( i == 0) {
         context.sendChars( this.normalizeIfNumber( value ), newLine );
       }

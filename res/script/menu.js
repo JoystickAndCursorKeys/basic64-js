@@ -121,12 +121,12 @@ class Menu {
 
 
     opts = [];
-    opts.push({opt: "changeTheme", display: "Change Menu Theme" });
+    opts.push({opt: "changeExtended", display: "Extended commands" });
+		opts.push({opt: "changeTheme", display: "Change Menu Theme" });
     opts.push({opt: "documentation", display: "documentation" });
     this.options["docssettings"] = opts;
     this.menus["docssettings"] = "docs & settings";
     this.menuOffset["docssettings"] = 9;
-
 
     opts = [];
     opts.push({opt: "listDirectory", display: "Dir & Load" });
@@ -430,13 +430,6 @@ class Menu {
 		}
 		else { //list
 
-
-
-	    /*this.selectList = true;
-			this.oldOptSelect = this.optSelect;
-			this.items = l.items;
-			this.listResult = -1;*/
-
 			var menuStr = "*** " + this.listTitle +" ***";
 			x = 20 - (Math.floor(menuStr.length / 2));
 			t.padLine( x, menuStr );
@@ -475,7 +468,7 @@ class Menu {
 					else {
 						t.console.setColor(txtColor);
 					}
-					t.pad( x, " " +(i+1)+ " - " + this.listItems[i].id );
+					t.pad( x, " " +(i+1)+ " - " + this.listItems[i].name );
 
 					this.curs.push( t.console.getCursorPos() );
 
@@ -894,6 +887,34 @@ class Menu {
 		this.context.selectDisk( id );
 	}
 
+	select_Extended( id ) {
+		console.log( id );
+
+		localStorage.setItem( "BJ64_Extended", JSON.stringify( { extended: id } ) );
+
+		if( id == "on" ) {
+			this.context.enableExtended( true );
+		}
+	}
+
+	do_changeExtended() {
+
+		if( !this.context.confirmCookies() ) {
+			return;
+		}
+
+		var list = { title: "Extended Commands", items: [
+			{ name: "on at startup", id: "on"},
+			{ name: "'XON' command to enable", id: "xon"}
+		] };
+
+		list.callback = "select_Extended";
+
+		console.log("list options");
+		this.startList( list );
+
+	}
+
 	select_File( id ) {
 
 		this.endMenu();
@@ -929,31 +950,6 @@ class Menu {
 
 		console.log("list dir");
 		this.startList( list );
-
-		/*
-
-    if( !this.context.confirmCookies() ) {
-      return;
-    }
-
-    this.endMenu();
-
-    var dir = this.context.getDir();
-    var row;
-
-    this.context.printLine("");
-    this.context.listCodeLine( "0 \u0012\""+dir.title+"          \"\u0092 00 2A");
-    for( var i=0; i<dir.files.length; i++) {
-      row = this.context.padSpaces6( dir.files[i].size ) +" \"" + dir.files[i].fname + "\"";
-      this.context.listCodeLine( row );
-    }
-
-    row = dir.free +" slots free.";
-    this.context.listCodeLine( row );
-
-    this.context.printReady();
-		*/
-
   }
 
   do_renumber() {
@@ -1167,7 +1163,6 @@ class Menu {
 
     this.endMenuWithMessage("snapshot saved");
   }
-
 
   do_reset() {
     this.endMenu();

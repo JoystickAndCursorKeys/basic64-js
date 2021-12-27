@@ -32,6 +32,16 @@ class BasicContext {
       this.settings.cookies = false;
     }
 
+    var commandsExtended = localStorage.getItem( "BJ64_Extended" );
+    if( commandsExtended != null ) {
+      commandsExtended = JSON.parse( commandsExtended );
+      commandsExtended = commandsExtended.extended;
+
+      if( commandsExtended == "on" ) {
+        this.enableExtended( true );
+      }
+    }
+
     this.code2colMap = [];
     var km = this.code2colMap;
 
@@ -388,6 +398,19 @@ class BasicContext {
     this.console.cursorX( p );
   }
 
+
+  resetVic() {
+    this.vpoke(53280,14);
+    this.vpoke(53281,6);
+    this.vpoke(53269,0);
+    this.vpoke(53270,200);
+    this.vpoke(53272,21);
+    this.vpoke(53265,155);
+    this.console.setColor(14);
+
+  }
+
+
   reset( hard, muteReady ) {
     this.console.clearScreen();
     this.vpoke(53280,14);
@@ -402,9 +425,12 @@ class BasicContext {
 
     this.printLine("");
     if( hard ) {
-      this.printLine(" **** commodore 64 basic emulator ****");
+      this.printLine("     **** c64 - basic emulator ****");
       this.printLine("");
-      this.printLine("  **** basic64/js - f9 = menu ****");
+      var ext = "off";
+      if(this.extendedcommands.enabled) ext = "on ";
+
+      this.printLine("   **** extended: " + ext + "- f9=menu ****");
       this.printLine("");
     }
     if( !muteReady ) {
@@ -677,7 +703,7 @@ class BasicContext {
     return val;
   }
 
-  cycleToNext() {
+  cycleToNext() { //only used after input command
     var c = this.console;
     var p = this.program;
 
@@ -685,12 +711,25 @@ class BasicContext {
     if( this.runPointer >=  p.length ) {
       this.runFlag = false;
       c.clearCursor();
+      this.printLine("");
       this.printLine("ready.");
     }
   }
 
   cycle() {
+
+    /*return values*/
+    var END_W_ERROR = 0;
+    var TERMINATE_PROGRAM = -1;
+    var LINE_FINISHED = 10;
+    var MIDLINE_INTERUPT = 20;
+    var TERMINATE_W_JUMP = 30;
+    var PAUSE_F_INPUT = 40;
+
     var c = this.console;
+
+    var cmdCount = 5;
+    var debug=false;
 
     try {
 
@@ -703,45 +742,83 @@ class BasicContext {
       }
       else {
 
+        if(debug) console.log("START CYCLE------------------------------" );
+
         var p = this.program;
 
-        for( var cyc=0; cyc<5; cyc++) {
+        while (true) {
 
+          if(debug)console.log("START CYCLE LOOP-------------" );
           var l = p[ this.runPointer ];
+          var bf = this.runPointer2;
+          if(debug)console.log(" this.runPointer = " + this.runPointer, " this.runPointer2 = " + this.runPointer2 );
+          if(debug)console.log(" cmdCount = " + cmdCount);
+          var rv = this.runCommands( l[1], 1 );
+          var af = rv[ 1 ];
 
-          //console.log("line:",l);
-          var rv = this.runCommands( l[1] );
-          //console.log("rv:",rv);
-          if( !rv ) {
+          if( rv[0] == MIDLINE_INTERUPT) {
+            this.runPointer2 = af;
+          }
+
+          var executedCount = af-bf;
+
+          if(debug)console.log(" bf = " + bf, " af = " + af);
+          if(debug)console.log(" executedCount = " + executedCount);
+          if(debug)console.log(" rv = " + rv);
+
+
+          cmdCount = cmdCount - executedCount;
+
+
+          if( rv[0]<=0 ) {
+            if(debug)console.log(" PGM END!!!!" );
             this.runFlag = false;
+            this.printLine("");
             this.printLine("ready.");
+            if(debug)console.log("CYCLE RETURN END");
             return;
           }
-
-          if( this.inputFlag ) {
-              break;
-          }
-
-          if( !this.gotoFlag) {
+          else if( rv[0] == LINE_FINISHED ) {
             this.runPointer ++;
+            this.runPointer2 = 0;
+            if(debug)console.log(" new this.runPointer = " + this.runPointer, " this.runPointer2 = " + this.runPointer2 );
+
             if( this.runPointer >=  p.length ) {
-              console.log( "end program");
+              if(debug)console.log( "end program");
               this.runFlag = false;
               c.clearCursor();
               this.printLine("ready.");
               break;
             }
           }
-          else {
-            this.gotoFlag = false;
+          else if( rv[0] == TERMINATE_W_JUMP ) {
+
+            if(debug)console.log(" jump to new this.runPointer = " + this.runPointer, " this.runPointer2 = " + this.runPointer2 );
+
           }
+          else if( rv[0] == PAUSE_F_INPUT ) {
+
+            if(debug)console.log("CYCLE PAUSE 4 INPUT");
+            break;
+
+          }
+
+          if( cmdCount<=0 ) {
+            if(debug)console.log("Breaking cmdCount=" + cmdCount)
+            break;
+          }
+
         }
+
+        if(debug)console.log(" this.runPointer = " + this.runPointer, " this.runPointer2 = " + this.runPointer2 );
+
       }
 
     }
     catch (e) {
       this.runFlag = false;
       c.clearCursor();
+      this.printError("unexpected");
       this.printLine("ready.");
     }
 
@@ -751,23 +828,42 @@ class BasicContext {
 
   doReturn() {
 
-    var oldLine = this.gosubReturn.pop();
-    if( oldLine === undefined ) {
+    var oldPointers = this.gosubReturn.pop();
+    if( oldPointers === undefined ) {
       throw "return without gosub  ";
     }
-    this.goto( oldLine );
+
+    this.runPointer2 = oldPointers[ 1 ];
+    this.runPointer = oldPointers[ 0 ];
+
+    //this.goto( oldLine );
   }
 
-  gosub( line ) {
+  gosub( line, runPointer2 ) {
 
     var pgm = this.program;
     var len=this.program.length;
-    var nextLine = null;
-    if( (this.runPointer+1) < len ) {
-      nextLine = this.program[ this.runPointer+1 ][0];
+    var retLine = null;
+    var retCmd = null;
+
+    this.runPointer2 = runPointer2;
+
+    if( ( this.runPointer2 + 1) < this.program[ this.runPointer ][1].length ) {
+      retCmd = this.runPointer2 + 1;
+      retLine = this.runPointer;
+    }
+    else {
+      if( (this.runPointer+1) < len ) {
+        retCmd=0;
+        retLine = this.runPointer+1 ;
+      }
+      else {
+        retCmd=9999;
+        retLine = this.runPointer;
+      }
     }
 
-    this.gosubReturn.push( nextLine );
+    this.gosubReturn.push( [ retLine, retCmd ] );
     this.goto( line );
   }
 
@@ -784,7 +880,6 @@ class BasicContext {
         this.runPointer = i;
         this.runPointer2 = 0;
         found = true;
-        this.gotoFlag = true;
       }
     }
 
@@ -1003,47 +1098,51 @@ class BasicContext {
       c.clearCursor();
       this.runPointer = 0;
       this.runPointer2 = 0;
-      this.gotoFlag = false;
     }
   }
 
-  doIf( a,b,comp,block ) {
+  doIf( a,b,comp ) {
+    var IF_ERROR = -1;
+    var IF_TRUE = 1;
+    var IF_FALSE = 0;
 
-    if( a==null || b == null || comp == null || block == null ) {
-      return false;
+    if( a==null || b == null || comp == null ) {
+      this.printError("if expression")
+      return IF_ERROR;
     }
-    var rv = true;
+
+    var result = IF_FALSE;
     if( comp == "=" ) {
       if( this.evalExpression(a) == this.evalExpression(b) ) {
-        rv = this.runCommands( block );
+        result = IF_TRUE;
       }
     }
     else if( comp == "<" ) {
       if( this.evalExpression(a) < this.evalExpression(b) ) {
-        rv = this.runCommands( block );
+        result = IF_TRUE;
       }
     }
     else if( comp == ">" ) {
       if( this.evalExpression(a) > this.evalExpression(b) ) {
-        rv = this.runCommands( block );
+        result = IF_TRUE;
       }
     }
     else if( comp == "<=" ) {
       if( this.evalExpression(a) <= this.evalExpression(b) ) {
-        rv = this.runCommands( block );
+        result = IF_TRUE;
       }
     }
     else if( comp == ">=" ) {
       if( this.evalExpression(a) >= this.evalExpression(b) ) {
-        rv = this.runCommands( block );
+        result = IF_TRUE;
       }
     }
     else if( comp == "<>" ) {
       if( this.evalExpression(a) != this.evalExpression(b) ) {
-        rv = this.runCommands( block );
+        result = IF_TRUE;
       }
     }
-    return rv;
+    return result;
   }
 
 
@@ -1100,7 +1199,6 @@ class BasicContext {
       varName = nextVarName;
     }
 
-
     var ctxv = ctx[varName];
 
     this.vars[ varName ] += ctxv.step;
@@ -1111,7 +1209,7 @@ class BasicContext {
       }
     }
     else if( ctxv.step == 0) {
-      throw "Step 0 not supported"
+      return ctxv.jumpTo;
     }
     else {
       if(this.vars[ varName ]>=ctxv.to) {
@@ -1141,13 +1239,45 @@ class BasicContext {
     return "";
   }
 
-  runCommands( cmds ) {
+  runCommands( cmds, limit ) {
+    /* return values
+      false -> error or end program
+      true  -> executed ok
+
+      should return
+      end_w_error
+      terminate_program
+      line_finished
+      goto_gosub
+    */
+
     var commands = this.commands;
     var ecommands = this.extendedcommands;
     var EXPR = 0, PAR = 1;
 
+    /*return values*/
+    var END_W_ERROR = 0;
+    var TERMINATE_PROGRAM = -1;
+    var LINE_FINISHED = 10;
+    var MIDLINE_INTERUPT = 20;
+    var TERMINATE_W_JUMP = 30;
+    var PAUSE_F_INPUT = 40;
+
     var end = cmds.length;
     var i=this.runPointer2;
+
+    if(!(limit == undefined )) {
+      console.log("RMM limit is defined");
+      if( end - i > limit ) {
+        console.log("RMM end:",end," i:",i," limit:",limit);
+        end = i + limit;
+
+        // end=5, i=2, limit=6 -> false
+        // end=5, i=2, limit=3 -> false
+        // end=5, i=2, limit=2 -> true -> end = 4
+      }
+    }
+
     while( i<end ) {
       var cmd=cmds[i];
       //console.log( cmd );
@@ -1155,30 +1285,40 @@ class BasicContext {
         var cn = cmd.controlKW;
         if( cn == "goto" ) {
           this.goto( cmd.params[0] );
-          break;
+          return [TERMINATE_W_JUMP,i+1];
         }
         else if( cn == "end" ) {
-          return false;
-          break;
+          return [TERMINATE_PROGRAM,i+1];
         }
         else if( cn == "gosub" ) {
-          this.gosub( cmd.params[0] );
+          this.gosub( cmd.params[0], i );
+          return [TERMINATE_W_JUMP,i+1];
         }
         else if( cn == "return" ) {
           this.doReturn();
+          return [TERMINATE_W_JUMP,i+1];
         }
         else if( cn == "if" ) {
-          var rv = this.doIf( cmd.params[0], cmd.params[1], cmd.comp, cmd.block );
-          if( !rv ) {
-            this.printError("syntax");
-            return false;
+          var IF_ERROR = -1;
+          var IF_TRUE = 1;
+          var IF_FALSE = 0;
+
+          var ifresult = this.doIf( cmd.params[0], cmd.params[1], cmd.comp );
+          if( ifresult == IF_ERROR ) {
+             return [END_W_ERROR,i+1];
+          }
+          else if( ifresult == IF_TRUE ) {
+             //return [MIDLINE_INTERUPT,i+1];
+          }
+          else  {
+             return [LINE_FINISHED,i+1];
           }
         }
         else if( cn == "data" ) {
           //Nothing
         }
         else if( cn == "rem" ) {
-          //Nothing
+          return [LINE_FINISHED,i+1];
         }
         else if( cn == "for:init" ) {
           this.doForInit( cmd.params[0], cmd.params[1], cmd.params[2], cmd.variable, i, cmds.length );
@@ -1197,9 +1337,8 @@ class BasicContext {
                 else {
                   this.runPointer = jump.line;
                   this.runPointer2 = jump.cmdPointer;
-                  this.gotoFlag = true;
                 }
-                return true;
+                return [TERMINATE_W_JUMP,i+1];
             }
             else {
               i = jump.cmdPointer;
@@ -1218,7 +1357,7 @@ class BasicContext {
           if( mycommands.enabled == false &&
               cmd.statementName.toLowerCase() != "xon" ) {
                 this.printError( "extended not enabled" );
-                return false;
+                return [END_W_ERROR,i+1];;
               }
         }
 
@@ -1260,10 +1399,13 @@ class BasicContext {
           var stc = mycommands[ "_stat_" + cmd.statementName.toLowerCase()];
           if( stc === undefined ) {
             this.printError("syntax");
-            return false;
+            return [END_W_ERROR,i+1];;
           }
           else {
               mycommands[ "_stat_" + cmd.statementName.toLowerCase()]( values );
+              if( this.inputFlag ) {
+                return [PAUSE_F_INPUT,i+1];
+              }
           }
 
         }
@@ -1275,7 +1417,7 @@ class BasicContext {
           else {
             this.printError("unexpected");
           }
-          return false;
+          return [END_W_ERROR,i+1];
         }
       }
       else if( cmd.type == "assignment" )  {
@@ -1288,8 +1430,11 @@ class BasicContext {
       i++;
     }
 
-    this.runPointer2 = 0;
-    return true;
+    if( i== cmds.length ) {
+      return [LINE_FINISHED,i];
+    }
+
+    return [MIDLINE_INTERUPT,i];
 
   }
 
@@ -1570,6 +1715,15 @@ class BasicContext {
 
   }
 
+  enableExtended( flag ) {
+    if( flag ) {
+      this.extendedcommands._stat_xon( undefined );
+    }
+    else {
+      this.extendedcommands._stat_xoff( undefined );
+    }
+  }
+
   textLinesToBas( lines ) {
 
     var myProgram = [];
@@ -1617,8 +1771,6 @@ class BasicContext {
     this.inputVarsPointer = 0;
     this.sendChars( "? " , false);
   }
-
-
 
   handleLineInput( str, isInputCommand ) {
 

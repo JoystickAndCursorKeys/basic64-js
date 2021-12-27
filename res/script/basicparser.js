@@ -860,48 +860,14 @@ class Parser {
               }
             }
 
-            command.block = this.parseLineCommands( context );
+            var block = this.parseLineCommands( context );
 
-            console.log( command.block );
+            console.log( block );
             commands.push( command );
 
-//------------------
-/*            var goto = false;
-
-            if( token.type == "name" && token.data == "GOTO") {
-                token = tokens.shift();
-                command.block = [{}];
-                command.block[0].controlKW = "goto";
-                command.block[0].type = "control";
-                command.block[0].lineNumber = context.lineNumber;
-                command.block[0].params = [];
-                command.block[0].params[0] = token.data;
-                goto = true;
+            for( var bi=0; bi<block.length; bi++) {
+              commands.push( block[bi] );
             }
-            else {
-              var implicitGoto = false;
-              if( tokens.length > 0 ) {
-                if( tokens[0].type == "num" ) {
-                  token = tokens.shift();
-                  command.block = [{}];
-                  command.block[0].controlKW = "goto";
-                  command.block[0].type = "control";
-                  command.block[0].lineNumber = context.lineNumber;
-                  command.block[0].params = [];
-                  command.block[0].params[0] = token.data;
-                  implicitGoto = true;
-                  goto = true;
-                }
-              }
-              if( !implicitGoto ) {
-                  command.block = this.parseLineCommands( context );
-              }
-            }
-
-            console.log( command.block );
-            commands.push( command );
-*/
-            //if( goto ) { break; }
 
           }
           else if( controlToken == "DATA") {

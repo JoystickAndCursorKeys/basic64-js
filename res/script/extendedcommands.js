@@ -61,7 +61,7 @@ class ExtendedCommands {
   }
 
   _stat_xrestore( pars ) {
-    this.context.reset( false, true );
+    this.context.resetVic();
   }
 
   _stat_xunnew( pars ) {
