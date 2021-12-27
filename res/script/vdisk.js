@@ -53,7 +53,7 @@ class VDisk {
   getDisks() {
 
     if( !this.initialized ) {
-      return {files:[], title: "null" };
+      return [];
     }
 
     var storageName =  "BJ64_disks_list";
@@ -64,11 +64,14 @@ class VDisk {
 
   }
 
+  getEmptyDirStructure(name) {
+    return {files:[], title: "null" };
+  }
 
   getDir() {
 
     if( !this.initialized ) {
-      return {files:[], title: "null" };
+      return getEmptyDirStructure(null);
     }
 
     var storageName =  "BJ64_" + this.currentDisk + "_dir";
@@ -175,7 +178,34 @@ class VDisk {
     return JSON.parse( json );
   }
 
-  createFullDisk( name, image ) {
+  _removeFile( fileName ) {
+
+    var storageName =  "BJ64_" +
+      this.currentDisk + "_" +
+      fileName;
+
+    localStorage.removeItem( storageName );
+
+  }
+
+  formatDisk() {
+
+    var dir = this.getDir();
+
+    for( var i=0; i<dir.files.length; i++) {
+
+        var fileName = dir.files[i].fname;
+        this._removeFile( fileName );
+
+    }
+
+    dir.files = [];
+    dir.title = "Empty"
+    this.setDir( );
+
+  }
+
+  createDiskFromImage( name, image ) {
 
     this.lastDisk++;
     var labl = "" + this.lastDisk;
@@ -191,6 +221,23 @@ class VDisk {
         var storageName =  "BJ64_" + labl + "_" + fileName;
         localStorage.setItem( storageName, content[i].content );
     }
+
+    this.disks.push( labl );
+    localStorage.setItem( "BJ64_disks_list", JSON.stringify( this.disks ) );
+
+  }
+
+  createDisk() {
+
+    var existingDisks = this.getDisks();
+    this.lastDisk ++;
+    var labl = "" + this.lastDisk;
+    labl = labl.padStart( 4,"0");
+
+    var newDir = this.getEmptyDirStructure("new disk");
+
+    var storageName =  "BJ64_" + labl + "_dir";
+    localStorage.setItem(storageName, JSON.stringify( newDir ) );
 
     this.disks.push( labl );
     localStorage.setItem( "BJ64_disks_list", JSON.stringify( this.disks ) );

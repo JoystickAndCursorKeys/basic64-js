@@ -1465,6 +1465,15 @@ class BasicContext {
 
   }
 
+  createDisk() {
+    if( !this.confirmCookies() ) {
+      return null;
+    }
+
+    this.vDisks.createDisk();    
+  }
+
+
   getDisks() {
     if( !this.confirmCookies() ) {
       return null;
@@ -1498,6 +1507,13 @@ class BasicContext {
     this.vDisks.setDir( dir );
   }
 
+  formatDisk() {
+    if( !this.confirmCookies() ) {
+      return null;
+    }
+
+    this.vDisks.formatDisk();
+  }
 
   loadDir() {
 
@@ -1604,7 +1620,15 @@ class BasicContext {
     if( container.type == "bas") {
 
       this.program = JSON.parse( container.data );
+      var p = new Parser( this.commands, this.extendedcommands );
+      p.init();
 
+      if( this.program != null ) {
+        for( i=0; i<this.program.length;i++) {
+          var l = p.parseLine( this.program[i][2] );
+          this.program[i][1] = l.commands;
+        }
+      }
     }
     else if( container.type == "snp") {
 
@@ -1663,34 +1687,17 @@ class BasicContext {
 
   }
 
-  createFullDisk( name, image ) {
+  createDiskFromImage( name, image ) {
 
     if( !this.confirmCookies() ) {
       return null;
     }
 
-    return this.vDisks.createFullDisk( name, image );
+    return this.vDisks.createDiskFromImage( name, image );
 
   }
 
   insertPgmLine( linenr, commands, raw ) {
-    /*
-    for( var i=0; i<this.program.length; i++) {
-      var pl=this.program[i];
-      if( pl[0] == linenr ) {
-        this.program[i] = [linenr, commands, raw ];
-        return;
-      }
-    }
-
-    this.program.push( [linenr, commands, raw ]);
-
-    var sortF = function compare( a, b ) {
-      return a[0] - b[0];
-    }
-
-    this.program.sort( sortF );
-    */
 
     this.insertPgmLineLocal( linenr, commands, raw, this.program );
   }

@@ -129,8 +129,11 @@ class Menu {
     this.menuOffset["docssettings"] = 9;
 
     opts = [];
-    opts.push({opt: "listDirectory", display: "Dir & Load" });
+    opts.push({opt: "listDirectory", display: "Load File" });
+		opts.push({opt: "formatDisk", display: "Format Disk", confirm: true });
     opts.push({opt: "listDisks",    display: "Swap Disks" });
+		opts.push({opt: "createDisk",    display: "Create new Disk", confirm: true });
+
 //    opts.push({opt: "listDirectory", display: "Save" });
     opts.push({opt: "saveSnapshot", display:  "Save Snapshot" });
 //    opts.push({opt: "listDirectory", display: "Format" });
@@ -620,7 +623,12 @@ class Menu {
 
 	      var opt = options[ this.optSelect ];
 
-	      this[ "do_" +  opt.opt ]();
+				if( ! opt.confirm ) {
+					this[ "do_" +  opt.opt ]();
+				}
+	      else {
+					this.chooseYesOrNo( opt.display , "do_" +  opt.opt);
+				}
 			}
     }
     if( evt.key == "Escape") {
@@ -897,6 +905,65 @@ class Menu {
 		}
 	}
 
+	do_createDisk() {
+		if( !this.context.confirmCookies() ) {
+			return;
+		}
+
+		this.context.createDisk();
+		this.infoBox("a new disk has been created");
+	}
+
+	do_formatDisk() {
+		if( !this.context.confirmCookies() ) {
+			return;
+		}
+		console.log( "do_FormatDisk" );
+
+		//this.context.formatDisk();
+		console.log("Formating Disk...");
+
+		this.infoBox("Disk has been formatted");
+	}
+
+	chooseYesOrNoCallBack( id ) {
+
+		if( id == "yes" ) {
+			this[this.chooseYesCallBack]();
+		}
+
+	}
+
+	chooseYesOrNo( action, callback ) {
+
+		var list = { title: action + " - Are you sure?", items: [
+			{ name: "Yes", id: "yes"},
+			{ name: "No",  id: "no"}
+		] };
+
+		this.chooseYesCallBack = callback;
+		list.callback = "chooseYesOrNoCallBack";
+
+		console.log("list options");
+		this.startList( list );
+
+	}
+
+	emptyCallBack( id ) {
+	}
+
+	infoBox( info  ) {
+
+		var list = { title: info, items: [
+			{ name: "Ok", id: "ok"}
+		] };
+
+		list.callback = "emptyCallBack";
+
+		this.startList( list );
+
+	}
+
 	do_changeExtended() {
 
 		if( !this.context.confirmCookies() ) {
@@ -1025,7 +1092,7 @@ class Menu {
     if( diskName.endsWith(".vd64") ) {
       diskName = diskName.substring(0,diskName.length-5);
     }
-    this.context.createFullDisk( diskName, JSON.parse( text ) );
+    this.context.createDiskFromImage( diskName, JSON.parse( text ) );
   }
 
 
@@ -1159,7 +1226,7 @@ class Menu {
 
     var data = JSON.stringify(this.vmState);
 
-    this.context.saveSerializedData( "snapshot", data, "snp", 65536 );
+    this.context.saveSerializedData( "SNAPSHOT", data, "snp", 65536 );
 
     this.endMenuWithMessage("snapshot saved");
   }
