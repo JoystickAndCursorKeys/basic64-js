@@ -96,6 +96,22 @@ class ExtendedCommands {
 
   }
 
+  _stat_xdel( pars ) {
+
+    if( pars.length == 0 ) {
+      this.context.printError("specify file");
+      return;
+    }
+
+    var rv = this.context.deleteFile( pars[0].value );
+
+    if( rv != "ok" ) {
+      this.context.printError(rv);
+      return;
+    }
+
+  }
+
   /************************ functions ************************/
 
 

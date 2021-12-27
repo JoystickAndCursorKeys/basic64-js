@@ -1470,9 +1470,17 @@ class BasicContext {
       return null;
     }
 
-    this.vDisks.createDisk();    
+    this.vDisks.createDisk();
   }
 
+
+  deleteFile( fn ) {
+    if( !this.confirmCookies() ) {
+      return null;
+    }
+
+    return this.vDisks.deleteFile( fn );
+  }
 
   getDisks() {
     if( !this.confirmCookies() ) {
