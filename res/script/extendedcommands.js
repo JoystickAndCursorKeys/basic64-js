@@ -7,10 +7,17 @@ class ExtendedCommands {
     this.func = {};
     this.enabled = false;
 
+    this.statementList = null;
+
   }
 
   getStatements() {
     if( this.enabled == false ) { return []; }
+
+    if( this.statementList != null ) {
+      return this.statementList;
+    }
+
     var stats = Object.getOwnPropertyNames( ExtendedCommands.prototype );
 
     var stats2 = [];
@@ -20,6 +27,8 @@ class ExtendedCommands {
         stats2.push( stats[i].substr(6 ).toUpperCase() );
       }
     }
+
+    this.statementList = stats2;
 
     return stats2;
   }
@@ -48,7 +57,7 @@ class ExtendedCommands {
     this.enabled = false;
   }
 
-  _stat_xhelp( pars ) {
+  _stat_help( pars ) {
     this.context.printLine("");
     this.context.printLine("extended commands");
     this.context.printLine("-----------------");
@@ -60,15 +69,15 @@ class ExtendedCommands {
 
   }
 
-  _stat_xrestore( pars ) {
+  _stat_panic( pars ) {
     this.context.resetVic();
   }
 
-  _stat_xunnew( pars ) {
+  _stat_unnew( pars ) {
     this.context.old();
   }
 
-  _stat_xdisks( pars ) {
+  _stat_disks( pars ) {
     var disks = this.context.getDisks();
 
     for( var i=0; i<disks.length; i++) {
@@ -78,13 +87,31 @@ class ExtendedCommands {
     }
   }
 
-  _stat_xdisksel( pars ) {
-    console.log(pars);
-    //this.context.selectDisk( id );
+  _stat_dselect( pars ) {
+    if( pars.length == 0 ) {
+      this.context.printError("specify disk");
+      return;
+    }
+    this.context.selectDisk( pars[0].value );
   }
 
-  _stat_xdir( pars ) {
+  _stat_dlabel( pars ) {
+
+    if( pars.length == 0 ) {
+      this.context.printError("specify label");
+      return;
+    }
+
+    this.context.setDiskLabel( pars[0].value );
+  }
+
+  _stat_dir( pars ) {
     var dir = this.context.getDir();
+
+    this.context.sendChars( "DIR OF " +
+      "\u0012\""+dir.title+"          \"\u0092" , true);
+
+    //this.context.printLine( this.context.padSpaces6( "" ) + dir.title );
 
     for( var i=0; i<dir.files.length; i++) {
       //list.items.push( { name: dir.files[i].fname, id:  dir.files[i].fname } );
@@ -96,7 +123,7 @@ class ExtendedCommands {
 
   }
 
-  _stat_xdel( pars ) {
+  _stat_delete( pars ) {
 
     if( pars.length == 0 ) {
       this.context.printError("specify file");
@@ -109,8 +136,9 @@ class ExtendedCommands {
       this.context.printError(rv);
       return;
     }
-
   }
+
+
 
   /************************ functions ************************/
 

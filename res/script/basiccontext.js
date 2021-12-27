@@ -430,7 +430,7 @@ class BasicContext {
       var ext = "off";
       if(this.extendedcommands.enabled) ext = "on ";
 
-      this.printLine("   **** extended: " + ext + "- f9=menu ****");
+      this.printLine("    **** extended: " + ext + "- f9=menu ****");
       this.printLine("");
     }
     if( !muteReady ) {
@@ -1351,14 +1351,25 @@ class BasicContext {
         var values = [];
         var pardefs = [];
         var mycommands = commands;
-        if( cmd.statementName.toLowerCase().startsWith("x") ) {
+
+        var stc = mycommands[ "_stat_" + cmd.statementName.toLowerCase()];
+
+        if( stc === undefined ) {
+          //cmd.statementName.toLowerCase().startsWith("x") )
           mycommands = ecommands;
 
-          if( mycommands.enabled == false &&
-              cmd.statementName.toLowerCase() != "xon" ) {
-                this.printError( "extended not enabled" );
-                return [END_W_ERROR,i+1];;
-              }
+          stc = mycommands[ "_stat_" + cmd.statementName.toLowerCase()];
+
+          if( stc === undefined ) { }
+          else {
+            if( mycommands.enabled == false &&
+              cmd.statementName.toLowerCase() != "xon") {
+                  this.printError( "extended not enabled" );
+                  return [END_W_ERROR,i+1];;
+                }
+          }
+
+
         }
 
         var intf = mycommands[ "_if_" + cmd.statementName.toLowerCase()];
@@ -1396,7 +1407,7 @@ class BasicContext {
           }
         }
         try {
-          var stc = mycommands[ "_stat_" + cmd.statementName.toLowerCase()];
+          //var stc = ;
           if( stc === undefined ) {
             this.printError("syntax");
             return [END_W_ERROR,i+1];;
@@ -1473,6 +1484,14 @@ class BasicContext {
     this.vDisks.createDisk();
   }
 
+  setDiskLabel( label ) {
+    if( !this.confirmCookies() ) {
+      return null;
+    }
+    var dir = this.vDisks.getDir();
+    dir.title = label;
+    this.vDisks.setDir( dir );
+  }
 
   deleteFile( fn ) {
     if( !this.confirmCookies() ) {
@@ -1540,7 +1559,7 @@ class BasicContext {
       this.program.push([null,null,row]);
     }
 
-    row = dir.free +" slots free.";
+    row = dir.free +" slots free.".toUpperCase();
     this.program.push([null,null,row]);
 
   }

@@ -5,10 +5,16 @@ class BasicCommands {
     this.context = context;
     this.cmds = {};
     this.func = {};
+    this.statementList = null;
 
   }
 
   getStatements() {
+
+    if( this.statementList != null ) {
+      return this.statementList;
+    }
+
     var stats = Object.getOwnPropertyNames( BasicCommands.prototype );
 
     var stats2 = [];
@@ -19,6 +25,7 @@ class BasicCommands {
       }
     }
 
+    this.statementList = stats2;
     return stats2;
   }
 
