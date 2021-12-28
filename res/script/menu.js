@@ -121,6 +121,7 @@ class Menu {
 
 
     opts = [];
+    opts.push({opt: "changeTurbo", display: "turbo mode" });
     opts.push({opt: "changeExtended", display: "Extended commands" });
 		opts.push({opt: "changeTheme", display: "Change Menu Theme" });
     opts.push({opt: "documentation", display: "documentation" });
@@ -973,6 +974,34 @@ class Menu {
 		var list = { title: "Extended Commands", items: [
 			{ name: "on at startup", id: "on"},
 			{ name: "'XON' command to enable", id: "xon"}
+		] };
+
+		list.callback = "select_Extended";
+
+		console.log("list options");
+		this.startList( list );
+
+	}
+
+	select_Turbo( id ) {
+		console.log( id );
+
+		localStorage.setItem( "BJ64_Turbo", JSON.stringify( { turbo: id } ) );
+
+		if( id == "on" ) {
+			this.contextthis.setTurbo( true );
+		}
+	}
+
+	do_changeTurbo() {
+
+		if( !this.context.confirmCookies() ) {
+			return;
+		}
+
+		var list = { title: "Turbo Mode", items: [
+			{ name: "on at startup", id: "on"},
+			{ name: "'turbo' command to enable", id: "manual"}
 		] };
 
 		list.callback = "select_Extended";

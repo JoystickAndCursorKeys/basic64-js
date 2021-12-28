@@ -9,7 +9,9 @@ class BasicContext {
     this.runFlag = false;
     this.inputFlag = false;
     this.gosubReturn = [];
+    this.nullTime = new Date().getTime();
 
+    this.turboMode = false;
     this.cmdCountPerCycleDefault = 5;
     this.cmdCountPerCycleTurbo = 1000;
     this.cmdCountPerCycle = this.cmdCountPerCycleDefault ;
@@ -43,6 +45,16 @@ class BasicContext {
 
       if( commandsExtended == "on" ) {
         this.enableExtended( true );
+      }
+    }
+
+    var turbo = localStorage.getItem( "BJ64_Turbo" );
+    if( turbo != null ) {
+      turbo = JSON.parse( turbo );
+      turbo = turbo.turbo;
+
+      if( turbo == "on" ) {
+        this.setTurbo( true );
       }
     }
 
@@ -99,10 +111,11 @@ class BasicContext {
   setTurbo( on ) {
     if( on ) {
       this.cmdCountPerCycle = this.cmdCountPerCycleTurbo ;
+      this.turboMode = true;
       return;
     }
     this.cmdCountPerCycle = this.cmdCountPerCycleDefault ;
-
+    this.turboMode = false;
   }
 
   setProgram( pgm ) {
@@ -488,6 +501,25 @@ class BasicContext {
 
   }
 
+  getJiffyTime() {
+    var millis=new Date().getTime() - this.nullTime;
+    var jiffis = Math.floor(millis / (1000 / 60));
+
+    return jiffis % 5184000;
+  }
+
+  getTime() {
+    var millis=new Date().getTime() - this.nullTime;
+    millis = millis % 86400000;
+
+    var hours = Math.floor(millis / 3600000);
+    millis = millis - (hours * 3600000 );
+    var minutes = Math.floor(millis / 60000);
+    millis = millis - (minutes * 60000 );
+    var seconds = Math.floor(millis / 1000);
+    //millis = millis - (seconds * 1000 );
+    return [hours,minutes,seconds];
+  }
 
   reset( hard, muteReady ) {
     this.console.clearScreen();
@@ -502,6 +534,8 @@ class BasicContext {
     this.runFlag = false;
     this.clrPGM();
 
+    this.setTurbo( false );
+
     this.printLine("");
     if( hard ) {
       this.printLine("     **** c64 - basic emulator ****");
@@ -509,7 +543,10 @@ class BasicContext {
       var ext = "off";
       if(this.extendedcommands.enabled) ext = "on ";
 
-      this.printLine("    **** extended: " + ext + "- f9=menu ****");
+      var turbo = "off";
+      if(this.turboMode) turbo = "on ";
+
+      this.printLine("  **** extended: " + ext + "-  turbo: "+turbo+" ****");
       this.printLine("");
     }
     if( !muteReady ) {
@@ -637,6 +674,14 @@ class BasicContext {
     return this.program;
   }
 
+  padZeros2( x ) {
+    var s = x + "";
+    for(var i=s.length; i<2; i++) {
+      s="0"+s;
+    }
+    return s;
+  }
+
   evalExpressionPart( p ) {
     var val=0;
 
@@ -652,7 +697,19 @@ class BasicContext {
       val = p.data;
     }
     else if( p.type=="var" ) {
-      val = this.vars[ p.data ];
+      if(p.data.startsWith("TI")) {
+        val = this.getJiffyTime();
+        if(p.data.endsWith("$")) {
+          val = this.getTime();
+          val = "" +
+            this.padZeros2(val[0]) +
+            this.padZeros2(val[1]) +
+            this.padZeros2(val[2]);
+        }
+      }
+      else {
+        val = this.vars[ p.data ];
+      }
       if( val == undefined ) {
         val = 0;
       }
@@ -1537,6 +1594,11 @@ class BasicContext {
       }
       else if( cmd.type == "assignment" )  {
         if( this.vars[ cmd.var ] === undefined ) {
+
+          if(cmd.var.startsWith("TI")) {
+            this.printError("syntax");
+            return [END_W_ERROR,i+1];
+          }
           this.vars[ cmd.var ] = 0;
         }
         this.vars[ cmd.var ] = this.evalExpression( cmd.expression );

@@ -489,4 +489,8 @@ class BasicCommands {
     return context.peek( pars[0].value );
 
   }
+
+  _fun_jiffies( pars ) {
+    return this.context.getJiffyTime( );
+  }
 }

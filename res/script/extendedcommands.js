@@ -128,14 +128,20 @@ class ExtendedCommands {
       return;
     }
     console.log(pars);
-    this.console.setColor( pars[0].value );
+    if( pars[0].value != -1 ) {
+      this.console.setColor( pars[0].value );
+    }
 
     if( pars.length >= 2 ) {
-      this.context.vpoke(53281, pars[1].value );
+      if( pars[1].value != -1 ) {
+        this.context.vpoke(53281, pars[1].value );
+      }
     }
 
     if( pars.length >= 3 ) {
-      this.context.vpoke(53280, pars[2].value );
+      if( pars[2].value != -1 ) {
+        this.context.vpoke(53280, pars[2].value );
+      }
     }
 
     if( pars.length > 3 ) {
@@ -202,6 +208,7 @@ class ExtendedCommands {
 
 
   /************************ functions ************************/
+
 
 
 }
