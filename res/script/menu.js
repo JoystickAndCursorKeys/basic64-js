@@ -1026,7 +1026,7 @@ class Menu {
   do_compress() {
     this.context.compressProgram();
 
-    this.endMenuWithMessage("import ok");
+    this.endMenuWithMessage("compress ok");
     this.context.printLine("list");
 
     var pgm = this.context.getProgramLines();

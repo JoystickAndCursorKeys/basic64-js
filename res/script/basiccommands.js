@@ -471,7 +471,7 @@ class BasicCommands {
 
   _fun_tab( pars ) {
     var context = this.context;
-    context.setCursXPos( _max( pars[0].value, 39) );
+    context.setCursXPos( this._max( pars[0].value, 39) );
     return "";
   }
 

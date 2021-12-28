@@ -105,6 +105,67 @@ class ExtendedCommands {
     this.context.setDiskLabel( pars[0].value );
   }
 
+  _stat_reset( pars ) {
+    this.context.reset( true, true );
+  }
+
+  _stat_turbo( pars ) {
+    this.context.setTurbo( true );
+  }
+
+  _stat_cls( pars ) {
+    this.context.clearScreen();
+  }
+
+  _stat_slow( pars ) {
+    this.context.setTurbo( false );
+  }
+
+  _stat_color( pars ) {
+
+    if( pars.length == 0 ) {
+      throw("@col missing");
+      return;
+    }
+    console.log(pars);
+    this.console.setColor( pars[0].value );
+
+    if( pars.length >= 2 ) {
+      this.context.vpoke(53281, pars[1].value );
+    }
+
+    if( pars.length >= 3 ) {
+      this.context.vpoke(53280, pars[2].value );
+    }
+
+    if( pars.length > 3 ) {
+      throw("@too many parameters");
+      return;
+    }
+
+  }
+
+  _stat_renumber( pars ) {
+
+    if( pars.length == 0 ) {
+      throw("@start missing");
+      return;
+    }
+
+    if( pars.length == 1 ) {
+      throw("@step missing");
+      return;
+    }
+
+    if( pars.length > 2 ) {
+      throw("@too many parameters");
+      return;
+    }
+
+    this.context.renumberProgram( pars[0].value, pars[1].value);
+
+  }
+
   _stat_dir( pars ) {
     var dir = this.context.getDir();
 

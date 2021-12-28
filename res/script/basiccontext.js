@@ -10,6 +10,10 @@ class BasicContext {
     this.inputFlag = false;
     this.gosubReturn = [];
 
+    this.cmdCountPerCycleDefault = 5;
+    this.cmdCountPerCycleTurbo = 1000;
+    this.cmdCountPerCycle = this.cmdCountPerCycleDefault ;
+
     var ctx = this.context;
     var c = this.console;
     this.commands = new BasicCommands( this );
@@ -92,6 +96,14 @@ class BasicContext {
 
   }
 
+  setTurbo( on ) {
+    if( on ) {
+      this.cmdCountPerCycle = this.cmdCountPerCycleTurbo ;
+      return;
+    }
+    this.cmdCountPerCycle = this.cmdCountPerCycleDefault ;
+
+  }
 
   setProgram( pgm ) {
     this.program = pgm;
@@ -365,6 +377,11 @@ class BasicContext {
     this.reverseOn = false;
   }
 
+  clearScreen() {
+    this.console.clearScreen();
+    this.console.cursorHome();
+  }
+
   sendChars( s, newline ) {
 
     for( var i=0; i< s.length; i++) {
@@ -483,6 +500,7 @@ class BasicContext {
     this.console.setColor(14);
     this.inputFlag = false;
     this.runFlag = false;
+    this.clrPGM();
 
     this.printLine("");
     if( hard ) {
@@ -801,7 +819,7 @@ class BasicContext {
 
     var c = this.console;
 
-    var cmdCount = 5;
+    var cmdCount = this.cmdCountPerCycle;
     var debug=false;
 
     try {
