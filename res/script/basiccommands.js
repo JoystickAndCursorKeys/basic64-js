@@ -274,6 +274,7 @@ class BasicCommands {
   isNumber(value) {
     return typeof value === 'number' && isFinite(value);
   }
+
   normalizeIfNumber( x )  {
     if( this.isNumber( x ) ) {
       if ( x >= 0 ) {
@@ -433,6 +434,14 @@ class BasicCommands {
 
   _fun_sin( pars ) {
     return Math.sin( pars[0].value);
+  }
+
+  _fun_tan( pars ) {
+    return Math.tan( pars[0].value);
+  }
+
+  _fun_atn( pars ) {
+    return Math.atan( pars[0].value);
   }
 
   _fun_cos( pars ) {
