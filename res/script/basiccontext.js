@@ -349,6 +349,12 @@ class BasicContext {
 
   }
 
+  printInfo( s ) {
+
+    this.console.writeString( ( s + this.onLineStr()).toUpperCase(), true );
+
+  }
+
   printLine( s ) {
     this.sendChars(s.toUpperCase(), true);
     this.reverseOn = false;
@@ -1364,6 +1370,10 @@ class BasicContext {
           return [TERMINATE_W_JUMP,i+1];
         }
         else if( cn == "end" ) {
+          return [TERMINATE_PROGRAM,i+1];
+        }
+        else if( cn == "stop" ) {
+          this.printInfo("break");
           return [TERMINATE_PROGRAM,i+1];
         }
         else if( cn == "gosub" ) {

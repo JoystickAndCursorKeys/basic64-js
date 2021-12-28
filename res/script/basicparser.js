@@ -100,7 +100,7 @@ class Parser {
 
   init() {
 
-	  this.CTRL_KW = ["IF","THEN","GOTO","AND", "NOT", "OR",  "GOSUB", "RETURN", "FOR", "TO", "NEXT", "STEP", "DATA", "REM", "GOSUB", "DIM", "END", "LET" ];
+	  this.CTRL_KW = ["IF","THEN","GOTO","AND", "NOT", "OR",  "GOSUB", "RETURN", "FOR", "TO", "NEXT", "STEP", "DATA", "REM", "GOSUB", "DIM", "END", "LET", "STOP" ];
     this.SHORTCUT_KW = ["?"];
 
     this.KEYWORDS = this.commands.getStatements();
@@ -723,6 +723,13 @@ class Parser {
 
           }
           else if( controlToken == "END") {
+            var num = -1;
+
+            command.params=[];
+            commands.push( command );
+
+          }
+          else if( controlToken == "STOP") {
             var num = -1;
 
             command.params=[];
