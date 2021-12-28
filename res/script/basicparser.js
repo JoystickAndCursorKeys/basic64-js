@@ -100,7 +100,7 @@ class Parser {
 
   init() {
 
-	  this.CTRL_KW = ["IF","THEN","GOTO","AND", "NOT", "OR",  "GOSUB", "RETURN", "FOR", "TO", "NEXT", "STEP", "DATA", "REM", "GOSUB", "DIM", "END" ];
+	  this.CTRL_KW = ["IF","THEN","GOTO","AND", "NOT", "OR",  "GOSUB", "RETURN", "FOR", "TO", "NEXT", "STEP", "DATA", "REM", "GOSUB", "DIM", "END", "LET" ];
     this.SHORTCUT_KW = ["?"];
 
     this.KEYWORDS = this.commands.getStatements();
@@ -648,8 +648,34 @@ class Parser {
 						tokens.unshift( token );
 					}
 
+          if( controlToken == "LET") {
 
-          if( controlToken == "GOTO") {
+            token = tokens.shift();
+            if( token.type != "name") {
+              this.Exception( context, "LET expects var name");
+            }
+            nameToken = token.data;
+
+            token = tokens.shift();
+      			if( token === undefined ) {
+      				token = { type: "@@@notoken" };
+      			}
+
+            if( token.type != "eq") {
+              this.Exception( context, "LET expects =");
+            }
+
+            cmdType = "assignment";
+            command.type = cmdType;
+            command.var = nameToken;
+
+            var endTokens = [];
+    				endTokens.push( { type: "cmdsep", data: "@@@all" });
+
+    				command.expression = this.parseExpression( context, endTokens );
+    				commands.push( command );
+          }
+          else if( controlToken == "GOTO") {
             var num = -1;
 
             token = tokens.shift();
