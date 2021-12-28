@@ -63,6 +63,32 @@ class BasicContext {
     km[0x9a] = 14;
     km[0x9b] = 15;
 
+    this.symbolTable = {};
+
+    this.symbolTable.up     = 0x91;
+    this.symbolTable.down   = 0x11;
+    this.symbolTable.left   = 157;
+    this.symbolTable.right  = 29;
+    this.symbolTable["reverse on"]  = 0x12;
+    this.symbolTable["reverse off"]  = 0x92;
+    this.symbolTable["clear"]  = 0x93;
+    this.symbolTable["home"]  = 0x13;
+    this.symbolTable.black  = 144;
+    this.symbolTable.white  = 5;
+    this.symbolTable.red  = 28;
+    this.symbolTable.cyan  = 159;
+    this.symbolTable.purple  = 156;
+    this.symbolTable.green  = 30;
+    this.symbolTable.blue  = 31;
+    this.symbolTable.yellow  = 158;
+    this.symbolTable.orange  = 129;
+    this.symbolTable.brown  = 149;
+    this.symbolTable.pink  = 150; // light red
+    this.symbolTable.grey1  = 151;  //dark grey
+    this.symbolTable.grey2  = 152;
+    this.symbolTable["light green"]  = 153;
+    this.symbolTable["light blue"]  = 154;
+    this.symbolTable.grey3  = 155; //light grey
 
   }
 
@@ -358,6 +384,30 @@ class BasicContext {
         else if( c==0x93 ) {
           this.console.clearScreen()
         }
+        else if( c==29 ) {
+          var xy = this.console.getCursorPos();
+          if(xy[0]<39) {
+            this.console.setCursorX( xy[0] + 1);
+          }
+        }
+        else if( c==157 ) {
+          var xy = this.console.getCursorPos();
+          if(xy[0]>0) {
+            this.console.setCursorX( xy[0] - 1);
+          }
+        }
+        else if( c==17 ) {
+          var xy = this.console.getCursorPos();
+          if(xy[1]<24) {
+            this.console.setCursorY( xy[1] + 1);
+          }
+        }
+        else if( c==145 ) {
+          var xy = this.console.getCursorPos();
+          if(xy[1]>0) {
+            this.console.setCursorY( xy[1] - 1);
+          }
+        }
       }
       else {
         if( this.reverseOn ) {
@@ -373,6 +423,11 @@ class BasicContext {
     if( newline ) {
       this.console.writeString( "", true );
     }
+  }
+
+  getLinePos() {
+    var xy = this.console.getCursorPos();
+    return xy[0];
   }
 
   sendCharsSimple( s, newline ) {
@@ -497,6 +552,15 @@ class BasicContext {
     return dst.toLowerCase();
   }
 
+  ResolveStringSymbolToCode( x ) {
+
+    if(this.symbolTable[x]) {
+      return this.symbolTable[x];
+    }
+
+    return x;
+  }
+
 
   prepareLineForImport( txt0 ) {
     var txt;
@@ -516,12 +580,15 @@ class BasicContext {
               break;
             }
             num += String.fromCharCode( c );
+
             console.log("found ESC seq char " + String.fromCharCode( c ) );
             console.log("found ESC seq char code " + c);
             i++;
         }
 
         console.log("found ESC seq " + num);
+        num = this.ResolveStringSymbolToCode(num.toLowerCase());
+        console.log("found resolved ESC seq " + num);
 
         dst += String.fromCharCode( parseInt( num, 10) );
       }
@@ -1047,6 +1114,15 @@ class BasicContext {
         line[2] = lRec.raw;
 
     }
+  }
+
+  clrPGM() {
+    this.vars = [];
+    this.restoreDataPtr();
+  }
+
+  restoreDataPtr() {
+    this.dataPointer = 0;
   }
 
   runPGM() {

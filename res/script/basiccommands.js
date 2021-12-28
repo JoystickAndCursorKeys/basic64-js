@@ -190,6 +190,10 @@ class BasicCommands {
 
   }
 
+  _stat_restore( pars ) {
+    this.context.restoreDataPtr();
+  }
+
   _stat_load( pars ) {
     var context = this.context;
     var result;
@@ -244,6 +248,17 @@ class BasicCommands {
     }
   }
 
+  _stat_sys( pars ) {
+    throw "@not supported";
+  }
+
+  _stat_wait( pars ) {
+    throw "@not supported";
+  }
+
+  _stat_verify( pars ) {
+    throw "@not supported";
+  }
 
   _stat_run( pars ) {
     var context = this.context;
@@ -331,15 +346,39 @@ class BasicCommands {
 
   }
 
+  _stat_clr( pars ) {
+    return this.context.clrPGM();
+  }
+
   /************************ functions ************************/
 
   _fun_chr_DLR_( pars ) {
     return String.fromCharCode( pars[0].value );
   }
 
+  _fun_str_DLR_( pars ) {
+    if(pars[0].value>=0) {
+      return " " +  pars[0].value;
+    }
+    return "" +  pars[0].value;
+  }
+
+  _fun_abs( pars ) {
+    if( pars[0].value < 0 ) {
+      return -pars[0].value;
+    }
+    return pars[0].value;
+  }
+
   _fun_len( pars ) {
     return pars[0].value.length;
   }
+
+  _fun_asc( pars ) {
+    return pars[0].value.charCodeAt(0);
+  }
+
+
 
   _fun_val( pars ) {
     return parseInt( pars[0].value );
@@ -359,6 +398,37 @@ class BasicCommands {
 
   _fun_log( pars ) {
     return Math.log( pars[0].value);
+  }
+
+  _fun_pos( pars ) {
+    return this.context.getLinePos();
+  }
+
+  _fun_left_DLR_( pars ) {
+      //? LEFT$(A$,8)
+      return pars[0].value.substr(0,pars[1].value);
+  }
+
+  _fun_right_DLR_( pars ) {
+      //? RIGHT$(A$,8)
+      var s = pars[0].value;
+      return s.substr( s.length - pars[1].value );
+  }
+
+  _fun_mid_DLR_( pars ) {
+      //? RIGHT$(A$,8)
+      var s = pars[0].value;
+
+      if( pars.length == 3) {
+        return s.substr( pars[1].value-1, pars[2].value );
+      }
+      else if( pars.length == 2) {
+        return s.substr( pars[1].value-1 );
+      }
+  }
+
+  _fun_fre( pars ) {
+    return -26627;
   }
 
   _fun_sin( pars ) {
