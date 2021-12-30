@@ -404,7 +404,7 @@ class C64Screen {
 				 // POKE 53265,PEEK(53265)OR32
 				 // this.useHires
 
-				 this.useHires = (v & 32) > 0; //bit 5
+				 this.useHires = (v & 32) > 0; //bit 5 (starting w bit 0)
 
 				 //console.log("poke 53265 -> " + v);
 				 //console.log("this.useHires -> " + this.useHires);
@@ -721,6 +721,29 @@ class C64Screen {
 	 		}
 	 		this.txScBuf[ y ] = row;
 	 	}
+	 }
+
+	 clearGFXScreen( col0, col1, col2 ) {
+
+		 if( this.useHires ) {
+			 for( var i=0; i<8000;i++) {
+				 this.memory[ this.videoBMRam + i] = 0;
+			 }
+		 }
+
+		 var buf  = this.txScBuf;
+		 var chrcol = (col1 + col0 * 16) % 256;
+		 var colram = col2;
+		 for(var y=0;y<25;y++) {
+			 for(var x=0;x<40;x++) {
+				 buf[y][x][0] = chrcol;
+				 if( col2 != null ) {
+					 	buf[y][x][1] = colram;
+				 }
+				 buf[y][x][2] = true;
+			 }
+		 }
+
 	 }
 
 	 scrollUp() {
@@ -1628,17 +1651,6 @@ class C64Screen {
 	 }
 
 	 _renderDirectChrMono( x, y, ch0, col0, bgcol) {
-
-		 // ch0 is character code
-		 // col0 is color
-/*
-		 try  {
-			this._renderDirectChrMono( x, y, c, col0 );
-		}
-		catch (e) {
-			var tmp = 1;
-		}
-*/
 
      var fid;
 		 var dataPtr;

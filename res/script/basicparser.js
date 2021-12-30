@@ -104,13 +104,23 @@ class Parser {
     this.SHORTCUT_KW = ["?"];
 
     this.KEYWORDS = this.commands.getStatements();
-    var extended = this.extendedcommands.getStatements();
 
-    for( var i=0; i<extended.length; i++) {
-      this.KEYWORDS.push( extended[ i ] );
-      //this.KWCODES.push( this.CTRL_KW[ i ] );
+    var more = this.extendedcommands.getStatements();
+    for( var i=0; i<more.length; i++) {
+      this.KEYWORDS.push( more[ i ] );
     }
 
+    more = this.commands.getFunctions();
+    for( var i=0; i<more.length; i++) {
+      this.KEYWORDS.push( more[ i ] );
+    }
+
+    more = this.extendedcommands.getFunctions();
+    for( var i=0; i<more.length; i++) {
+      this.KEYWORDS.push( more[ i ] );
+    }
+
+//kwcodes for later use
     //this.KWCODES = this.commands.getStatements();
 
     //this.padArray( this.KWCODES, 64 );
@@ -456,14 +466,20 @@ class Parser {
 				else if( token.type=="name" ) {
 
 						var name = token.data;
-						var isFunctionCall = this.peekIfNextIsOpenBracket( context );
+						var isFunctionCallOrArray = this.peekIfNextIsOpenBracket( context );
 
-						if( isFunctionCall ) {
+						if( isFunctionCallOrArray ) {
 							token = tokens.shift();
 							var parameters = this.parseFunParList( context );
               tokens.shift();
 
               part = { type: "funCall", params: parameters, op: op, functionName: name };
+
+              if( this.KEYWORDS.indexOf( name ) == -1 ) {
+                //isArray  example: x=a(5)
+                part = { type: "array", data: name, op: op, indices: parameters };
+
+              }
 
               if( op == null && negate ) {
                 var subExpression = {
@@ -631,6 +647,53 @@ class Parser {
 				cmdType = "assignment";
 				command.type = cmdType;
 				command.var = nameToken;
+        command.arrayAssignment = false;
+
+				var endTokens = [];
+				endTokens.push( { type: "cmdsep", data: "@@@all" });
+
+				command.expression = this.parseExpression( context, endTokens );
+				commands.push( command );
+			}
+      //tokens[0].type=="bracket" && tokens[0].data==")")
+      /*
+      if( this.KEYWORDS.indexOf( name ) == -1 ) {
+        //isArray  example: x=a(5)
+        part = { type: "array", data: name, op: op, indices: parameters };
+
+      }
+
+      var isFunctionCallOrArray = this.peekIfNextIsOpenBracket( context );
+
+      if( isFunctionCallOrArray ) {
+        token = tokens.shift();
+        var parameters = this.parseFunParList( context );
+        tokens.shift();
+      */
+      else if( token.type == "bracket" && token.data=="(" ) {
+				if( cmdType == "control" ) {
+					this.Exception( context, "Unexpected symbol name, '"+nameToken+"' is a control keyword");
+				}
+				cmdType = "assignment";
+				command.type = cmdType;
+				command.var = nameToken;
+        command.arrayAssignment = true;
+
+        //token = tokens.shift();
+        var indices = this.parseFunParList( context );
+        command.indices = indices;
+
+        tokens.shift();
+        console.log("tokens after:",tokens)
+
+        token = tokens.shift();
+        if( token === undefined ) {
+          token = { type: "@@@notoken" };
+        }
+
+        if( token.type != "eq") {
+					this.Exception( context, "Expected =");
+				}
 
 				var endTokens = [];
 				endTokens.push( { type: "cmdsep", data: "@@@all" });
@@ -674,6 +737,38 @@ class Parser {
 
     				command.expression = this.parseExpression( context, endTokens );
     				commands.push( command );
+          }
+          else if( controlToken == "DIM") {
+
+            token = tokens.shift();
+            if( token.type != "name") {
+              this.Exception( context, "DIM expects var name");
+            }
+            nameToken = token.data;
+
+            token = tokens.shift();
+      			if( token === undefined ) {
+      				token = { type: "@@@notoken" };
+      			}
+
+            if( !(token.type=="bracket" && token.data=="(") ) {
+              this.Exception( context, "DIM expects (");
+            }
+
+            var indices = this.parseFunParList( context );
+
+            token = tokens.shift();
+      			if( token === undefined ) {
+      				token = { type: "@@@notoken" };
+      			}
+
+            if( !(token.type=="bracket" && token.data==")") ) {
+              this.Exception( context, "DIM expects )");
+            }
+
+            command.params=indices;
+            command.arrayName = nameToken;
+            commands.push( command );
           }
           else if( controlToken == "GOTO") {
             var num = -1;

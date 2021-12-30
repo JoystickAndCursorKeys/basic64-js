@@ -311,7 +311,7 @@ class VDisk {
     var labl = "" + this.lastDisk;
     labl = labl.padStart( 4,"0");
 
-    var newDir = this.getEmptyDirStructure("new disk");
+    var newDir = this.getEmptyDirStructure("NEW DISK");
 
     var storageName =  "BJ64_" + labl + "_dir";
     localStorage.setItem(storageName, JSON.stringify( newDir ) );

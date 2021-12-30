@@ -34,7 +34,7 @@ class ExtendedCommands {
   }
 
   getFunctions() {
-    var stats = Object.getOwnPropertyNames( BasicCommands.prototype );
+    var stats = Object.getOwnPropertyNames( ExtendedCommands.prototype );
 
     var stats2 = [];
 
@@ -67,6 +67,11 @@ class ExtendedCommands {
       this.context.printLine( stats[i] );
     }
 
+    var fun = this.getFunctions();
+    for( var i=0; i<fun.length; i++) {
+      this.context.printLine( fun[i] + "()");
+    }
+
   }
 
   _stat_panic( pars ) {
@@ -77,25 +82,7 @@ class ExtendedCommands {
     this.context.old();
   }
 
-  _stat_disks( pars ) {
-    var disks = this.context.getDisks();
-
-    for( var i=0; i<disks.length; i++) {
-      var row = this.context.padSpaces8( "" ) +" \"" + disks[i] + "\"";
-
-      this.context.printLine( row );
-    }
-  }
-
-  _stat_dselect( pars ) {
-    if( pars.length == 0 ) {
-      this.context.printError("specify disk");
-      return;
-    }
-    this.context.selectDisk( pars[0].value );
-  }
-
-  _stat_dlabel( pars ) {
+  _stat_disklabel( pars ) {
 
     if( pars.length == 0 ) {
       this.context.printError("specify label");
@@ -117,38 +104,31 @@ class ExtendedCommands {
     this.context.clearScreen();
   }
 
+  _stat_gcls( pars ) {
+
+    var c2 = null;
+    if( pars.length == 0 ) {
+      throw("@col0 missing");
+    }
+    else if( pars.length == 1 ) {
+      throw("@col1 missing");
+    }
+    else if( pars.length == 3 ) {
+      c2 = pars[2].value;
+    }
+    else if( pars.length > 3 ) {
+      throw("@too many parameters");
+    }
+
+    this.context.clearGFXScreen( pars[0].value, pars[1].value, c2 );
+  }
+
   _stat_slow( pars ) {
     this.context.setTurbo( false );
   }
 
-  _stat_color( pars ) {
-
-    if( pars.length == 0 ) {
-      throw("@col missing");
-      return;
-    }
-    console.log(pars);
-    if( pars[0].value != -1 ) {
-      this.console.setColor( pars[0].value );
-    }
-
-    if( pars.length >= 2 ) {
-      if( pars[1].value != -1 ) {
-        this.context.vpoke(53281, pars[1].value );
-      }
-    }
-
-    if( pars.length >= 3 ) {
-      if( pars[2].value != -1 ) {
-        this.context.vpoke(53280, pars[2].value );
-      }
-    }
-
-    if( pars.length > 3 ) {
-      throw("@too many parameters");
-      return;
-    }
-
+  _stat_synctime( pars ) {
+    this.context.synchClock();
   }
 
   _stat_renumber( pars ) {
@@ -205,10 +185,231 @@ class ExtendedCommands {
     }
   }
 
+    //--graphics
+    _stat_mode( pars ) {
+
+      if( pars.length != 1 ) {
+        throw("@mode missing");
+        return;
+      }
+      if( pars[0].value < 0 | pars[0].value > 3) {
+        throw("@only mode 0-3 supported");
+        return;
+      }
+      
+      var ctx = this.context;
+      if( pars[0].value == 0 ) {
+        ctx.poke( 53265, ctx.peek(53265) & (255-32));
+        ctx.poke( 53270, ctx.peek(53270) & (255-16));
+      }
+      else if( pars[0].value == 1 ) {
+        ctx.poke( 53265, ctx.peek(53265) & (255-32));
+        ctx.poke( 53270, ctx.peek(53270) | 16 );
+      }
+      else if( pars[0].value == 2 ) {
+        ctx.poke( 53265, ctx.peek(53265) | 32 );
+        ctx.poke( 53270, ctx.peek(53270) & (255-16));
+      }
+      else if( pars[0].value == 3 ) {
+        ctx.poke( 53265, ctx.peek(53265) | 32 );
+        ctx.poke( 53270, ctx.peek(53270) | 16);
+      }
+      console.log(pars);
+
+      if( pars.length > 1 ) {
+        throw("@too many parameters");
+        return;
+      }
+    }
+
+    _stat_pcol( pars ) {
+
+      if( pars.length < 1 ) {
+        throw("@col missing");
+        return;
+      }
+      console.log(pars);
+
+      this.console.setColor( pars[0].value );
+
+      if( pars.length > 1 ) {
+        throw("@too many parameters");
+        return;
+      }
+
+    }
+
+    _stat_rcol( pars ) {
+
+      if( pars.length == 0 ) {
+        throw("@index missing");
+        return;
+      }
+      console.log(pars);
+      if( pars.length >= 1 ) {
+          if( !(pars[0].value >=0
+              && pars[0].value <=14) ) {
+              throw("@index must be in range 0-14");
+          }
+      }
+
+      if( pars.length >= 2 ) {
+          this.context.vpoke(53280 + pars[0].value, pars[1].value );
+      }
+      else {
+        throw("@color missing");
+      }
+
+      if( pars.length > 2 ) {
+        throw("@too many parameters");
+        return;
+      }
+
+    }
+
+    _stat_cursor( pars ) {
+
+      if( pars.length == 0 ) {
+        throw("@x missing");
+        return;
+      }
+
+      if( pars.length == 1 ) {
+        throw("@y missing");
+        return;
+      }
+
+      if( pars.length > 2 ) {
+        throw("@too many parameters");
+        return;
+      }
+
+      this.context.setCursor( pars[0].value %40, pars[1].value%25);
+
+    }
+
+    _stat_peekchr( pars ) {
+
+      if( pars.length == 0 ) {
+        throw("@x missing");
+        return;
+      }
+
+      if( pars.length == 1 ) {
+        throw("@y missing");
+        return;
+      }
+
+      if( pars.length == 2 ) {
+        throw("@char missing");
+        return;
+      }
+
+      if( pars.length == 3 ) {
+        this.context.setTextChar(
+            pars[0].value %40,
+            pars[1].value %25,
+            pars[2].value %256,
+            undefined );
+
+        return;
+      }
+
+      if( pars.length == 4 ) {
+        this.context.setTextChar(
+            pars[0].value %40,
+            pars[1].value %25,
+            pars[2].value %256,
+            pars[3].value %16 );
+
+        return;
+      }
+
+      if( pars.length > 4 ) {
+        throw("@too many parameters");
+        return;
+      }
+    }
+
+
+    _stat_cpoke( pars ) {
+
+      if( pars.length == 0 ) {
+        throw("@x missing");
+        return;
+      }
+
+      if( pars.length == 1 ) {
+        throw("@y missing");
+        return;
+      }
+
+      if( pars.length == 2 ) {
+        throw("@col missing");
+        return;
+      }
+
+      if( pars.length == 3 ) {
+        this.context.setTextCol(
+            pars[0].value %40,
+            pars[1].value %25,
+            pars[2].value %16
+          );
+
+        return;
+      }
+
+      if( pars.length > 3 ) {
+        throw("@too many parameters");
+        return;
+      }
+    }
 
 
   /************************ functions ************************/
 
+  _fun_tpeek( pars ) {
 
+    if( pars.length == 0 ) {
+      throw("@x missing");
+      return;
+    }
+
+    if( pars.length == 1 ) {
+      throw("@y missing");
+      return;
+    }
+
+    if( pars.length > 2 ) {
+      throw("@too many parameters");
+    }
+
+    return this.context.getTextChar(
+        pars[0].value %40,
+        pars[1].value %25
+      );
+  }
+
+  _fun_cpeek( pars ) {
+
+    if( pars.length == 0 ) {
+      throw("@x missing");
+      return;
+    }
+
+    if( pars.length == 1 ) {
+      throw("@y missing");
+      return;
+    }
+
+    if( pars.length > 2 ) {
+      throw("@too many parameters");
+    }
+
+    return this.context.getTextColor(
+        pars[0].value %40,
+        pars[1].value %25
+      );
+  }
 
 }

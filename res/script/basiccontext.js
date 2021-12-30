@@ -10,6 +10,10 @@ class BasicContext {
     this.inputFlag = false;
     this.gosubReturn = [];
     this.nullTime = new Date().getTime();
+    this.cursorCountMaxNormal = 15;
+    this.cursorCountMaxTurbo = 7;
+    this.cursorCountMax = this.cursorCountMaxNormal;
+
 
     this.turboMode = false;
     this.cmdCountPerCycleDefault = 5;
@@ -55,6 +59,16 @@ class BasicContext {
 
       if( turbo == "on" ) {
         this.setTurbo( true );
+      }
+    }
+
+    var clock = localStorage.getItem( "BJ64_Clock" );
+    if( clock != null ) {
+      clock = JSON.parse( clock );
+      clock = clock.synchronized;
+
+      if( clock == "clocksync" ) {
+        this.synchClock( );
       }
     }
 
@@ -108,14 +122,29 @@ class BasicContext {
 
   }
 
+  synchClock() {
+
+    //var clock = new Date().getTime();
+    var nullClock = new Date();
+    nullClock.setHours(0);
+    nullClock.setSeconds(0);
+    nullClock.setMinutes(0);
+    nullClock.setMilliseconds(0);
+
+    this.nullTime = nullClock;
+
+  }
+
   setTurbo( on ) {
     if( on ) {
       this.cmdCountPerCycle = this.cmdCountPerCycleTurbo ;
       this.turboMode = true;
+      this.cursorCountMax = this.cursorCountMaxTurbo;
       return;
     }
     this.cmdCountPerCycle = this.cmdCountPerCycleDefault ;
     this.turboMode = false;
+      this.cursorCountMax = this.cursorCountMaxNormal;
   }
 
   setProgram( pgm ) {
@@ -393,6 +422,35 @@ class BasicContext {
   clearScreen() {
     this.console.clearScreen();
     this.console.cursorHome();
+  }
+
+  clearGFXScreen( col0, col1, col2 ) {
+    this.console.clearGFXScreen( col0, col1, col2 );
+  }
+
+  setCursor(x,y) {
+    this.console.setCursorX(x);
+    this.console.setCursorY(y);
+  }
+
+  setTextCol(x,y,col) {
+    this.poke(55296+x+(y*40),col);
+  }
+
+  setTextChar(x,y,c,col) {
+    this.poke(1024+x+(y*40),c);
+    if( col === undefined ) {
+      return;
+    }
+    this.poke(55296+x+(y*40),col);
+  }
+
+  getTextChar(x,y) {
+    return this.peek(1024+x+(y*40));
+  }
+
+  getTextColor(x,y) {
+    return this.peek(55296+x+(y*40));
   }
 
   sendChars( s, newline ) {
@@ -714,6 +772,22 @@ class BasicContext {
         val = 0;
       }
     }
+    else if( p.type=="array" ) {
+      var varIntName = "@array_" + p.data;
+      var arr = this.vars[ varIntName ];
+
+      if( arr.getIndexCount() != p.indices.length ) {
+          throw "@bad subscript";
+      }
+
+      var indices = [];
+      for( var ai=0; ai<p.indices.length; ai++) {
+        indices[ai] = this.evalExpression( p.indices[ ai ] );
+      }
+
+      val = arr.get( indices );
+
+    }
     else if( p.type=="expr" ) {
       val = this.evalExpression( p );
     }
@@ -726,18 +800,31 @@ class BasicContext {
       }
       try {
         var commands = this.commands;
+        var ecommands = this.extendedcommands;
+        var cmds = this.commands;
+
         var nFunName = "_fun_" + p.functionName.toLowerCase().replaceAll("$","_DLR_");
 
         var stc = commands[ nFunName ];
         if( stc === undefined ) {
-          this.printError("no such function " + p.functionName);
-          console.log("Cannot find functionName " + nFunName );
-          throw "no such function " + p.functionName;
-          return null;
+
+          stc = ecommands[ nFunName ];
+
+          if( stc === undefined ) {
+
+            stc = ecommands[ nFunName ];
+
+            this.printError("no such function " + p.functionName);
+            console.log("Cannot find functionName " + nFunName );
+            throw "no such function " + p.functionName;
+
+          }
+          else {
+            cmds = ecommands;
+          }
         }
-        else {
-            val = commands[ nFunName ]( values );
-        }
+
+        val = cmds[ nFunName ]( values );
 
       }
       catch ( e ) {
@@ -882,7 +969,7 @@ class BasicContext {
     try {
 
       if( !this.runFlag || this.menuFocus || this.inputFlag  ) {
-        if(this.cursorCount++>15) {
+        if(this.cursorCount++>this.cursorCountMax) {
           this.cursorCount = 0;
 
           if( !this.menuFocus ) { c.blinkCursor(); }
@@ -964,10 +1051,11 @@ class BasicContext {
 
     }
     catch (e) {
-      this.runFlag = false;
       c.clearCursor();
       this.printError("unexpected");
       this.printLine("ready.");
+      this.runFlag = false;
+
     }
 
 
@@ -1507,6 +1595,25 @@ class BasicContext {
             }
           }
         }
+        else if( cn == "dim" ) {
+          var vars = this.vars;
+
+          var indices = [];
+          for( var ai=0;ai<cmd.params.length;ai++){
+            indices[ai] = this.evalExpression( cmd.params[ai] );
+          }
+
+          var arrRec = new BasicArray( indices, 0 );
+
+          var varIntName = "@array_" + cmd.arrayName;
+
+          if( ! ( this.vars[ varIntName ] === undefined )) {
+            this.printError( "redim'd array" );
+            return [END_W_ERROR,i+1];
+          }
+          this.vars[ varIntName ] = arrRec;
+
+        }
       }
       else if( cmd.type == "call" )  {
         var values = [];
@@ -1593,16 +1700,35 @@ class BasicContext {
         }
       }
       else if( cmd.type == "assignment" )  {
-        if( this.vars[ cmd.var ] === undefined ) {
-
-          if(cmd.var.startsWith("TI")) {
-            this.printError("syntax");
+        if( cmd.arrayAssignment ) {
+          var varIntName = "@array_" + cmd.var;
+          if( this.vars[ varIntName ] === undefined ) {
+            this.printError("bad subscript");
             return [END_W_ERROR,i+1];
           }
-          this.vars[ cmd.var ] = 0;
+
+          var arr = this.vars[ varIntName ];
+          if( cmd.indices.length != arr.getIndexCount() ) {
+            this.printError("bad subscript");
+            return [END_W_ERROR,i+1];
+          }
+
+          var indices = [];
+          for( var ai=0;ai<cmd.indices.length;ai++){
+            indices[ai] = this.evalExpression( cmd.indices[ai] );
+          }
+          arr.set( indices, this.evalExpression( cmd.expression ) );
         }
-        this.vars[ cmd.var ] = this.evalExpression( cmd.expression );
-        //console.log("VAR("+cmd.var+")=" + this.vars[ cmd.var ]);
+        else { //single var (not an array)
+          if( this.vars[ cmd.var ] === undefined ) {
+            if(cmd.var.startsWith("TI")) {
+              this.printError("syntax");
+              return [END_W_ERROR,i+1];
+            }
+            this.vars[ cmd.var ] = 0;
+          }
+          this.vars[ cmd.var ] = this.evalExpression( cmd.expression );
+        }
       }
       i++;
     }

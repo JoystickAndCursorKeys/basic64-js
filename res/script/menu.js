@@ -121,6 +121,7 @@ class Menu {
 
 
     opts = [];
+    opts.push({opt: "changeClock", display: "clock mode" });
     opts.push({opt: "changeTurbo", display: "turbo mode" });
     opts.push({opt: "changeExtended", display: "Extended commands" });
 		opts.push({opt: "changeTheme", display: "Change Menu Theme" });
@@ -896,6 +897,18 @@ class Menu {
 		this.context.selectDisk( id );
 	}
 
+
+	select_Clock( id ) {
+		console.log( id );
+
+		localStorage.setItem( "BJ64_Clock", JSON.stringify( { synchronized: id } ) );
+
+		if( id == "clocksync" ) {
+			this.context.synchClock();
+		}
+	}
+
+
 	select_Extended( id ) {
 		console.log( id );
 
@@ -992,6 +1005,25 @@ class Menu {
 			this.contextthis.setTurbo( true );
 		}
 	}
+
+
+	do_changeClock() {
+
+		if( !this.context.confirmCookies() ) {
+			return;
+		}
+
+		var list = { title: "Clock Mode", items: [
+			{ name: "compatible",   id: "compat"},
+			{ name: "synchronized with host", id: "clocksync"}
+		] };
+
+		list.callback = "select_Clock";
+
+		this.startList( list );
+
+	}
+
 
 	do_changeTurbo() {
 
