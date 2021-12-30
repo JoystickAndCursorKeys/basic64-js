@@ -11,9 +11,9 @@ class BasicCommands {
 
   getStatements() {
 
-    if( this.statementList != null ) {
-      return this.statementList;
-    }
+    //if( this.statementList != null ) {
+    //  return this.statementList;
+    //}
 
     var stats = Object.getOwnPropertyNames( BasicCommands.prototype );
 
@@ -25,7 +25,7 @@ class BasicCommands {
       }
     }
 
-    this.statementList = stats2;
+    //this.statementList = stats2;
     return stats2;
   }
 
@@ -36,7 +36,9 @@ class BasicCommands {
 
     for( var i=0;i<stats.length;i++) {
       if( stats[i].startsWith("_fun_")) {
-        stats2.push( stats[i].substr(5 ).toUpperCase() );
+        var name = stats[i].substr(5 ).toUpperCase().replaceAll("_DLR_","$");
+
+        stats2.push( name );
       }
     }
 

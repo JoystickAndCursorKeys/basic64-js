@@ -282,7 +282,9 @@ class BasicContext {
   }
 
 
-  poke( a, b ) {
+  poke( a, b0 ) {
+
+      var b = Math.floor( b0 ) % 256;
 /*      var addr = "poke_" + a;
       if( this[addr] ) {
         this[addr](b);
@@ -308,6 +310,9 @@ class BasicContext {
           this.console.setCharRomVisible( false );
         }
 
+      }
+      else if( a == 646) {
+        this.console.setColor( b%16 );
       }
       else if( a>53247 && a<53295) { //VIC registers
 
@@ -344,9 +349,8 @@ class BasicContext {
 
         this.console.setCharCol(x,y,c%16);
       }
-      else {
-        this.console.poke( a, b);
-      }
+
+      this.console.poke( a, b);
   }
 
   peek( a ) {
