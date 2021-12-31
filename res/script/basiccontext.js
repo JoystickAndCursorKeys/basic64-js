@@ -285,17 +285,12 @@ class BasicContext {
   poke( a, b0 ) {
 
       var b = Math.floor( b0 ) % 256;
-/*      var addr = "poke_" + a;
-      if( this[addr] ) {
-        this[addr](b);
-      }
-*/
 
-      //console.log("poke ",a,b);
+      if( isNaN( b ) ) { b = 0; }
+
       if( a == 1) { //Bank Switching
 
         this.console.poke( a, b);
-
 
         //%0xx: Character ROM visible at $D000-$DFFF. (Except for the value %000, see above.)
         //%1xx: I/O area visible at $D000-$DFFF. (Except for the value %100, see above.)
@@ -751,7 +746,10 @@ class BasicContext {
     var val=0;
 
     if( p.type=="num" ) {
-      if((""+p.data).indexOf(".") >= 0) {
+      if( p.data == "." ) {
+        val = 0;
+      }
+      else if((""+p.data).indexOf(".") >= 0) {
         val = parseFloat(p.data);
       }
       else {

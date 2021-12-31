@@ -451,8 +451,16 @@ class Program {
 
   playRender(context) {
 
-    this.console.renderDisplay();
+    if( this.renderError ) { return; }
 
+    try {
+      this.console.renderDisplay();
+    }
+    catch ( e ) {
+      this.renderError = true;
+      console.log( e );
+      throw e;
+    }
   }
 
 
