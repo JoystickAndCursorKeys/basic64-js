@@ -100,6 +100,7 @@ class Menu {
     this.menuOffset["tools"] = 3;
 
     opts = [];
+    opts.push({opt: "list", display: "List" });
     opts.push({opt: "renumber", display: "Renumber Basic Program" });
     opts.push({opt: "compress", display: "Remove Spaces" });
     this.options["basic"] = opts;
@@ -375,7 +376,6 @@ class Menu {
     var title = t.menus[ t.menuvmState ];
     var options = this.options[ t.menuvmState ];
 
-
 		var x;
 
 		//draw logo
@@ -437,6 +437,10 @@ class Menu {
 
 			var menuStr = "*** " + this.listTitle +" ***";
 			x = 20 - (Math.floor(menuStr.length / 2));
+			var offX = x;
+			if( this.listOffset != -1 ) {
+				offX = this.listOffset;
+			}
 			t.padLine( x, menuStr );
 
 			t.nl();
@@ -450,10 +454,22 @@ class Menu {
 			this.curs = [];
 			var more = false;
 
-			if( offset > 0 ) {
-				t.pad( x, "..." );
-				t.nl();
-				t.nl();
+			if( this.showNumbers) {
+				if( offset > 0 ) {
+					t.pad( offX, "..." );
+					t.nl();
+					t.nl();
+				}
+			}
+			else {
+				if( offset > 0 ) {
+					t.pad( offX, "..." );
+					t.nl();
+				}
+				else {
+					t.pad( offX, "" );
+					t.nl();
+				}
 			}
 
 			for( var i=0; i<this.listItems.length; i++) {
@@ -462,10 +478,19 @@ class Menu {
 						continue;
 					}
 
-					if( printCount >= 8 ) {
-						more = true;
-						break;
+					if( !this.showNumbers) {
+						if( printCount >= 12 ) {
+							more = true;
+							break;
+						}
 					}
+					else {
+						if( printCount >= 8 ) {
+							more = true;
+							break;
+						}
+					}
+
 
 					if( i == this.optSelect ) {
 						t.console.setColor(hlColor);
@@ -473,17 +498,22 @@ class Menu {
 					else {
 						t.console.setColor(txtColor);
 					}
-					t.pad( x, " " +(i+1)+ " - " + this.listItems[i].name );
+					if( this.showNumbers) {
+						t.pad( offX, " " +(i+1)+ " - " + this.listItems[i].name );
+						t.nl();
+						t.nl();
+					}
+					else {
+						t.printCodeLine( this.listItems[i].name );
+					}
+					//t.pad( offX, " " +(i+1)+ " - " + this.listItems[i].name );
 
 					this.curs.push( t.console.getCursorPos() );
-
-					t.nl();
-					t.nl();
 
 					printCount++;
 			}
 			if( more ) {
-				t.pad( x, "..." );
+				t.pad( offX, "..." );
 			}
 			//var selectCursor = this.curs[ this.optSelect ];
 
@@ -508,8 +538,13 @@ class Menu {
     for(var i=0; i<pad;i++) {
       padStr+=" ";
     }
+
     this.context.print( padStr + txt );
   }
+
+	printCodeLine( x ) {
+		this.context.listCodeLine( x );
+	}
 
   padLine( pad, txt ) {
 
@@ -552,6 +587,14 @@ class Menu {
 		this.listItems = l.items;
 		this.listResult = -1;
 		this.listCallback = l.callback;
+		this.listOffset = -1;
+		if( ! (l.offset === undefined ) ) {
+			this.listOffset = l.offset;
+		}
+		this.showNumbers = true;
+		if( ! (l.showNum === undefined ) ) {
+			this.showNumbers = l.showNum;
+		}
 
 		this.rendervmStateText();
   }
@@ -1014,6 +1057,38 @@ class Menu {
 		if( id == "on" ) {
 			this.contextthis.setTurbo( true );
 		}
+	}
+
+	select_List( id ) {
+		console.log( id );
+
+	}
+
+
+	do_list() {
+
+		var list = { title: "Basic Listing", showNum: false, offset:0, items: []
+//			{ name: "compatible",   id: "compat"},
+//			{ name: "synchronized with host", id: "clocksync"}
+		 };
+
+		list.callback = "select_List";
+
+		var pgm = this.context.getProgramLines();
+		for( var i=0; i<pgm.length; i++ )
+		{
+				var l = pgm[i];
+				var display = l[2].trim();
+				if( display.length > 35 ) {
+					display = l[2].substr(0,34)+"..";
+				}
+				list.items.push({name: display, id: i});
+//				this.context.listCodeLine( l[2] );
+				console.log(l[2]);
+		}
+
+		this.startList( list );
+
 	}
 
 

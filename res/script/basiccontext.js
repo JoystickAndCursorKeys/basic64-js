@@ -1200,7 +1200,7 @@ class BasicContext {
 
       var foundGoto = false;
       for( i = 0; i<tokens.length; i++) {
-        if( tokens[i].type == "name" && tokens[i].data == "GOTO" ) {
+        if( tokens[i].type == "name" && (tokens[i].data == "GOTO" || tokens[i].data == "GOSUB") ) {
           foundGoto = true;
         } else {
           if( i>1 ) {
