@@ -174,12 +174,12 @@ class Program {
             console.log(pgm);
             var regExp=/\r\n|\n\r|\n|\r/g;
             var lines = pgm.replace(regExp,"\n").split("\n");
-            var bas = basiccontext.textLinesToBas( lines );
-            basiccontext.setProgram( bas );
+            var bas = this.basiccontext.textLinesToBas( lines );
+            this.basiccontext.setProgram( bas );
 
             this.basiccontext.clearScreen();
 
-            basiccontext.runPGM();
+            this.basiccontext.runPGM();
             return;
           }
           catch ( e ) {
