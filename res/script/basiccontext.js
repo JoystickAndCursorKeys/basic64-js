@@ -691,7 +691,6 @@ class BasicContext {
     var dst = "";
 
     var i=0; while( i<txt.length ) {
-      //var c = txt.charAt( i );
       var c = txt.charCodeAt( i );
       if( c == 123 ) {
         i++;
@@ -714,6 +713,10 @@ class BasicContext {
         console.log("found resolved ESC seq " + num);
 
         dst += String.fromCharCode( parseInt( num, 10) );
+      }
+      else if( c == 8221 || c == 8220) { //almost a double quote
+        dst += "\"";
+        i++;
       }
       else {
         dst += txt.charAt( i );
@@ -2057,7 +2060,7 @@ class BasicContext {
   textLinesToBas( lines ) {
 
     var myProgram = [];
-
+    console.log( "textLinesToBas" );
     for( var i = 0; i<lines.length; i++ ) {
 
       var line = this.prepareLineForImport( lines[ i ] );

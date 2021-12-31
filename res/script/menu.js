@@ -561,8 +561,12 @@ class Menu {
     this.context.printLine("*** " + m);
   }
 
-  errorMessage( m ) {
-    this.context.printLine("??" + m + " error");
+  errorMessage( m, extra0 ) {
+		var extra = "";
+		if( ! (extra0 === undefined )) {
+			extra = " " + extra0;
+		}
+    this.context.printLine("??" + m + " error" + extra);
   }
 
   stop() {
@@ -590,11 +594,11 @@ class Menu {
 
   }
 
-  endMenuWithError( m ) {
+  endMenuWithError( m, extra ) {
     this.context.endMenu();
     this.stop();
     this.context.printLine( "" );
-    this.errorMessage(m);
+    this.errorMessage(m, extra);
 
   }
 
@@ -869,6 +873,12 @@ class Menu {
       }
     }
     catch (e) {
+			if( typeof(e) == "object" ) {
+				if(! (e["lineNr"] === undefined )) {
+					this.endMenuWithError("parse", "on line " + e["lineNr"]);
+					return;
+				}
+			}
       this.endMenuWithError("syntax");
     }
   }
