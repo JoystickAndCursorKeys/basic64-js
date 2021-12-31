@@ -3,18 +3,9 @@ class Program {
 
   constructor( console ) {
     this.console = console;
-  }
-
-  initPlayBook( properties ) {
-
     this.basiccontext = new BasicContext( this.console );
 
-    this.width = properties.w;
-    this.height = properties.h;
-
     this.stringMode = false;
-
-    this.console.reset();
 
     this.keyToCode = [];
     var k2c = this.keyToCode;
@@ -68,6 +59,13 @@ class Program {
     k2c["CTRL_:0"] = '\x92'; //9
     k2c[":Home"]  = '\x13';
     k2c["SHFT_:Home"]  = '\x93';
+  }
+
+  initPlayBook( properties ) {
+    this.width = properties.w;
+    this.height = properties.h;
+
+    this.console.reset();
 
   }
 
@@ -77,12 +75,74 @@ class Program {
   load(action, data) {
 
     if (action == 'GETURLS') {
-      return;
+
+        this.cursorCount = 1;
+        var c = this.console;
+        var basiccontext = this.basiccontext;
+
+        basiccontext.reset( true );
+
+        const queryString = window.location.search;
+        const urlParams = new URLSearchParams(queryString);
+        var url = urlParams.get('linkpgm');
+
+        if( url != null ) {
+          var dataURLs = [];
+          this.bgcolor = 0;
+          dataURLs[ 'externalPGM' ] = url;
+          data.urls = {
+              imgSrcArray: [],
+              audioSrcArray: [],
+              dataSrcArray: dataURLs
+            };
+
+          this.basiccontext.clearScreen();
+          this.basiccontext.printLine("load \"*\",98");
+          this.basiccontext.printLine("");
+          this.basiccontext.printLine("searching for *");
+        }
+        return;
+
+
     } else if (action == 'LOADED') {
-      var loadedResources = data.resources;
+      var pgm = data.resources.dataArray["externalPGM"].data;
+
+      if( pgm != null ) {
+        console.log("External URL Program detected, size " + pgm.length );
+        console.log(pgm);
+
+        this.basiccontext.printLine("loading");
+
+        try {
+
+          console.log(pgm);
+          var regExp=/\r\n|\n\r|\n|\r/g;
+          var lines = pgm.replace(regExp,"\n").split("\n");
+          var bas = this.basiccontext.textLinesToBas( lines );
+
+          this.basiccontext.printReady();
+          this.basiccontext.printLine("run");
+
+          this.basiccontext.setProgram( bas );
+
+          this.basiccontext.clearScreen();
+
+          this.basiccontext.runPGM();
+          return;
+        }
+        catch ( e ) {
+          this.basiccontext.runStop();
+          this.basiccontext.printError("load");
+          this.basiccontext.printReady();
+        }
+      }
     }
   }
 
+  loadLSRender() {
+    this.console.renderDisplay();
+
+  }
 
   /*
 	Playing the demo
@@ -90,14 +150,8 @@ class Program {
   play(action, data) {
 
     if (action == "INIT") {
-        this.cursorCount = 1;
-        var c = this.console;
-        var basiccontext = this.basiccontext;
-
-        basiccontext.reset( true );
 
         //get basic code from url here:
-        // https://www.sitepoint.com/get-url-parameters-with-javascript/
 
         const queryString = window.location.search;
         const urlParams = new URLSearchParams(queryString);
@@ -109,14 +163,24 @@ class Program {
           this.basiccontext.printLine("load \"*\",99");
           this.basiccontext.printLine("");
           this.basiccontext.printLine("searching for *");
+          this.basiccontext.printLine("loading");
+
           try {
             pgm = atob( pgm );
+
+            this.basiccontext.printReady();
+            this.basiccontext.printLine("run");
+
             console.log(pgm);
             var regExp=/\r\n|\n\r|\n|\r/g;
             var lines = pgm.replace(regExp,"\n").split("\n");
             var bas = basiccontext.textLinesToBas( lines );
             basiccontext.setProgram( bas );
+
+            this.basiccontext.clearScreen();
+
             basiccontext.runPGM();
+            return;
           }
           catch ( e ) {
             this.basiccontext.runStop();
@@ -124,7 +188,6 @@ class Program {
             this.basiccontext.printReady();
           }
         }
-
     }
   }
 
@@ -388,8 +451,16 @@ class Program {
 
   playRender(context) {
 
-    this.console.renderDisplay();
+    if( this.renderError ) { return; }
 
+    try {
+      this.console.renderDisplay();
+    }
+    catch ( e ) {
+      this.renderError = true;
+      console.log( e );
+      throw e;
+    }
   }
 
 

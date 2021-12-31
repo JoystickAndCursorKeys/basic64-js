@@ -5,10 +5,16 @@ class BasicCommands {
     this.context = context;
     this.cmds = {};
     this.func = {};
+    this.statementList = null;
 
   }
 
   getStatements() {
+
+    //if( this.statementList != null ) {
+    //  return this.statementList;
+    //}
+
     var stats = Object.getOwnPropertyNames( BasicCommands.prototype );
 
     var stats2 = [];
@@ -19,6 +25,7 @@ class BasicCommands {
       }
     }
 
+    //this.statementList = stats2;
     return stats2;
   }
 
@@ -29,7 +36,9 @@ class BasicCommands {
 
     for( var i=0;i<stats.length;i++) {
       if( stats[i].startsWith("_fun_")) {
-        stats2.push( stats[i].substr(5 ).toUpperCase() );
+        var name = stats[i].substr(5 ).toUpperCase().replaceAll("_DLR_","$");
+
+        stats2.push( name );
       }
     }
 
@@ -183,6 +192,10 @@ class BasicCommands {
 
   }
 
+  _stat_restore( pars ) {
+    this.context.restoreDataPtr();
+  }
+
   _stat_load( pars ) {
     var context = this.context;
     var result;
@@ -237,6 +250,17 @@ class BasicCommands {
     }
   }
 
+  _stat_sys( pars ) {
+    throw "@not supported";
+  }
+
+  _stat_wait( pars ) {
+    throw "@not supported";
+  }
+
+  _stat_verify( pars ) {
+    throw "@not supported";
+  }
 
   _stat_run( pars ) {
     var context = this.context;
@@ -252,6 +276,7 @@ class BasicCommands {
   isNumber(value) {
     return typeof value === 'number' && isFinite(value);
   }
+
   normalizeIfNumber( x )  {
     if( this.isNumber( x ) ) {
       if ( x >= 0 ) {
@@ -275,7 +300,6 @@ class BasicCommands {
         return;
       }
     }
-    console.log(pars);
 
     var newLine = true;
     var value;
@@ -286,7 +310,6 @@ class BasicCommands {
         newLine = false;
       }
 
-      console.log( "i=" +i+ " newline: " + newLine);
       if( i>0) { context.sendChars( "         " , false ); }
 
       var exparts = pars[i];
@@ -307,7 +330,7 @@ class BasicCommands {
         }
       }
       value = context.evalExpression( exparts2 );
-      console.log( " newline: " + newLine);
+
       if( i == 0) {
         context.sendChars( this.normalizeIfNumber( value ), newLine );
       }
@@ -326,15 +349,39 @@ class BasicCommands {
 
   }
 
+  _stat_clr( pars ) {
+    return this.context.clrPGM();
+  }
+
   /************************ functions ************************/
 
   _fun_chr_DLR_( pars ) {
     return String.fromCharCode( pars[0].value );
   }
 
+  _fun_str_DLR_( pars ) {
+    if(pars[0].value>=0) {
+      return " " +  pars[0].value;
+    }
+    return "" +  pars[0].value;
+  }
+
+  _fun_abs( pars ) {
+    if( pars[0].value < 0 ) {
+      return -pars[0].value;
+    }
+    return pars[0].value;
+  }
+
   _fun_len( pars ) {
     return pars[0].value.length;
   }
+
+  _fun_asc( pars ) {
+    return pars[0].value.charCodeAt(0);
+  }
+
+
 
   _fun_val( pars ) {
     return parseInt( pars[0].value );
@@ -356,8 +403,47 @@ class BasicCommands {
     return Math.log( pars[0].value);
   }
 
+  _fun_pos( pars ) {
+    return this.context.getLinePos();
+  }
+
+  _fun_left_DLR_( pars ) {
+      //? LEFT$(A$,8)
+      return pars[0].value.substr(0,pars[1].value);
+  }
+
+  _fun_right_DLR_( pars ) {
+      //? RIGHT$(A$,8)
+      var s = pars[0].value;
+      return s.substr( s.length - pars[1].value );
+  }
+
+  _fun_mid_DLR_( pars ) {
+      //? RIGHT$(A$,8)
+      var s = pars[0].value;
+
+      if( pars.length == 3) {
+        return s.substr( pars[1].value-1, pars[2].value );
+      }
+      else if( pars.length == 2) {
+        return s.substr( pars[1].value-1 );
+      }
+  }
+
+  _fun_fre( pars ) {
+    return -26627;
+  }
+
   _fun_sin( pars ) {
     return Math.sin( pars[0].value);
+  }
+
+  _fun_tan( pars ) {
+    return Math.tan( pars[0].value);
+  }
+
+  _fun_atn( pars ) {
+    return Math.atan( pars[0].value);
   }
 
   _fun_cos( pars ) {
@@ -387,7 +473,7 @@ class BasicCommands {
 
   _fun_tab( pars ) {
     var context = this.context;
-    context.setCursXPos( _max( pars[0].value, 39) );
+    context.setCursXPos( this._max( pars[0].value, 39) );
     return "";
   }
 
@@ -404,5 +490,9 @@ class BasicCommands {
     var context = this.context;
     return context.peek( pars[0].value );
 
+  }
+
+  _fun_jiffies( pars ) {
+    return this.context.getJiffyTime( );
   }
 }

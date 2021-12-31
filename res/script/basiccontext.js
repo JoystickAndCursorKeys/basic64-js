@@ -9,6 +9,16 @@ class BasicContext {
     this.runFlag = false;
     this.inputFlag = false;
     this.gosubReturn = [];
+    this.nullTime = new Date().getTime();
+    this.cursorCountMaxNormal = 15;
+    this.cursorCountMaxTurbo = 7;
+    this.cursorCountMax = this.cursorCountMaxNormal;
+
+
+    this.turboMode = false;
+    this.cmdCountPerCycleDefault = 5;
+    this.cmdCountPerCycleTurbo = 1000;
+    this.cmdCountPerCycle = this.cmdCountPerCycleDefault ;
 
     var ctx = this.context;
     var c = this.console;
@@ -32,6 +42,36 @@ class BasicContext {
       this.settings.cookies = false;
     }
 
+    var commandsExtended = localStorage.getItem( "BJ64_Extended" );
+    if( commandsExtended != null ) {
+      commandsExtended = JSON.parse( commandsExtended );
+      commandsExtended = commandsExtended.extended;
+
+      if( commandsExtended == "on" ) {
+        this.enableExtended( true );
+      }
+    }
+
+    var turbo = localStorage.getItem( "BJ64_Turbo" );
+    if( turbo != null ) {
+      turbo = JSON.parse( turbo );
+      turbo = turbo.turbo;
+
+      if( turbo == "on" ) {
+        this.setTurbo( true );
+      }
+    }
+
+    var clock = localStorage.getItem( "BJ64_Clock" );
+    if( clock != null ) {
+      clock = JSON.parse( clock );
+      clock = clock.synchronized;
+
+      if( clock == "clocksync" ) {
+        this.synchClock( );
+      }
+    }
+
     this.code2colMap = [];
     var km = this.code2colMap;
 
@@ -53,9 +93,59 @@ class BasicContext {
     km[0x9a] = 14;
     km[0x9b] = 15;
 
+    this.symbolTable = {};
+
+    this.symbolTable.up     = 0x91;
+    this.symbolTable.down   = 0x11;
+    this.symbolTable.left   = 157;
+    this.symbolTable.right  = 29;
+    this.symbolTable["reverse on"]  = 0x12;
+    this.symbolTable["reverse off"]  = 0x92;
+    this.symbolTable["clear"]  = 0x93;
+    this.symbolTable["home"]  = 0x13;
+    this.symbolTable.black  = 144;
+    this.symbolTable.white  = 5;
+    this.symbolTable.red  = 28;
+    this.symbolTable.cyan  = 159;
+    this.symbolTable.purple  = 156;
+    this.symbolTable.green  = 30;
+    this.symbolTable.blue  = 31;
+    this.symbolTable.yellow  = 158;
+    this.symbolTable.orange  = 129;
+    this.symbolTable.brown  = 149;
+    this.symbolTable.pink  = 150; // light red
+    this.symbolTable.grey1  = 151;  //dark grey
+    this.symbolTable.grey2  = 152;
+    this.symbolTable["light green"]  = 153;
+    this.symbolTable["light blue"]  = 154;
+    this.symbolTable.grey3  = 155; //light grey
 
   }
 
+  synchClock() {
+
+    //var clock = new Date().getTime();
+    var nullClock = new Date();
+    nullClock.setHours(0);
+    nullClock.setSeconds(0);
+    nullClock.setMinutes(0);
+    nullClock.setMilliseconds(0);
+
+    this.nullTime = nullClock;
+
+  }
+
+  setTurbo( on ) {
+    if( on ) {
+      this.cmdCountPerCycle = this.cmdCountPerCycleTurbo ;
+      this.turboMode = true;
+      this.cursorCountMax = this.cursorCountMaxTurbo;
+      return;
+    }
+    this.cmdCountPerCycle = this.cmdCountPerCycleDefault ;
+    this.turboMode = false;
+      this.cursorCountMax = this.cursorCountMaxNormal;
+  }
 
   setProgram( pgm ) {
     this.program = pgm;
@@ -192,18 +282,15 @@ class BasicContext {
   }
 
 
-  poke( a, b ) {
-/*      var addr = "poke_" + a;
-      if( this[addr] ) {
-        this[addr](b);
-      }
-*/
+  poke( a, b0 ) {
 
-      //console.log("poke ",a,b);
+      var b = Math.floor( b0 ) % 256;
+
+      if( isNaN( b ) ) { b = 0; }
+
       if( a == 1) { //Bank Switching
 
         this.console.poke( a, b);
-
 
         //%0xx: Character ROM visible at $D000-$DFFF. (Except for the value %000, see above.)
         //%1xx: I/O area visible at $D000-$DFFF. (Except for the value %100, see above.)
@@ -218,6 +305,9 @@ class BasicContext {
           this.console.setCharRomVisible( false );
         }
 
+      }
+      else if( a == 646) {
+        this.console.setColor( b%16 );
       }
       else if( a>53247 && a<53295) { //VIC registers
 
@@ -254,9 +344,8 @@ class BasicContext {
 
         this.console.setCharCol(x,y,c%16);
       }
-      else {
-        this.console.poke( a, b);
-      }
+
+      this.console.poke( a, b);
   }
 
   peek( a ) {
@@ -313,6 +402,12 @@ class BasicContext {
 
   }
 
+  printInfo( s ) {
+
+    this.console.writeString( ( s + this.onLineStr()).toUpperCase(), true );
+
+  }
+
   printLine( s ) {
     this.sendChars(s.toUpperCase(), true);
     this.reverseOn = false;
@@ -321,6 +416,40 @@ class BasicContext {
   print( s ) {
     this.sendChars(s.toUpperCase(), false);
     this.reverseOn = false;
+  }
+
+  clearScreen() {
+    this.console.clearScreen();
+    this.console.cursorHome();
+  }
+
+  clearGFXScreen( col0, col1, col2 ) {
+    this.console.clearGFXScreen( col0, col1, col2 );
+  }
+
+  setCursor(x,y) {
+    this.console.setCursorX(x);
+    this.console.setCursorY(y);
+  }
+
+  setTextCol(x,y,col) {
+    this.poke(55296+x+(y*40),col);
+  }
+
+  setTextChar(x,y,c,col) {
+    this.poke(1024+x+(y*40),c);
+    if( col === undefined ) {
+      return;
+    }
+    this.poke(55296+x+(y*40),col);
+  }
+
+  getTextChar(x,y) {
+    return this.peek(1024+x+(y*40));
+  }
+
+  getTextColor(x,y) {
+    return this.peek(55296+x+(y*40));
   }
 
   sendChars( s, newline ) {
@@ -348,6 +477,30 @@ class BasicContext {
         else if( c==0x93 ) {
           this.console.clearScreen()
         }
+        else if( c==29 ) {
+          var xy = this.console.getCursorPos();
+          if(xy[0]<39) {
+            this.console.setCursorX( xy[0] + 1);
+          }
+        }
+        else if( c==157 ) {
+          var xy = this.console.getCursorPos();
+          if(xy[0]>0) {
+            this.console.setCursorX( xy[0] - 1);
+          }
+        }
+        else if( c==17 ) {
+          var xy = this.console.getCursorPos();
+          if(xy[1]<24) {
+            this.console.setCursorY( xy[1] + 1);
+          }
+        }
+        else if( c==145 ) {
+          var xy = this.console.getCursorPos();
+          if(xy[1]>0) {
+            this.console.setCursorY( xy[1] - 1);
+          }
+        }
       }
       else {
         if( this.reverseOn ) {
@@ -363,6 +516,11 @@ class BasicContext {
     if( newline ) {
       this.console.writeString( "", true );
     }
+  }
+
+  getLinePos() {
+    var xy = this.console.getCursorPos();
+    return xy[0];
   }
 
   sendCharsSimple( s, newline ) {
@@ -388,6 +546,38 @@ class BasicContext {
     this.console.cursorX( p );
   }
 
+
+  resetVic() {
+    this.vpoke(53280,14);
+    this.vpoke(53281,6);
+    this.vpoke(53269,0);
+    this.vpoke(53270,200);
+    this.vpoke(53272,21);
+    this.vpoke(53265,155);
+    this.console.setColor(14);
+
+  }
+
+  getJiffyTime() {
+    var millis=new Date().getTime() - this.nullTime;
+    var jiffis = Math.floor(millis / (1000 / 60));
+
+    return jiffis % 5184000;
+  }
+
+  getTime() {
+    var millis=new Date().getTime() - this.nullTime;
+    millis = millis % 86400000;
+
+    var hours = Math.floor(millis / 3600000);
+    millis = millis - (hours * 3600000 );
+    var minutes = Math.floor(millis / 60000);
+    millis = millis - (minutes * 60000 );
+    var seconds = Math.floor(millis / 1000);
+    //millis = millis - (seconds * 1000 );
+    return [hours,minutes,seconds];
+  }
+
   reset( hard, muteReady ) {
     this.console.clearScreen();
     this.vpoke(53280,14);
@@ -399,12 +589,21 @@ class BasicContext {
     this.console.setColor(14);
     this.inputFlag = false;
     this.runFlag = false;
+    this.clrPGM();
+
+    this.setTurbo( false );
 
     this.printLine("");
     if( hard ) {
-      this.printLine(" **** commodore 64 basic emulator ****");
+      this.printLine("     **** c64 - basic emulator ****");
       this.printLine("");
-      this.printLine("  **** basic64/js - f9 = menu ****");
+      var ext = "off";
+      if(this.extendedcommands.enabled) ext = "on ";
+
+      var turbo = "off";
+      if(this.turboMode) turbo = "on ";
+
+      this.printLine("  **** extended: " + ext + "-  turbo: "+turbo+" ****");
       this.printLine("");
     }
     if( !muteReady ) {
@@ -471,6 +670,15 @@ class BasicContext {
     return dst.toLowerCase();
   }
 
+  ResolveStringSymbolToCode( x ) {
+
+    if(this.symbolTable[x]) {
+      return this.symbolTable[x];
+    }
+
+    return x;
+  }
+
 
   prepareLineForImport( txt0 ) {
     var txt;
@@ -478,7 +686,6 @@ class BasicContext {
     var dst = "";
 
     var i=0; while( i<txt.length ) {
-      //var c = txt.charAt( i );
       var c = txt.charCodeAt( i );
       if( c == 123 ) {
         i++;
@@ -490,14 +697,21 @@ class BasicContext {
               break;
             }
             num += String.fromCharCode( c );
+
             console.log("found ESC seq char " + String.fromCharCode( c ) );
             console.log("found ESC seq char code " + c);
             i++;
         }
 
         console.log("found ESC seq " + num);
+        num = this.ResolveStringSymbolToCode(num.toLowerCase());
+        console.log("found resolved ESC seq " + num);
 
         dst += String.fromCharCode( parseInt( num, 10) );
+      }
+      else if( c == 8221 || c == 8220) { //almost a double quote
+        dst += "\"";
+        i++;
       }
       else {
         dst += txt.charAt( i );
@@ -520,11 +734,22 @@ class BasicContext {
     return this.program;
   }
 
+  padZeros2( x ) {
+    var s = x + "";
+    for(var i=s.length; i<2; i++) {
+      s="0"+s;
+    }
+    return s;
+  }
+
   evalExpressionPart( p ) {
     var val=0;
 
     if( p.type=="num" ) {
-      if((""+p.data).indexOf(".") >= 0) {
+      if( p.data == "." ) {
+        val = 0;
+      }
+      else if((""+p.data).indexOf(".") >= 0) {
         val = parseFloat(p.data);
       }
       else {
@@ -535,10 +760,38 @@ class BasicContext {
       val = p.data;
     }
     else if( p.type=="var" ) {
-      val = this.vars[ p.data ];
+      if(p.data.startsWith("TI")) {
+        val = this.getJiffyTime();
+        if(p.data.endsWith("$")) {
+          val = this.getTime();
+          val = "" +
+            this.padZeros2(val[0]) +
+            this.padZeros2(val[1]) +
+            this.padZeros2(val[2]);
+        }
+      }
+      else {
+        val = this.vars[ p.data ];
+      }
       if( val == undefined ) {
         val = 0;
       }
+    }
+    else if( p.type=="array" ) {
+      var varIntName = "@array_" + p.data;
+      var arr = this.vars[ varIntName ];
+
+      if( arr.getIndexCount() != p.indices.length ) {
+          throw "@bad subscript";
+      }
+
+      var indices = [];
+      for( var ai=0; ai<p.indices.length; ai++) {
+        indices[ai] = this.evalExpression( p.indices[ ai ] );
+      }
+
+      val = arr.get( indices );
+
     }
     else if( p.type=="expr" ) {
       val = this.evalExpression( p );
@@ -552,18 +805,31 @@ class BasicContext {
       }
       try {
         var commands = this.commands;
+        var ecommands = this.extendedcommands;
+        var cmds = this.commands;
+
         var nFunName = "_fun_" + p.functionName.toLowerCase().replaceAll("$","_DLR_");
 
         var stc = commands[ nFunName ];
         if( stc === undefined ) {
-          this.printError("no such function " + p.functionName);
-          console.log("Cannot find functionName " + nFunName );
-          throw "no such function " + p.functionName;
-          return null;
+
+          stc = ecommands[ nFunName ];
+
+          if( stc === undefined ) {
+
+            stc = ecommands[ nFunName ];
+
+            this.printError("no such function " + p.functionName);
+            console.log("Cannot find functionName " + nFunName );
+            throw "no such function " + p.functionName;
+
+          }
+          else {
+            cmds = ecommands;
+          }
         }
-        else {
-            val = commands[ nFunName ]( values );
-        }
+
+        val = cmds[ nFunName ]( values );
 
       }
       catch ( e ) {
@@ -677,7 +943,7 @@ class BasicContext {
     return val;
   }
 
-  cycleToNext() {
+  cycleToNext() { //only used after input command
     var c = this.console;
     var p = this.program;
 
@@ -685,17 +951,30 @@ class BasicContext {
     if( this.runPointer >=  p.length ) {
       this.runFlag = false;
       c.clearCursor();
+      this.printLine("");
       this.printLine("ready.");
     }
   }
 
   cycle() {
+
+    /*return values*/
+    var END_W_ERROR = 0;
+    var TERMINATE_PROGRAM = -1;
+    var LINE_FINISHED = 10;
+    var MIDLINE_INTERUPT = 20;
+    var TERMINATE_W_JUMP = 30;
+    var PAUSE_F_INPUT = 40;
+
     var c = this.console;
+
+    var cmdCount = this.cmdCountPerCycle;
+    var debug=false;
 
     try {
 
       if( !this.runFlag || this.menuFocus || this.inputFlag  ) {
-        if(this.cursorCount++>15) {
+        if(this.cursorCount++>this.cursorCountMax) {
           this.cursorCount = 0;
 
           if( !this.menuFocus ) { c.blinkCursor(); }
@@ -703,46 +982,85 @@ class BasicContext {
       }
       else {
 
+        if(debug) console.log("START CYCLE------------------------------" );
+
         var p = this.program;
 
-        for( var cyc=0; cyc<5; cyc++) {
+        while (true) {
 
+          if(debug)console.log("START CYCLE LOOP-------------" );
           var l = p[ this.runPointer ];
+          var bf = this.runPointer2;
+          if(debug)console.log(" this.runPointer = " + this.runPointer, " this.runPointer2 = " + this.runPointer2 );
+          if(debug)console.log(" cmdCount = " + cmdCount);
+          var rv = this.runCommands( l[1], 1 );
+          var af = rv[ 1 ];
 
-          //console.log("line:",l);
-          var rv = this.runCommands( l[1] );
-          //console.log("rv:",rv);
-          if( !rv ) {
+          if( rv[0] == MIDLINE_INTERUPT) {
+            this.runPointer2 = af;
+          }
+
+          var executedCount = af-bf;
+
+          if(debug)console.log(" bf = " + bf, " af = " + af);
+          if(debug)console.log(" executedCount = " + executedCount);
+          if(debug)console.log(" rv = " + rv);
+
+
+          cmdCount = cmdCount - executedCount;
+
+
+          if( rv[0]<=0 ) {
+            if(debug)console.log(" PGM END!!!!" );
             this.runFlag = false;
+            this.printLine("");
             this.printLine("ready.");
+            if(debug)console.log("CYCLE RETURN END");
             return;
           }
-
-          if( this.inputFlag ) {
-              break;
-          }
-
-          if( !this.gotoFlag) {
+          else if( rv[0] == LINE_FINISHED ) {
             this.runPointer ++;
+            this.runPointer2 = 0;
+            if(debug)console.log(" new this.runPointer = " + this.runPointer, " this.runPointer2 = " + this.runPointer2 );
+
             if( this.runPointer >=  p.length ) {
-              console.log( "end program");
+              if(debug)console.log( "end program");
               this.runFlag = false;
               c.clearCursor();
               this.printLine("ready.");
               break;
             }
           }
-          else {
-            this.gotoFlag = false;
+          else if( rv[0] == TERMINATE_W_JUMP ) {
+
+            if(debug)console.log(" jump to new this.runPointer = " + this.runPointer, " this.runPointer2 = " + this.runPointer2 );
+
           }
+          else if( rv[0] == PAUSE_F_INPUT ) {
+
+            if(debug)console.log("CYCLE PAUSE 4 INPUT");
+            break;
+
+          }
+
+          if( cmdCount<=0 ) {
+            if(debug)console.log("Breaking cmdCount=" + cmdCount)
+            break;
+          }
+
         }
+
+        if(debug)console.log(" this.runPointer = " + this.runPointer, " this.runPointer2 = " + this.runPointer2 );
+
       }
 
     }
     catch (e) {
-      this.runFlag = false;
       c.clearCursor();
+      this.printError("unexpected");
       this.printLine("ready.");
+      this.runFlag = false;
+
     }
 
 
@@ -751,23 +1069,42 @@ class BasicContext {
 
   doReturn() {
 
-    var oldLine = this.gosubReturn.pop();
-    if( oldLine === undefined ) {
+    var oldPointers = this.gosubReturn.pop();
+    if( oldPointers === undefined ) {
       throw "return without gosub  ";
     }
-    this.goto( oldLine );
+
+    this.runPointer2 = oldPointers[ 1 ];
+    this.runPointer = oldPointers[ 0 ];
+
+    //this.goto( oldLine );
   }
 
-  gosub( line ) {
+  gosub( line, runPointer2 ) {
 
     var pgm = this.program;
     var len=this.program.length;
-    var nextLine = null;
-    if( (this.runPointer+1) < len ) {
-      nextLine = this.program[ this.runPointer+1 ][0];
+    var retLine = null;
+    var retCmd = null;
+
+    this.runPointer2 = runPointer2;
+
+    if( ( this.runPointer2 + 1) < this.program[ this.runPointer ][1].length ) {
+      retCmd = this.runPointer2 + 1;
+      retLine = this.runPointer;
+    }
+    else {
+      if( (this.runPointer+1) < len ) {
+        retCmd=0;
+        retLine = this.runPointer+1 ;
+      }
+      else {
+        retCmd=9999;
+        retLine = this.runPointer;
+      }
     }
 
-    this.gosubReturn.push( nextLine );
+    this.gosubReturn.push( [ retLine, retCmd ] );
     this.goto( line );
   }
 
@@ -784,7 +1121,6 @@ class BasicContext {
         this.runPointer = i;
         this.runPointer2 = 0;
         found = true;
-        this.gotoFlag = true;
       }
     }
 
@@ -954,6 +1290,15 @@ class BasicContext {
     }
   }
 
+  clrPGM() {
+    this.vars = [];
+    this.restoreDataPtr();
+  }
+
+  restoreDataPtr() {
+    this.dataPointer = 0;
+  }
+
   runPGM() {
 
     if( this.startAsGoto ) {
@@ -1003,47 +1348,51 @@ class BasicContext {
       c.clearCursor();
       this.runPointer = 0;
       this.runPointer2 = 0;
-      this.gotoFlag = false;
     }
   }
 
-  doIf( a,b,comp,block ) {
+  doIf( a,b,comp ) {
+    var IF_ERROR = -1;
+    var IF_TRUE = 1;
+    var IF_FALSE = 0;
 
-    if( a==null || b == null || comp == null || block == null ) {
-      return false;
+    if( a==null || b == null || comp == null ) {
+      this.printError("if expression")
+      return IF_ERROR;
     }
-    var rv = true;
+
+    var result = IF_FALSE;
     if( comp == "=" ) {
       if( this.evalExpression(a) == this.evalExpression(b) ) {
-        rv = this.runCommands( block );
+        result = IF_TRUE;
       }
     }
     else if( comp == "<" ) {
       if( this.evalExpression(a) < this.evalExpression(b) ) {
-        rv = this.runCommands( block );
+        result = IF_TRUE;
       }
     }
     else if( comp == ">" ) {
       if( this.evalExpression(a) > this.evalExpression(b) ) {
-        rv = this.runCommands( block );
+        result = IF_TRUE;
       }
     }
     else if( comp == "<=" ) {
       if( this.evalExpression(a) <= this.evalExpression(b) ) {
-        rv = this.runCommands( block );
+        result = IF_TRUE;
       }
     }
     else if( comp == ">=" ) {
       if( this.evalExpression(a) >= this.evalExpression(b) ) {
-        rv = this.runCommands( block );
+        result = IF_TRUE;
       }
     }
     else if( comp == "<>" ) {
       if( this.evalExpression(a) != this.evalExpression(b) ) {
-        rv = this.runCommands( block );
+        result = IF_TRUE;
       }
     }
-    return rv;
+    return result;
   }
 
 
@@ -1100,7 +1449,6 @@ class BasicContext {
       varName = nextVarName;
     }
 
-
     var ctxv = ctx[varName];
 
     this.vars[ varName ] += ctxv.step;
@@ -1111,7 +1459,7 @@ class BasicContext {
       }
     }
     else if( ctxv.step == 0) {
-      throw "Step 0 not supported"
+      return ctxv.jumpTo;
     }
     else {
       if(this.vars[ varName ]>=ctxv.to) {
@@ -1141,13 +1489,45 @@ class BasicContext {
     return "";
   }
 
-  runCommands( cmds ) {
+  runCommands( cmds, limit ) {
+    /* return values
+      false -> error or end program
+      true  -> executed ok
+
+      should return
+      end_w_error
+      terminate_program
+      line_finished
+      goto_gosub
+    */
+
     var commands = this.commands;
     var ecommands = this.extendedcommands;
     var EXPR = 0, PAR = 1;
 
+    /*return values*/
+    var END_W_ERROR = 0;
+    var TERMINATE_PROGRAM = -1;
+    var LINE_FINISHED = 10;
+    var MIDLINE_INTERUPT = 20;
+    var TERMINATE_W_JUMP = 30;
+    var PAUSE_F_INPUT = 40;
+
     var end = cmds.length;
     var i=this.runPointer2;
+
+    if(!(limit == undefined )) {
+      console.log("RMM limit is defined");
+      if( end - i > limit ) {
+        console.log("RMM end:",end," i:",i," limit:",limit);
+        end = i + limit;
+
+        // end=5, i=2, limit=6 -> false
+        // end=5, i=2, limit=3 -> false
+        // end=5, i=2, limit=2 -> true -> end = 4
+      }
+    }
+
     while( i<end ) {
       var cmd=cmds[i];
       //console.log( cmd );
@@ -1155,30 +1535,44 @@ class BasicContext {
         var cn = cmd.controlKW;
         if( cn == "goto" ) {
           this.goto( cmd.params[0] );
-          break;
+          return [TERMINATE_W_JUMP,i+1];
         }
         else if( cn == "end" ) {
-          return false;
-          break;
+          return [TERMINATE_PROGRAM,i+1];
+        }
+        else if( cn == "stop" ) {
+          this.printInfo("break");
+          return [TERMINATE_PROGRAM,i+1];
         }
         else if( cn == "gosub" ) {
-          this.gosub( cmd.params[0] );
+          this.gosub( cmd.params[0], i );
+          return [TERMINATE_W_JUMP,i+1];
         }
         else if( cn == "return" ) {
           this.doReturn();
+          return [TERMINATE_W_JUMP,i+1];
         }
         else if( cn == "if" ) {
-          var rv = this.doIf( cmd.params[0], cmd.params[1], cmd.comp, cmd.block );
-          if( !rv ) {
-            this.printError("syntax");
-            return false;
+          var IF_ERROR = -1;
+          var IF_TRUE = 1;
+          var IF_FALSE = 0;
+
+          var ifresult = this.doIf( cmd.params[0], cmd.params[1], cmd.comp );
+          if( ifresult == IF_ERROR ) {
+             return [END_W_ERROR,i+1];
+          }
+          else if( ifresult == IF_TRUE ) {
+             //return [MIDLINE_INTERUPT,i+1];
+          }
+          else  {
+             return [LINE_FINISHED,i+1];
           }
         }
         else if( cn == "data" ) {
           //Nothing
         }
         else if( cn == "rem" ) {
-          //Nothing
+          return [LINE_FINISHED,i+1];
         }
         else if( cn == "for:init" ) {
           this.doForInit( cmd.params[0], cmd.params[1], cmd.params[2], cmd.variable, i, cmds.length );
@@ -1197,9 +1591,8 @@ class BasicContext {
                 else {
                   this.runPointer = jump.line;
                   this.runPointer2 = jump.cmdPointer;
-                  this.gotoFlag = true;
                 }
-                return true;
+                return [TERMINATE_W_JUMP,i+1];
             }
             else {
               i = jump.cmdPointer;
@@ -1207,19 +1600,49 @@ class BasicContext {
             }
           }
         }
+        else if( cn == "dim" ) {
+          var vars = this.vars;
+
+          var indices = [];
+          for( var ai=0;ai<cmd.params.length;ai++){
+            indices[ai] = this.evalExpression( cmd.params[ai] );
+          }
+
+          var arrRec = new BasicArray( indices, 0 );
+
+          var varIntName = "@array_" + cmd.arrayName;
+
+          if( ! ( this.vars[ varIntName ] === undefined )) {
+            this.printError( "redim'd array" );
+            return [END_W_ERROR,i+1];
+          }
+          this.vars[ varIntName ] = arrRec;
+
+        }
       }
       else if( cmd.type == "call" )  {
         var values = [];
         var pardefs = [];
         var mycommands = commands;
-        if( cmd.statementName.toLowerCase().startsWith("x") ) {
+
+        var stc = mycommands[ "_stat_" + cmd.statementName.toLowerCase()];
+
+        if( stc === undefined ) {
+          //cmd.statementName.toLowerCase().startsWith("x") )
           mycommands = ecommands;
 
-          if( mycommands.enabled == false &&
-              cmd.statementName.toLowerCase() != "xon" ) {
-                this.printError( "extended not enabled" );
-                return false;
-              }
+          stc = mycommands[ "_stat_" + cmd.statementName.toLowerCase()];
+
+          if( stc === undefined ) { }
+          else {
+            if( mycommands.enabled == false &&
+              cmd.statementName.toLowerCase() != "xon") {
+                  this.printError( "extended not enabled" );
+                  return [END_W_ERROR,i+1];;
+                }
+          }
+
+
         }
 
         var intf = mycommands[ "_if_" + cmd.statementName.toLowerCase()];
@@ -1257,13 +1680,16 @@ class BasicContext {
           }
         }
         try {
-          var stc = mycommands[ "_stat_" + cmd.statementName.toLowerCase()];
+          //var stc = ;
           if( stc === undefined ) {
             this.printError("syntax");
-            return false;
+            return [END_W_ERROR,i+1];;
           }
           else {
               mycommands[ "_stat_" + cmd.statementName.toLowerCase()]( values );
+              if( this.inputFlag ) {
+                return [PAUSE_F_INPUT,i+1];
+              }
           }
 
         }
@@ -1275,21 +1701,48 @@ class BasicContext {
           else {
             this.printError("unexpected");
           }
-          return false;
+          return [END_W_ERROR,i+1];
         }
       }
       else if( cmd.type == "assignment" )  {
-        if( this.vars[ cmd.var ] === undefined ) {
-          this.vars[ cmd.var ] = 0;
+        if( cmd.arrayAssignment ) {
+          var varIntName = "@array_" + cmd.var;
+          if( this.vars[ varIntName ] === undefined ) {
+            this.printError("bad subscript");
+            return [END_W_ERROR,i+1];
+          }
+
+          var arr = this.vars[ varIntName ];
+          if( cmd.indices.length != arr.getIndexCount() ) {
+            this.printError("bad subscript");
+            return [END_W_ERROR,i+1];
+          }
+
+          var indices = [];
+          for( var ai=0;ai<cmd.indices.length;ai++){
+            indices[ai] = this.evalExpression( cmd.indices[ai] );
+          }
+          arr.set( indices, this.evalExpression( cmd.expression ) );
         }
-        this.vars[ cmd.var ] = this.evalExpression( cmd.expression );
-        //console.log("VAR("+cmd.var+")=" + this.vars[ cmd.var ]);
+        else { //single var (not an array)
+          if( this.vars[ cmd.var ] === undefined ) {
+            if(cmd.var.startsWith("TI")) {
+              this.printError("syntax");
+              return [END_W_ERROR,i+1];
+            }
+            this.vars[ cmd.var ] = 0;
+          }
+          this.vars[ cmd.var ] = this.evalExpression( cmd.expression );
+        }
       }
       i++;
     }
 
-    this.runPointer2 = 0;
-    return true;
+    if( i== cmds.length ) {
+      return [LINE_FINISHED,i];
+    }
+
+    return [MIDLINE_INTERUPT,i];
 
   }
 
@@ -1318,6 +1771,31 @@ class BasicContext {
     }
     this.program = pgm2;
 
+  }
+
+  createDisk() {
+    if( !this.confirmCookies() ) {
+      return null;
+    }
+
+    this.vDisks.createDisk();
+  }
+
+  setDiskLabel( label ) {
+    if( !this.confirmCookies() ) {
+      return null;
+    }
+    var dir = this.vDisks.getDir();
+    dir.title = label;
+    this.vDisks.setDir( dir );
+  }
+
+  deleteFile( fn ) {
+    if( !this.confirmCookies() ) {
+      return null;
+    }
+
+    return this.vDisks.deleteFile( fn );
   }
 
   getDisks() {
@@ -1353,6 +1831,13 @@ class BasicContext {
     this.vDisks.setDir( dir );
   }
 
+  formatDisk() {
+    if( !this.confirmCookies() ) {
+      return null;
+    }
+
+    this.vDisks.formatDisk();
+  }
 
   loadDir() {
 
@@ -1371,7 +1856,7 @@ class BasicContext {
       this.program.push([null,null,row]);
     }
 
-    row = dir.free +" slots free.";
+    row = dir.free +" slots free.".toUpperCase();
     this.program.push([null,null,row]);
 
   }
@@ -1459,7 +1944,15 @@ class BasicContext {
     if( container.type == "bas") {
 
       this.program = JSON.parse( container.data );
+      var p = new Parser( this.commands, this.extendedcommands );
+      p.init();
 
+      if( this.program != null ) {
+        for( i=0; i<this.program.length;i++) {
+          var l = p.parseLine( this.program[i][2] );
+          this.program[i][1] = l.commands;
+        }
+      }
     }
     else if( container.type == "snp") {
 
@@ -1518,34 +2011,17 @@ class BasicContext {
 
   }
 
-  createFullDisk( name, image ) {
+  createDiskFromImage( name, image ) {
 
     if( !this.confirmCookies() ) {
       return null;
     }
 
-    return this.vDisks.createFullDisk( name, image );
+    return this.vDisks.createDiskFromImage( name, image );
 
   }
 
   insertPgmLine( linenr, commands, raw ) {
-    /*
-    for( var i=0; i<this.program.length; i++) {
-      var pl=this.program[i];
-      if( pl[0] == linenr ) {
-        this.program[i] = [linenr, commands, raw ];
-        return;
-      }
-    }
-
-    this.program.push( [linenr, commands, raw ]);
-
-    var sortF = function compare( a, b ) {
-      return a[0] - b[0];
-    }
-
-    this.program.sort( sortF );
-    */
 
     this.insertPgmLineLocal( linenr, commands, raw, this.program );
   }
@@ -1570,10 +2046,19 @@ class BasicContext {
 
   }
 
+  enableExtended( flag ) {
+    if( flag ) {
+      this.extendedcommands._stat_xon( undefined );
+    }
+    else {
+      this.extendedcommands._stat_xoff( undefined );
+    }
+  }
+
   textLinesToBas( lines ) {
 
     var myProgram = [];
-
+    console.log( "textLinesToBas" );
     for( var i = 0; i<lines.length; i++ ) {
 
       var line = this.prepareLineForImport( lines[ i ] );
@@ -1617,8 +2102,6 @@ class BasicContext {
     this.inputVarsPointer = 0;
     this.sendChars( "? " , false);
   }
-
-
 
   handleLineInput( str, isInputCommand ) {
 

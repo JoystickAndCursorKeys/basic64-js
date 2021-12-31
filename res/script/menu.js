@@ -76,8 +76,8 @@ class Menu {
     opts.push({opt: "diskMenu", display: "Virtual Disk" });
     opts.push({opt: "exportMenu", display: "Import" });
     opts.push({opt: "clipboardMenu", display: "Clipboard" });
-    //opts.push({opt: "keys", display: "Keys" });
     opts.push({opt: "docsSettingsMenu", display: "Docs and Settings" });
+		opts.push({opt: "toolsMenu", display: "Tools" });
     opts.push({opt: "reset", display: "Reset" });
 
     this.options["main"] = opts;
@@ -85,13 +85,19 @@ class Menu {
     this.menuOffset["main"] = 10;
 
     opts = [];
-    opts.push({opt: "copyPGMtoClip", display: "Copy Program to Clipboard" });
-	  opts.push({opt: "copyPGMURLtoClip", display: "Copy Program URL to Clipboard" });
-    opts.push({opt: "pastePGMFromClip", display: "New Program from Clipboard" });
-		opts.push({opt: "pastePGMFromClipAppend", display: "Merge Clipboard with Program" });
+    opts.push({opt: "copyPGMtoClip", display: "Copy program" });
+    opts.push({opt: "pastePGMFromClip", display: "Paste Program" });
+		opts.push({opt: "pastePGMFromClipAppend", display: "Paste and Merge" });
     this.options["clipboard"] = opts;
     this.menus["clipboard"] = "clipboard";
-    this.menuOffset["clipboard"] = 1;
+    this.menuOffset["clipboard"] = 10;
+
+		opts = [];
+    opts.push({opt: "generatePGMUrl",   display: "Generate Program URL" });
+	  opts.push({opt: "copyPGMURLtoClip", display: "Generate Inline Program URL" });
+    this.options["tools"] = opts;
+    this.menus["tools"] = "tools";
+    this.menuOffset["tools"] = 3;
 
     opts = [];
     opts.push({opt: "renumber", display: "Renumber Basic Program" });
@@ -115,16 +121,21 @@ class Menu {
 
 
     opts = [];
-    opts.push({opt: "changeTheme", display: "Change Menu Theme" });
+    opts.push({opt: "changeClock", display: "clock mode" });
+    opts.push({opt: "changeTurbo", display: "turbo mode" });
+    opts.push({opt: "changeExtended", display: "Extended commands" });
+		opts.push({opt: "changeTheme", display: "Change Menu Theme" });
     opts.push({opt: "documentation", display: "documentation" });
     this.options["docssettings"] = opts;
     this.menus["docssettings"] = "docs & settings";
     this.menuOffset["docssettings"] = 9;
 
-
     opts = [];
-    opts.push({opt: "listDirectory", display: "Dir & Load" });
+    opts.push({opt: "listDirectory", display: "Load File" });
+		opts.push({opt: "formatDisk", display: "Format Disk", confirm: true });
     opts.push({opt: "listDisks",    display: "Swap Disks" });
+		opts.push({opt: "createDisk",    display: "Create new Disk", confirm: true });
+
 //    opts.push({opt: "listDirectory", display: "Save" });
     opts.push({opt: "saveSnapshot", display:  "Save Snapshot" });
 //    opts.push({opt: "listDirectory", display: "Format" });
@@ -424,13 +435,6 @@ class Menu {
 		}
 		else { //list
 
-
-
-	    /*this.selectList = true;
-			this.oldOptSelect = this.optSelect;
-			this.items = l.items;
-			this.listResult = -1;*/
-
 			var menuStr = "*** " + this.listTitle +" ***";
 			x = 20 - (Math.floor(menuStr.length / 2));
 			t.padLine( x, menuStr );
@@ -469,7 +473,7 @@ class Menu {
 					else {
 						t.console.setColor(txtColor);
 					}
-					t.pad( x, " " +(i+1)+ " - " + this.listItems[i].id );
+					t.pad( x, " " +(i+1)+ " - " + this.listItems[i].name );
 
 					this.curs.push( t.console.getCursorPos() );
 
@@ -557,8 +561,12 @@ class Menu {
     this.context.printLine("*** " + m);
   }
 
-  errorMessage( m ) {
-    this.context.printLine("??" + m + " error");
+  errorMessage( m, extra0 ) {
+		var extra = "";
+		if( ! (extra0 === undefined )) {
+			extra = " " + extra0;
+		}
+    this.context.printLine("??" + m + " error" + extra);
   }
 
   stop() {
@@ -586,11 +594,11 @@ class Menu {
 
   }
 
-  endMenuWithError( m ) {
+  endMenuWithError( m, extra ) {
     this.context.endMenu();
     this.stop();
     this.context.printLine( "" );
-    this.errorMessage(m);
+    this.errorMessage(m, extra);
 
   }
 
@@ -621,7 +629,12 @@ class Menu {
 
 	      var opt = options[ this.optSelect ];
 
-	      this[ "do_" +  opt.opt ]();
+				if( ! opt.confirm ) {
+					this[ "do_" +  opt.opt ]();
+				}
+	      else {
+					this.chooseYesOrNo( opt.display , "do_" +  opt.opt);
+				}
 			}
     }
     if( evt.key == "Escape") {
@@ -738,6 +751,12 @@ class Menu {
     this.rendervmState();
   }
 
+	do_toolsMenu() {
+    this.menuvmState = "tools";
+    this.optSelect = 0
+    this.rendervmState();
+  }
+
   do_clipboardMenu() {
     this.menuvmState = "clipboard";
     this.optSelect = 0
@@ -760,13 +779,6 @@ class Menu {
 	do_copyPGMURLtoClip() {
 
 		var text = this.context.getProgramAsText();
-		//console.log( text.length );
-		//console.log( text );
-
-		//text = this.context.compressPGMText( text );
-
-		//console.log( text.length );
-		//console.log( text );
 
 		var url = window.location +
 							"?pgm=" +
@@ -781,6 +793,19 @@ class Menu {
 
 		this.endMenuWithMessage("url to clip");
 	}
+
+	do_generatePGMUrl() {
+
+    registerClipboardCallback( this, "do_generatePGMUrlCallBack" );
+    enableConvertLinkWidget();
+    this.runImportedPGMFlag = false;
+  }
+
+	do_generatePGMUrlCallBack( text ) {
+
+		var encodedLink = encodeURIComponent( text );
+		setLinkCallbackText( document.URL +  "?linkpgm=" + encodedLink );
+  }
 
 
   do_copyPGMtoClip() {
@@ -802,6 +827,7 @@ class Menu {
     enableClipBoardWidget();
     this.runImportedPGMFlag = false;
   }
+
 
 	do_pastePGMFromClipAppendCallback( text ) {
 
@@ -847,6 +873,12 @@ class Menu {
       }
     }
     catch (e) {
+			if( typeof(e) == "object" ) {
+				if(! (e["lineNr"] === undefined )) {
+					this.endMenuWithError("parse", "on line " + e["lineNr"]);
+					return;
+				}
+			}
       this.endMenuWithError("syntax");
     }
   }
@@ -873,6 +905,152 @@ class Menu {
 	select_Disk( id ) {
 
 		this.context.selectDisk( id );
+	}
+
+
+	select_Clock( id ) {
+		console.log( id );
+
+		localStorage.setItem( "BJ64_Clock", JSON.stringify( { synchronized: id } ) );
+
+		if( id == "clocksync" ) {
+			this.context.synchClock();
+		}
+	}
+
+
+	select_Extended( id ) {
+		console.log( id );
+
+		localStorage.setItem( "BJ64_Extended", JSON.stringify( { extended: id } ) );
+
+		if( id == "on" ) {
+			this.context.enableExtended( true );
+		}
+	}
+
+	do_createDisk() {
+		if( !this.context.confirmCookies() ) {
+			return;
+		}
+
+		this.context.createDisk();
+		this.infoBox("a new disk has been created");
+	}
+
+	do_formatDisk() {
+		if( !this.context.confirmCookies() ) {
+			return;
+		}
+		console.log( "do_FormatDisk" );
+
+		//this.context.formatDisk();
+		console.log("Formating Disk...");
+
+		this.infoBox("Disk has been formatted");
+	}
+
+	chooseYesOrNoCallBack( id ) {
+
+		if( id == "yes" ) {
+			this[this.chooseYesCallBack]();
+		}
+
+	}
+
+	chooseYesOrNo( action, callback ) {
+
+		var list = { title: action + " - Are you sure?", items: [
+			{ name: "Yes", id: "yes"},
+			{ name: "No",  id: "no"}
+		] };
+
+		this.chooseYesCallBack = callback;
+		list.callback = "chooseYesOrNoCallBack";
+
+		console.log("list options");
+		this.startList( list );
+
+	}
+
+	emptyCallBack( id ) {
+	}
+
+	infoBox( info  ) {
+
+		var list = { title: info, items: [
+			{ name: "Ok", id: "ok"}
+		] };
+
+		list.callback = "emptyCallBack";
+
+		this.startList( list );
+
+	}
+
+	do_changeExtended() {
+
+		if( !this.context.confirmCookies() ) {
+			return;
+		}
+
+		var list = { title: "Extended Commands", items: [
+			{ name: "on at startup", id: "on"},
+			{ name: "'XON' command to enable", id: "xon"}
+		] };
+
+		list.callback = "select_Extended";
+
+		console.log("list options");
+		this.startList( list );
+
+	}
+
+	select_Turbo( id ) {
+		console.log( id );
+
+		localStorage.setItem( "BJ64_Turbo", JSON.stringify( { turbo: id } ) );
+
+		if( id == "on" ) {
+			this.contextthis.setTurbo( true );
+		}
+	}
+
+
+	do_changeClock() {
+
+		if( !this.context.confirmCookies() ) {
+			return;
+		}
+
+		var list = { title: "Clock Mode", items: [
+			{ name: "compatible",   id: "compat"},
+			{ name: "synchronized with host", id: "clocksync"}
+		] };
+
+		list.callback = "select_Clock";
+
+		this.startList( list );
+
+	}
+
+
+	do_changeTurbo() {
+
+		if( !this.context.confirmCookies() ) {
+			return;
+		}
+
+		var list = { title: "Turbo Mode", items: [
+			{ name: "on at startup", id: "on"},
+			{ name: "'turbo' command to enable", id: "manual"}
+		] };
+
+		list.callback = "select_Extended";
+
+		console.log("list options");
+		this.startList( list );
+
 	}
 
 	select_File( id ) {
@@ -910,31 +1088,6 @@ class Menu {
 
 		console.log("list dir");
 		this.startList( list );
-
-		/*
-
-    if( !this.context.confirmCookies() ) {
-      return;
-    }
-
-    this.endMenu();
-
-    var dir = this.context.getDir();
-    var row;
-
-    this.context.printLine("");
-    this.context.listCodeLine( "0 \u0012\""+dir.title+"          \"\u0092 00 2A");
-    for( var i=0; i<dir.files.length; i++) {
-      row = this.context.padSpaces6( dir.files[i].size ) +" \"" + dir.files[i].fname + "\"";
-      this.context.listCodeLine( row );
-    }
-
-    row = dir.free +" slots free.";
-    this.context.listCodeLine( row );
-
-    this.context.printReady();
-		*/
-
   }
 
   do_renumber() {
@@ -944,7 +1097,7 @@ class Menu {
   do_compress() {
     this.context.compressProgram();
 
-    this.endMenuWithMessage("import ok");
+    this.endMenuWithMessage("compress ok");
     this.context.printLine("list");
 
     var pgm = this.context.getProgramLines();
@@ -1010,7 +1163,7 @@ class Menu {
     if( diskName.endsWith(".vd64") ) {
       diskName = diskName.substring(0,diskName.length-5);
     }
-    this.context.createFullDisk( diskName, JSON.parse( text ) );
+    this.context.createDiskFromImage( diskName, JSON.parse( text ) );
   }
 
 
@@ -1144,11 +1297,10 @@ class Menu {
 
     var data = JSON.stringify(this.vmState);
 
-    this.context.saveSerializedData( "snapshot", data, "snp", 65536 );
+    this.context.saveSerializedData( "SNAPSHOT", data, "snp", 65536 );
 
     this.endMenuWithMessage("snapshot saved");
   }
-
 
   do_reset() {
     this.endMenu();

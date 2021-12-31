@@ -8,17 +8,7 @@
 	<link rel="icon" href="res/img/fav.png">
 	<style>
 
-	input[type=button], input[type=submit], input[type=reset] {
-	  background-color: #0000aa;
-	  border: none;
-	  color: #0088ff;
-	  padding: 16px 32px;
-	  font-family: "Lucida Console", "Courier New", monospace;
-	  font-weight: 900;
-	   font-size: large;
-	  margin: 4px 2px;
-	  cursor: pointer;
-	}
+
 		.outer {
 		  display: table;
 		  position: absolute;
@@ -54,10 +44,35 @@
 			height: 90vh;
 		}
 
+		.fakec64 {
+			background-color: #0000aa;
+			border: none;
+			color: #0088ff;
+			padding: 16px 32px;
+			font-family: "Lucida Console", "Courier New", monospace;
+			font-weight: 900;
+			 font-size: large;
+			margin: 4px 2px;
+			cursor: pointer;
+		}
+
+		.fakec64nopad {
+			background-color: #0000aa;
+			border: none;
+			color: #0088ff;
+			font-family: "Lucida Console", "Courier New", monospace;
+			font-weight: 900;
+			 font-size: large;
+			margin: 4px 2px;
+			cursor: pointer;
+		}
+
+
 	</style>
 
 	<script src="res/script/g1/core/boot.js"></script>
 	<script src="res/script/g1/screens/c64/screen.js"></script>
+  <script src="res/script/basicarray.js"></script>
 	<script src="res/script/errorhandler.js"></script>
 	<script src="res/script/basictokenizer.js"></script>
 	<script src="res/script/basicparser.js"></script>
@@ -68,6 +83,7 @@
 	<script src="res/script/menu.js"></script>
 	<script src="res/script/basiccontext.js"></script>
 	<script src="res/script/w64.js"></script>
+	<script src="res/script/statedefinitions.js"></script>
 
 
 <script>
@@ -96,12 +112,16 @@
 
 		var doc = document;
 
-		var size = console.getRenderSize();
+		var size = console.getRenderSize( );
 		SCR_W = size[0];
 		SCR_H = size[1];
 
 		var pgm = new Program( console );
-		program = new Boot( 'screenCanvas', SCR_W, SCR_H, [ pgm, 'basic' ] );
+
+		var stateDefinitions = new StateDefinitions( pgm );
+
+		//program = new Boot( 'screenCanvas', SCR_W, SCR_H, [ pgm, 'basic' ] );
+		program = new Boot( 'screenCanvas', SCR_W, SCR_H,  stateDefinitions );
 
 	}
 
@@ -110,7 +130,8 @@
 		screenCanvas.style="display:none";
 		document.getElementById("exporttxt").style="display:block";
 		document.getElementById("exporttxtdata").focus();
-		document.getElementById('exporttxtdata').value = 'PASTE HERE (CTRL-V)';
+		document.getElementById('exporttxtdata').value =
+					"PASTE_HERE__USE_CTRL_V";
 		document.getElementById("exporttxtdata").select();
 
 	}
@@ -122,16 +143,75 @@
 		clipboardCallback_method = method;
 	}
 
-	function clipboardCallback() {
+
+	function clipboardClose() {
 		console.log("callback");
 		document.getElementById("exporttxt").style="display:none";
 		screenCanvas.style="display:block";
 		screenCanvas.focus();
 
+	}
+
+
+	function clipboardCallback() {
+		console.log("callback");
+		clipboardClose();
+
 		var text = document.getElementById('exporttxtdata').value;
 
 		clipboardCallback_class[ clipboardCallback_method ]( text );
 	}
+
+
+	function enableConvertLinkWidget() {
+
+		screenCanvas.style="display:none";
+		document.getElementById("linkMaker").style="display:block";
+		document.getElementById("linkmakerinput").focus();
+		document.getElementById('linkmakerinput').value = '';
+		document.getElementById("linkmakerinput").select();
+
+	}
+
+	var convertLinkCallback_class, convertLinkCallback_method;
+
+	function registerConvertLinkCallback( clazz, method ) {
+		convertLinkCallback_class = clazz;
+		convertLinkCallback_method = method;
+	}
+
+	function convertLinkCallback() {
+		console.log("callback");
+
+		var text = document.getElementById('linkmakerinput').value;
+
+		clipboardCallback_class[ clipboardCallback_method ]( text );
+	}
+
+
+
+function convertLinkClipboard() {
+
+
+	navigator.clipboard.writeText( document.getElementById('linkmakeroutput').value );
+
+}
+
+
+	function convertLinkClose() {
+
+		document.getElementById("linkMaker").style="display:none";
+		screenCanvas.style="display:block";
+		screenCanvas.focus();
+
+	}
+
+	function setLinkCallbackText( text ) {
+		console.log("callback");
+		document.getElementById("linkmakeroutput").value=text;
+
+	}
+
 
 </script>
 
@@ -148,11 +228,35 @@
 		<input hidden name="imageLoader" id="imageLoader" type="file" onclick="this.value=null;"></input>
 		<div id=exporttxt hidden >
 			<br>&nbsp;
-			<input value="READY" type=button
+			<input class=fakec64  value="READY" type=button
 				onclick="clipboardCallback();">
-				<br>&nbsp;
-				<textarea width=100% id=exporttxtdata></textarea>
+				<input class=fakec64 value="BACK TO BASIC" type=button
+						onclick="clipboardClose();">
 
+				<br>&nbsp;
+				<textarea class=fakec64nopad width=100% id=exporttxtdata></textarea>
+		</div>
+		<div id=linkMaker hidden >
+
+				<center>
+				<table border=0 class=fakec64>
+					<tr>
+						<td>Basic Source Link:</td>
+						<td><input class=fakec64 style="width: 640px"  id=linkmakerinput name=linkmakerinput value="LINK_2_BASIC_PGM_HERE" type=text></td>
+					</tr>
+					<tr>
+						<td>Shareable Link:</td>
+						<td><input class=fakec64 style="width: 640px"  id=linkmakeroutput name=linkmakeroutput value="" type=text></td>
+					</tr>
+				</table>
+				<input class=fakec64 value="MAKE LINK" type=button
+					onclick="convertLinkCallback();">
+				<input class=fakec64 value="COPY LINK" type=button
+						onclick="convertLinkClipboard();">
+				<input class=fakec64 value="BACK TO BASIC" type=button
+						onclick="convertLinkClose();">
+					<br>
+				</center>
 		</div>
     </div>
 

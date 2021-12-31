@@ -44,6 +44,7 @@ class C64Screen {
 
 			this.bufcanvas =  document.createElement('canvas');
       this.bufcontext = this.bufcanvas.getContext('2d');
+			this.bufcontext.imageSmoothingEnabled= false;
 			this.bufcanvas.width = this.iwidth;
 			this.bufcanvas.height = this.iheight;
 
@@ -53,8 +54,8 @@ class C64Screen {
 				h: 64
 			}
 
-			this.WIDTH = 960;
-			this.HEIGHT = 600;
+			this.WIDTH = 320*2.5;
+			this.HEIGHT = 200*2.5;
 
 			this.FULLWIDTH = this.WIDTH + this.border.w * 2;
 			this.FULLHEIGHT = this.HEIGHT + this.border.h * 2;
@@ -63,6 +64,7 @@ class C64Screen {
       this.rcanvas.height=this.FULLHEIGHT;
 
 
+			this.rcanvas.imageSmoothingEnabled= false;
 			this.context.imageSmoothingEnabled= false;
 
 			this._setCharMapping();
@@ -99,6 +101,7 @@ class C64Screen {
 
 			this.memory = new Uint8Array( 256 * 256 ); //64 KB, we're not using all
 			this.videoRam = 12288;
+			this.videoBMRam = 0;
 			this.useRomCharMem = true;
 			this.visibleRomCharMem = false;
 
@@ -401,14 +404,16 @@ class C64Screen {
 				 // POKE 53265,PEEK(53265)OR32
 				 // this.useHires
 
-				 this.useHires = (v & 32) > 0; //bit 5
+				 this.useHires = (v & 32) > 0; //bit 5 (starting w bit 0)
 
 				 //console.log("poke 53265 -> " + v);
 				 //console.log("this.useHires -> " + this.useHires);
 
 
 			 }
-			 else if( nr == 53272)  {
+			 else if( nr == 53272)  { /*$D018*/
+				 //http://www.devili.iki.fi/Computers/Commodore/C64/Programmers_Reference/Chapter_3/page_104.html
+
 				 var bits = this._getByteBits( v );
 				 var b1,b2,b3, value;
 				 b1 = bits[1];
@@ -416,16 +421,11 @@ class C64Screen {
 				 b3 = bits[3];
 
 				 value = 0;
+
+
 				 if( b1 ) { value += 2; }
 				 if( b2 ) { value += 4; }
 				 if( b3 ) { value += 8; }
-
-				 //console.log("poke 53272 -> " + value);
-/*
-this.videoRam = 12288;
-this.useRomCharMem = true;
-this.visibleRomCharMem = false;
-*/
 
 				 if( value == 8 ) {
 					this.useRomCharMem = false;
@@ -436,6 +436,12 @@ this.visibleRomCharMem = false;
 					 this.videoRam = 12288;
 				 } else {
 					 this.useRomCharMem = true;
+				 }
+
+				 if( b3 ) {
+					this.videoBMRam = 8192;
+				 } else {
+					 this.videoBMRam = 0;
 				 }
 
 			 }
@@ -500,10 +506,10 @@ this.visibleRomCharMem = false;
 
 		 if( this.useHires ) {
 
-			 if( a >= this.videoRam && a< this.videoRam + 8192 ) {
+			 if( a >= this.videoBMRam && a< this.videoBMRam + 8192 ) {
 
 				 var buf  = this.txScBuf;
-				 var addr = Math.floor  (( a-this.videoRam ) / 8 );
+				 var addr = Math.floor  (( a-this.videoBMRam ) / 8 );
 				 var y = Math.floor( (addr / 40) );
 				 var x = addr % 40;
 				 buf[y][x][2] = true;
@@ -715,6 +721,29 @@ this.visibleRomCharMem = false;
 	 		}
 	 		this.txScBuf[ y ] = row;
 	 	}
+	 }
+
+	 clearGFXScreen( col0, col1, col2 ) {
+
+		 if( this.useHires ) {
+			 for( var i=0; i<8000;i++) {
+				 this.memory[ this.videoBMRam + i] = 0;
+			 }
+		 }
+
+		 var buf  = this.txScBuf;
+		 var chrcol = (col1 + col0 * 16) % 256;
+		 var colram = col2;
+		 for(var y=0;y<25;y++) {
+			 for(var x=0;x<40;x++) {
+				 buf[y][x][0] = chrcol;
+				 if( col2 != null ) {
+					 	buf[y][x][1] = colram;
+				 }
+				 buf[y][x][2] = true;
+			 }
+		 }
+
 	 }
 
 	 scrollUp() {
@@ -1541,18 +1570,11 @@ this.visibleRomCharMem = false;
 
 	 _renderDirectChrMultiHres( x, y, ch0, colRam, chRamLoCol, chRamHiCol) {
 
-		 var fid;
-		 var dataPtr;
+		var fid;
+		var dataPtr;
 
-		 if( this.useRomCharMem ) {
-			fid = this.fontImageRom;
-			dataPtr = 0;
-		 }
-		 else {
-			fid = this.memory;
-			dataPtr = this.videoRam;
-		 }
-
+		fid = this.memory;
+		dataPtr = this.videoBMRam;
 
 	 	var iDta = this.iDta;
 	 	var pixWidthM4 = this.iwidth * 4;
@@ -1630,27 +1652,22 @@ this.visibleRomCharMem = false;
 
 	 _renderDirectChrMono( x, y, ch0, col0, bgcol) {
 
-		 // ch0 is character code
-		 // col0 is color
-/*
-		 try  {
-			this._renderDirectChrMono( x, y, c, col0 );
-		}
-		catch (e) {
-			var tmp = 1;
-		}
-*/
-
      var fid;
 		 var dataPtr;
 
-		 if( this.useRomCharMem ) {
-			fid = this.fontImageRom;
-			dataPtr = 0;
+		 if( this.useHires ) {
+			 fid = this.memory;
+	 		 dataPtr = this.videoBMRam;
 		 }
 		 else {
-			fid = this.memory;
-			dataPtr = this.videoRam;
+			 if( this.useRomCharMem ) {
+				fid = this.fontImageRom;
+				dataPtr = 0;
+			 }
+			 else {
+				fid = this.memory;
+				dataPtr = this.videoRam;
+			 }
 		 }
 
      var iDta = this.iDta;
@@ -1849,8 +1866,6 @@ this.visibleRomCharMem = false;
 		var dw = this.WIDTH;
 		var dh = this.HEIGHT;
 		var b = this.border;
-
-		//dCtx.globalAlpha = 0.01;
 
 		dCtx.drawImage( sCvs, b.w, b.h, dw, dh);
 	 }
