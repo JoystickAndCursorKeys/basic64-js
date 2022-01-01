@@ -472,11 +472,19 @@ class Menu {
 				}
 			}
 
+			var first = true;
 			for( var i=0; i<this.listItems.length; i++) {
 
 					if( i< offset ) {
 						continue;
 					}
+					else {
+						if( first ) {
+							this.page_first = i;
+							first = false;
+						}
+					}
+					this.page_last = i;
 
 					if( !this.showNumbers) {
 						if( printCount >= 12 ) {
@@ -491,7 +499,6 @@ class Menu {
 						}
 					}
 
-
 					if( i == this.optSelect ) {
 						t.console.setColor(hlColor);
 					}
@@ -499,14 +506,12 @@ class Menu {
 						t.console.setColor(txtColor);
 					}
 					if( this.showNumbers) {
-						t.padSave( offX, " " +(i+1)+ " - " + this.listItems[i].name );
+						t.padSave( this.listOffset , " " +(i+1)+ " - " + this.listItems[i].name );
 						t.nl();
-						//t.nl();
 					}
 					else {
 						t.printCodeLine( this.listItems[i].name );
 					}
-					//t.pad( offX, " " +(i+1)+ " - " + this.listItems[i].name );
 
 					this.curs.push( t.console.getCursorPos() );
 
@@ -515,10 +520,7 @@ class Menu {
 			if( more ) {
 				t.pad( offX, "..." );
 			}
-			//var selectCursor = this.curs[ this.optSelect ];
 
-			//t.console.setCursorX( selectCursor[0]);
-			//t.console.setCursorY( selectCursor[1]);
 
 		}
   }
@@ -673,7 +675,11 @@ class Menu {
 					console.log("List selected " + listIndex );
 					console.log("List selected item " + this.listItems[listIndex].id );
 
-					this[ this.listCallback ]( this.listItems[listIndex].id );
+					this[ this.listCallback ]( this.listItems[listIndex].id,
+						{
+							ixFrom: this.page_first,
+							ixTo:  this.page_last
+						});
 
       }
 			else {
@@ -1070,8 +1076,22 @@ class Menu {
 		}
 	}
 
-	select_List( id ) {
-		console.log( id );
+	select_List( id, page ) {
+		console.log( id, page  );
+		this.endMenuWithMessage("LISTING PAGE");
+
+		var pgm = this.context.getProgramLines();
+
+		for(var i=page.ixFrom; i<=page.ixTo; i++ )
+		{
+				var l = pgm[i];
+				var display = l[2].trim();
+				if( display.length > 35 ) {
+					display = l[2].substr(0,34)+"..";
+				}
+				this.context.listCodeLine( l[2] );
+				//console.log(l[2]);
+		}
 
 	}
 
