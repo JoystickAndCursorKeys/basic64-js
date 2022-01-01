@@ -196,7 +196,7 @@ class ExtendedCommands {
         throw("@only mode 0-3 supported");
         return;
       }
-      
+
       var ctx = this.context;
       if( pars[0].value == 0 ) {
         ctx.poke( 53265, ctx.peek(53265) & (255-32));

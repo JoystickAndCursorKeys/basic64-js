@@ -499,9 +499,9 @@ class Menu {
 						t.console.setColor(txtColor);
 					}
 					if( this.showNumbers) {
-						t.pad( offX, " " +(i+1)+ " - " + this.listItems[i].name );
+						t.padSave( offX, " " +(i+1)+ " - " + this.listItems[i].name );
 						t.nl();
-						t.nl();
+						//t.nl();
 					}
 					else {
 						t.printCodeLine( this.listItems[i].name );
@@ -541,6 +541,17 @@ class Menu {
 
     this.context.print( padStr + txt );
   }
+
+	padSave( pad, txt ) {
+
+    var padStr = "";
+    for(var i=0; i<pad;i++) {
+      padStr+=" ";
+    }
+
+    this.context.printLine( padStr + txt.toUpperCase() );
+  }
+
 
 	printCodeLine( x ) {
 		this.context.listCodeLine( x );
@@ -1155,7 +1166,7 @@ class Menu {
 		var row;
 
 		for( var i=0; i<dir.files.length; i++) {
-			list.items.push( { name: dir.files[i].fname, id:  dir.files[i].fname } );
+			list.items.push( { name: dir.files[i].fname.trim(), id:  dir.files[i].fname } );
 
 		}
 
