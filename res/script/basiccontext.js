@@ -993,14 +993,14 @@ class BasicContext {
           var bf = this.runPointer2;
           if(debug)console.log(" this.runPointer = " + this.runPointer, " this.runPointer2 = " + this.runPointer2 );
           if(debug)console.log(" cmdCount = " + cmdCount);
-          var rv = this.runCommands( l[1], 1 );
+          var rv = this.runCommands( l[1], cmdCount );
           var af = rv[ 1 ];
 
           if( rv[0] == MIDLINE_INTERUPT) {
             this.runPointer2 = af;
           }
 
-          var executedCount = af-bf;
+          var executedCount = rv[2];
 
           if(debug)console.log(" bf = " + bf, " af = " + af);
           if(debug)console.log(" executedCount = " + executedCount);
@@ -1515,42 +1515,46 @@ class BasicContext {
 
     var end = cmds.length;
     var i=this.runPointer2;
+    var cnt=0;
 
     if(!(limit == undefined )) {
       console.log("RMM limit is defined");
-      if( end - i > limit ) {
+      /*if( end - i > limit ) {
         console.log("RMM end:",end," i:",i," limit:",limit);
         end = i + limit;
 
         // end=5, i=2, limit=6 -> false
         // end=5, i=2, limit=3 -> false
         // end=5, i=2, limit=2 -> true -> end = 4
-      }
+      }*/
+    }
+    else {
+      limit = 9999; //reaching to infinite (max on line maybe  40)
     }
 
-    while( i<end ) {
+    while( i<end && cnt <limit) {
       var cmd=cmds[i];
       //console.log( cmd );
       if( cmd.type == "control" )  {
         var cn = cmd.controlKW;
         if( cn == "goto" ) {
           this.goto( cmd.params[0] );
-          return [TERMINATE_W_JUMP,i+1];
+          return [TERMINATE_W_JUMP,i+1,cnt+1];
         }
         else if( cn == "end" ) {
-          return [TERMINATE_PROGRAM,i+1];
+          return [TERMINATE_PROGRAM,i+1,cnt+1];
         }
         else if( cn == "stop" ) {
           this.printInfo("break");
-          return [TERMINATE_PROGRAM,i+1];
+          return [TERMINATE_PROGRAM,i+1,cnt+1];
         }
         else if( cn == "gosub" ) {
           this.gosub( cmd.params[0], i );
-          return [TERMINATE_W_JUMP,i+1];
+          return [TERMINATE_W_JUMP,i+1,cnt+1];
         }
         else if( cn == "return" ) {
           this.doReturn();
-          return [TERMINATE_W_JUMP,i+1];
+          return [TERMINATE_W_JUMP,i+1,cnt+1];
         }
         else if( cn == "if" ) {
           var IF_ERROR = -1;
@@ -1559,20 +1563,20 @@ class BasicContext {
 
           var ifresult = this.doIf( cmd.params[0], cmd.params[1], cmd.comp );
           if( ifresult == IF_ERROR ) {
-             return [END_W_ERROR,i+1];
+             return [END_W_ERROR,i+1,cnt+1];
           }
           else if( ifresult == IF_TRUE ) {
              //return [MIDLINE_INTERUPT,i+1];
           }
           else  {
-             return [LINE_FINISHED,i+1];
+             return [LINE_FINISHED,i+1,cnt+1];
           }
         }
         else if( cn == "data" ) {
           //Nothing
         }
         else if( cn == "rem" ) {
-          return [LINE_FINISHED,i+1];
+          return [LINE_FINISHED,i+1,cnt+1];
         }
         else if( cn == "for:init" ) {
           this.doForInit( cmd.params[0], cmd.params[1], cmd.params[2], cmd.variable, i, cmds.length );
@@ -1586,16 +1590,18 @@ class BasicContext {
             if( jump.line != -1 ) {
                 if( this.runPointer == jump.line ) {
                   i = jump.cmdPointer;
+                  cnt++;
                   continue;
                 }
                 else {
                   this.runPointer = jump.line;
                   this.runPointer2 = jump.cmdPointer;
                 }
-                return [TERMINATE_W_JUMP,i+1];
+                return [TERMINATE_W_JUMP,i+1,cnt+1];
             }
             else {
               i = jump.cmdPointer;
+              cnt++;
               continue;
             }
           }
@@ -1614,7 +1620,7 @@ class BasicContext {
 
           if( ! ( this.vars[ varIntName ] === undefined )) {
             this.printError( "redim'd array" );
-            return [END_W_ERROR,i+1];
+            return [END_W_ERROR,i+1,cnt+1];
           }
           this.vars[ varIntName ] = arrRec;
 
@@ -1638,7 +1644,7 @@ class BasicContext {
             if( mycommands.enabled == false &&
               cmd.statementName.toLowerCase() != "xon") {
                   this.printError( "extended not enabled" );
-                  return [END_W_ERROR,i+1];;
+                  return [END_W_ERROR,i+1,cnt+1];
                 }
           }
 
@@ -1683,12 +1689,12 @@ class BasicContext {
           //var stc = ;
           if( stc === undefined ) {
             this.printError("syntax");
-            return [END_W_ERROR,i+1];;
+            return [END_W_ERROR,i+1,cnt+1];
           }
           else {
               mycommands[ "_stat_" + cmd.statementName.toLowerCase()]( values );
               if( this.inputFlag ) {
-                return [PAUSE_F_INPUT,i+1];
+                return [PAUSE_F_INPUT,i+1,cnt+1];
               }
           }
 
@@ -1701,7 +1707,7 @@ class BasicContext {
           else {
             this.printError("unexpected");
           }
-          return [END_W_ERROR,i+1];
+          return [END_W_ERROR,i+1,cnt];
         }
       }
       else if( cmd.type == "assignment" )  {
@@ -1709,13 +1715,13 @@ class BasicContext {
           var varIntName = "@array_" + cmd.var;
           if( this.vars[ varIntName ] === undefined ) {
             this.printError("bad subscript");
-            return [END_W_ERROR,i+1];
+            return [END_W_ERROR,i+1,cnt];
           }
 
           var arr = this.vars[ varIntName ];
           if( cmd.indices.length != arr.getIndexCount() ) {
             this.printError("bad subscript");
-            return [END_W_ERROR,i+1];
+            return [END_W_ERROR,i+1,cnt];
           }
 
           var indices = [];
@@ -1728,21 +1734,23 @@ class BasicContext {
           if( this.vars[ cmd.var ] === undefined ) {
             if(cmd.var.startsWith("TI")) {
               this.printError("syntax");
-              return [END_W_ERROR,i+1];
+              return [END_W_ERROR,i+1,cnt+1];
             }
             this.vars[ cmd.var ] = 0;
           }
           this.vars[ cmd.var ] = this.evalExpression( cmd.expression );
         }
       }
+      //cnt++;
       i++;
+      cnt++;
     }
 
     if( i== cmds.length ) {
-      return [LINE_FINISHED,i];
+      return [LINE_FINISHED,i,cnt];
     }
 
-    return [MIDLINE_INTERUPT,i];
+    return [MIDLINE_INTERUPT,i,cnt];
 
   }
 
