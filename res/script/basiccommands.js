@@ -345,7 +345,7 @@ class BasicCommands {
   _stat_poke( pars ) {
 
     var context = this.context;
-    context.poke( pars[0].value, pars[1].value);
+    context.poke( pars[0].value, pars[1].value );
 
   }
 

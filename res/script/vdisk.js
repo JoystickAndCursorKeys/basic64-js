@@ -212,10 +212,15 @@ class VDisk {
     this.setDir(dir);
   }
 
-  saveFile( fileName, data, type, length ) {
+  saveFile( fileName0, data, type, length ) {
 
     if( !this.initialized ) {
       return;
+    }
+
+    var fileName = fileName0;
+    if( fileName0.length > 32) {
+        fileName = fileName0.substr(0,32);
     }
 
     var storageName =  "BJ64_" + this.currentDisk + "_" + fileName;

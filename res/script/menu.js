@@ -76,7 +76,7 @@ class Menu {
     opts.push({opt: "diskMenu", display: "Virtual Disk" });
     opts.push({opt: "exportMenu", display: "Import" });
     opts.push({opt: "clipboardMenu", display: "Clipboard" });
-    opts.push({opt: "docsSettingsMenu", display: "Docs and Settings" });
+    opts.push({opt: "docsSettingsMenu", display: "Settings and docs" });
 		opts.push({opt: "toolsMenu", display: "Tools" });
     opts.push({opt: "reset", display: "Reset" });
 
@@ -100,8 +100,10 @@ class Menu {
     this.menuOffset["tools"] = 3;
 
     opts = [];
+    opts.push({opt: "list", display: "List" });
     opts.push({opt: "renumber", display: "Renumber Basic Program" });
     opts.push({opt: "compress", display: "Remove Spaces" });
+    opts.push({opt: "normalize", display: "Normalize Spaces" });
     this.options["basic"] = opts;
     this.menus["basic"] = "basic";
     this.menuOffset["basic"] = 7;
@@ -121,9 +123,12 @@ class Menu {
 
 
     opts = [];
+    opts.push({opt: "changeExitMode", display: "exit mode" });
+    opts.push({opt: "changeImmersiveMode", display: "immersive mode" });
     opts.push({opt: "changeClock", display: "clock mode" });
     opts.push({opt: "changeTurbo", display: "turbo mode" });
     opts.push({opt: "changeExtended", display: "Extended commands" });
+		opts.push({opt: "changeZoom", display: "Display" });
 		opts.push({opt: "changeTheme", display: "Change Menu Theme" });
     opts.push({opt: "documentation", display: "documentation" });
     this.options["docssettings"] = opts;
@@ -349,10 +354,10 @@ class Menu {
     var context = this.context;
     var theme = this.themes[ this.theme ];
 
-    context.vpoke(53280,theme.border);
-    context.vpoke(53281,theme.bg);
-    context.vpoke(53269,0);
-    context.vpoke(53270,200);
+    context.poke(53280,theme.border);
+    context.poke(53281,theme.bg);
+    context.poke(53269,0);
+    context.poke(53270,200);
 
     t.rendervmStateText() ;
 
@@ -374,7 +379,6 @@ class Menu {
 
     var title = t.menus[ t.menuvmState ];
     var options = this.options[ t.menuvmState ];
-
 
 		var x;
 
@@ -437,6 +441,10 @@ class Menu {
 
 			var menuStr = "*** " + this.listTitle +" ***";
 			x = 20 - (Math.floor(menuStr.length / 2));
+			var offX = x;
+			if( this.listOffset != -1 ) {
+				offX = this.listOffset;
+			}
 			t.padLine( x, menuStr );
 
 			t.nl();
@@ -450,21 +458,49 @@ class Menu {
 			this.curs = [];
 			var more = false;
 
-			if( offset > 0 ) {
-				t.pad( x, "..." );
-				t.nl();
-				t.nl();
+			if( this.showNumbers) {
+				if( offset > 0 ) {
+					t.pad( offX, "..." );
+					t.nl();
+					t.nl();
+				}
+			}
+			else {
+				if( offset > 0 ) {
+					t.pad( offX, "..." );
+					t.nl();
+				}
+				else {
+					t.pad( offX, "" );
+					t.nl();
+				}
 			}
 
+			var first = true;
 			for( var i=0; i<this.listItems.length; i++) {
 
 					if( i< offset ) {
 						continue;
 					}
+					else {
+						if( first ) {
+							this.page_first = i;
+							first = false;
+						}
+					}
+					this.page_last = i;
 
-					if( printCount >= 8 ) {
-						more = true;
-						break;
+					if( !this.showNumbers) {
+						if( printCount >= 12 ) {
+							more = true;
+							break;
+						}
+					}
+					else {
+						if( printCount >= 8 ) {
+							more = true;
+							break;
+						}
 					}
 
 					if( i == this.optSelect ) {
@@ -473,23 +509,21 @@ class Menu {
 					else {
 						t.console.setColor(txtColor);
 					}
-					t.pad( x, " " +(i+1)+ " - " + this.listItems[i].name );
+					if( this.showNumbers) {
+						t.padSave( this.listOffset , " " +(i+1)+ " - " + this.listItems[i].name );
+						t.nl();
+					}
+					else {
+						t.printCodeLine( this.listItems[i].name );
+					}
 
 					this.curs.push( t.console.getCursorPos() );
-
-					t.nl();
-					t.nl();
 
 					printCount++;
 			}
 			if( more ) {
-				t.pad( x, "..." );
+				t.pad( offX, "..." );
 			}
-			//var selectCursor = this.curs[ this.optSelect ];
-
-			//t.console.setCursorX( selectCursor[0]);
-			//t.console.setCursorY( selectCursor[1]);
-
 		}
   }
 
@@ -508,8 +542,24 @@ class Menu {
     for(var i=0; i<pad;i++) {
       padStr+=" ";
     }
+
     this.context.print( padStr + txt );
   }
+
+	padSave( pad, txt ) {
+
+    var padStr = "";
+    for(var i=0; i<pad;i++) {
+      padStr+=" ";
+    }
+
+    this.context.printLine( padStr + txt.toUpperCase() );
+  }
+
+
+	printCodeLine( x ) {
+		this.context.listCodeLine( x );
+	}
 
   padLine( pad, txt ) {
 
@@ -552,6 +602,18 @@ class Menu {
 		this.listItems = l.items;
 		this.listResult = -1;
 		this.listCallback = l.callback;
+		this.listOffset = -1;
+		this.listAtExit = "close";
+		if( ! (l.offset === undefined ) ) {
+			this.listOffset = l.offset;
+		}
+		if( ! (l.atExit === undefined ) ) {
+			this.listAtExit = l.atExit;
+		}
+		this.showNumbers = true;
+		if( ! (l.showNum === undefined ) ) {
+			this.showNumbers = l.showNum;
+		}
 
 		this.rendervmStateText();
   }
@@ -579,6 +641,7 @@ class Menu {
       mem[i] = this.stateMemory[ i ];
     }
     this.console.clearCursor();
+		//this.context.setBorderChangedFlag();
   }
 
   endMenu() {
@@ -609,17 +672,26 @@ class Menu {
     if( evt.key == "Enter") {
 
 			if( this.selectList == true ) {
-        	this.selectList = false;
 
 					var listIndex = this.optSelect;
-					this.optSelect = this.oldOptSelect;
-
-					this.rendervmStateText();
 
 					console.log("List selected " + listIndex );
 					console.log("List selected item " + this.listItems[listIndex].id );
 
-					this[ this.listCallback ]( this.listItems[listIndex].id );
+					if( this.listAtExit != "stay" ) {
+
+        		this.selectList = false;
+						this.optSelect = this.oldOptSelect;
+
+					}
+
+					this.rendervmStateText();
+
+					this[ this.listCallback ]( this.listItems[listIndex].id,
+						{
+							ixFrom: this.page_first,
+							ixTo:  this.page_last
+						});
 
       }
 			else {
@@ -907,6 +979,31 @@ class Menu {
 		this.context.selectDisk( id );
 	}
 
+	select_ExitMode( id ) {
+		localStorage.setItem( "BJ64_ExitMode", JSON.stringify( { exitmode: id } ) );
+
+		if( id == "stay" ) {
+			this.context.setExitMode("stay");
+		}
+		else {
+			this.context.setExitMode("panic");
+		}
+
+	}
+
+	select_ImmersiveMode( id ) {
+		localStorage.setItem( "BJ64_ImmersiveMode", JSON.stringify( { immersive: id } ) );
+
+		if( id == "immersive" ) {
+			this.context.setImmersiveFlag(true);
+			this.context.setBorderChangedFlag();
+		}
+		else {
+			this.context.setImmersiveFlag(false);
+			default_Document_Page_Color();
+		}
+
+	}
 
 	select_Clock( id ) {
 		console.log( id );
@@ -988,6 +1085,42 @@ class Menu {
 
 	}
 
+	do_changeZoom() {
+
+		if( !this.context.confirmCookies() ) {
+			return;
+		}
+
+		var list = { title: "Select Zoom", items: [
+			{ name: "1.0x", id: "1.0"},
+			{ name: "1.5x", id: "1.5"},
+			{ name: "2.0x", id: "2.0"},
+			{ name: "2.5x", id: "2.5"},
+			{ name: "3.0x", id: "3.0"},
+			{ name: "3.5x", id: "3.5"},
+			{ name: "4.0x", id: "4.0"},
+			{ name: "4.5x", id: "4.5"},
+			{ name: "5.0x", id: "5.0"},
+			{ name: "5.5x", id: "5.5"}
+
+		] };
+
+		list.callback = "select_Zoom";
+		list.atExit = "stay";
+
+		console.log("list options");
+		this.startList( list );
+
+	}
+
+	select_Zoom( id ) {
+		console.log( id );
+
+		localStorage.setItem( "BJ64_Zoom", JSON.stringify( { zoom: id } ) );
+
+		this.context.setScale( id );
+	}
+
 	do_changeExtended() {
 
 		if( !this.context.confirmCookies() ) {
@@ -1012,10 +1145,90 @@ class Menu {
 		localStorage.setItem( "BJ64_Turbo", JSON.stringify( { turbo: id } ) );
 
 		if( id == "on" ) {
-			this.contextthis.setTurbo( true );
+			this.context.setTurbo( true );
 		}
 	}
 
+	select_List( id, page ) {
+		console.log( id, page  );
+		this.endMenuWithMessage("LISTING PAGE");
+
+		var pgm = this.context.getProgramLines();
+
+		for(var i=page.ixFrom; i<=page.ixTo; i++ )
+		{
+				var l = pgm[i];
+				var display = l[2].trim();
+				if( display.length > 35 ) {
+					display = l[2].substr(0,34)+"..";
+				}
+				this.context.listCodeLine( l[2] );
+				//console.log(l[2]);
+		}
+
+	}
+
+
+	do_list() {
+
+		var list = { title: "Basic Listing", showNum: false, offset:0, items: []
+//			{ name: "compatible",   id: "compat"},
+//			{ name: "synchronized with host", id: "clocksync"}
+		 };
+
+		list.callback = "select_List";
+
+		var pgm = this.context.getProgramLines();
+		for( var i=0; i<pgm.length; i++ )
+		{
+				var l = pgm[i];
+				var display = l[2].trim();
+				if( display.length > 35 ) {
+					display = l[2].substr(0,34)+"..";
+				}
+				list.items.push({name: display, id: i});
+//				this.context.listCodeLine( l[2] );
+				console.log(l[2]);
+		}
+
+		this.startList( list );
+
+	}
+
+
+	do_changeExitMode() {
+
+		if( !this.context.confirmCookies() ) {
+			return;
+		}
+
+		var list = { title: "when program exists:", items: [
+			{ name: "stay in current graphics mode",   id: "stay"},
+			{ name: "return to text mode", id: "panic"}
+		] };
+
+		list.callback = "select_ExitMode";
+
+		this.startList( list );
+
+	}
+
+	do_changeImmersiveMode() {
+
+		if( !this.context.confirmCookies() ) {
+			return;
+		}
+
+		var list = { title: "immersive mode:", items: [
+			{ name: "on",   id: "immersive"},
+			{ name: "off", id: "off"}
+		] };
+
+		list.callback = "select_ImmersiveMode";
+
+		this.startList( list );
+
+	}
 
 	do_changeClock() {
 
@@ -1080,7 +1293,7 @@ class Menu {
 		var row;
 
 		for( var i=0; i<dir.files.length; i++) {
-			list.items.push( { name: dir.files[i].fname, id:  dir.files[i].fname } );
+			list.items.push( { name: dir.files[i].fname.trim(), id:  dir.files[i].fname } );
 
 		}
 
@@ -1094,7 +1307,21 @@ class Menu {
     this.renumber(100,10);
   }
 
-  do_compress() {
+  do_normalize() {
+    this.context.normalizeProgram();
+
+    this.endMenuWithMessage("normalize ok");
+    this.context.printLine("list");
+
+    var pgm = this.context.getProgramLines();
+    for (const l of pgm )
+      {
+        this.context.listCodeLine( l[2] );
+        console.log(l[2]);
+      }
+  }
+
+	do_compress() {
     this.context.compressProgram();
 
     this.endMenuWithMessage("compress ok");

@@ -44,17 +44,18 @@ class C64Screen {
 
 			this.bufcanvas =  document.createElement('canvas');
       this.bufcontext = this.bufcanvas.getContext('2d');
-			this.bufcontext.imageSmoothingEnabled= false;
 			this.bufcanvas.width = this.iwidth;
 			this.bufcanvas.height = this.iheight;
 
 
-			this.border = {
-				w: 128,
-				h: 64
+			this.border0 = {
+				w: 32+16,
+				h: 32
 			}
 
-			this.WIDTH = 320*2.5;
+
+
+/*			this.WIDTH = 320*2.5;
 			this.HEIGHT = 200*2.5;
 
 			this.FULLWIDTH = this.WIDTH + this.border.w * 2;
@@ -63,13 +64,14 @@ class C64Screen {
 			this.rcanvas.width=this.FULLWIDTH ;
       this.rcanvas.height=this.FULLHEIGHT;
 
-
 			this.rcanvas.imageSmoothingEnabled= false;
-			this.context.imageSmoothingEnabled= false;
+			this.bufcontext.imageSmoothingEnabled= false;
+
+*/
+
 
 			this._setCharMapping();
 			this._initSpriteArrays();
-
 
 			this.pixel = this.context.createImageData(1,1);
 			this.pixeldata = this.pixel.data;
@@ -113,7 +115,58 @@ class C64Screen {
 				}
 			}
 
+			this.rescale( 2.5, 2.5 );
+
    }
+
+	 rescale(xs,ys) {
+		 this.xScale = xs;
+		 this.yScale = ys;
+
+		 this.border = {
+			 w: this.border0.w * xs,
+			 h: this.border0.h * ys
+		 }
+
+		 this.WIDTH = 320*xs;
+		 this.HEIGHT = 200*ys;
+
+		 this.FULLWIDTH = this.WIDTH + (this.border.w  * 2);
+		 this.FULLHEIGHT = this.HEIGHT + (this.border.h * 2);
+
+		 this.rcanvas.width=this.FULLWIDTH ;
+		 this.rcanvas.height=this.FULLHEIGHT;
+
+		 this.rcontext.imageSmoothingEnabled= false;
+		 this.context.imageSmoothingEnabled= false;
+		 this.bufcontext.imageSmoothingEnabled= false;
+
+		 this.bcolLast = -1 ; //force border redraw
+	 }
+
+
+	 getColorRGB( i ) {
+		 return this.colors[ i ];
+	 }
+
+	 getColorHTML( i ) {
+		 return this._htmlColor( this.colors[ i ] );
+	 }
+
+	 getBorderColor() {
+		 return this.bcol;
+	 }
+
+	 getBorderChangedState() {
+		 if( this.bcolLast != this.bcol ) {
+			 return true;
+		 }
+		 return false;
+	 }
+
+	 getBitmapAddress() {
+		 return this.videoBMRam;
+	 }
 
 	 getMemory() {
 		 return this.memory;
@@ -188,6 +241,8 @@ class C64Screen {
 	 setState( state ) {
 		 this.setVicRegisters( state.vicRegisters );
 		 this.setScreen( state.screen );
+		 this.bcolLast = -1;
+		 this.bcol = state.vicRegisters[32];
 
 		 this.col = state.cursor.col;
 		 this.cursorx = state.cursor.cx;
@@ -233,6 +288,7 @@ class C64Screen {
 			 map[String.fromCharCode(i)] = 64+i;
 		 }
 
+		 map['\x7e'] = 94;
 
 		 map['@'] = 0;
 		 map['A'] = 1;
@@ -407,7 +463,7 @@ class C64Screen {
 				 this.useHires = (v & 32) > 0; //bit 5 (starting w bit 0)
 
 				 //console.log("poke 53265 -> " + v);
-				 //console.log("this.useHires -> " + this.useHires);
+				 console.log("this.useHires -> " + this.useHires);
 
 
 			 }
@@ -421,7 +477,6 @@ class C64Screen {
 				 b3 = bits[3];
 
 				 value = 0;
-
 
 				 if( b1 ) { value += 2; }
 				 if( b2 ) { value += 4; }
@@ -443,7 +498,7 @@ class C64Screen {
 				 } else {
 					 this.videoBMRam = 0;
 				 }
-
+				 console.log("BitMapRam set to: " + this.videoBMRam);
 			 }
 			 else if(nr == 53276) {
 				 var bits = this._getByteBits( v );
@@ -501,6 +556,11 @@ class C64Screen {
 		 this.vicUsed = [];
 	 }
 
+
+	 pokeFlush() {
+		 this._intVpokesProcess();
+	 }
+
 	 poke( a, b ) {
 		 this.memory[a] = b % 256;
 
@@ -520,18 +580,6 @@ class C64Screen {
 				 this.screenRefresh = true;
 			 }
 		 }
-
-		 /*
-		 this.useHires = false;
-		 this.useHiresLast = false;
-
-		 this.memory = new Uint8Array( 256 * 256 ); //64 KB, we're not using all
-		 this.videoRam = 12288;
-		 this.hiresMem = 8192;
-		 this.useRomCharMem = true;
-		 this.visibleRomCharMem = false;
-		 */
-
 	 }
 
 	 peek( a ) {
@@ -554,7 +602,6 @@ class C64Screen {
 	 reset( ) {
 			 this.rcontext.imageSmoothingEnabled= false;
 	 }
-
 
 	 preparefontImageRom() {
 
@@ -626,10 +673,6 @@ class C64Screen {
 		 //this.fontImageData = this._prepareFontImageData(this.srcImage);
 		 this.fontImageRom = this.preparefontImageRom(this.srcImage);
 
-
-		 //-----------------------
-
-
 		 //-------------------------
 		 this.bcolLast = -1;
 
@@ -673,17 +716,13 @@ class C64Screen {
  		 this.mcol2 = c;
  	 }
 
-
 	 setBorderColor( c ) {
 		 this.bcol = c;
 	 }
 
-
-
  	 spriteEnable( n, enabled ) {
  		 this.sprites[ n ].enabled = enabled;
  	 }
-
 
 	 spriteXPos( n, x ) {
  		 this.sprites[ n ].x = x;
@@ -723,27 +762,16 @@ class C64Screen {
 	 	}
 	 }
 
-	 clearGFXScreen( col0, col1, col2 ) {
+	 isBitMapMode() {
+		 return this.useHires;
+	 }
 
-		 if( this.useHires ) {
-			 for( var i=0; i<8000;i++) {
-				 this.memory[ this.videoBMRam + i] = 0;
-			 }
-		 }
+	 isMultiColor() {
+		 return this.multiColor;
+	 }
 
-		 var buf  = this.txScBuf;
-		 var chrcol = (col1 + col0 * 16) % 256;
-		 var colram = col2;
-		 for(var y=0;y<25;y++) {
-			 for(var x=0;x<40;x++) {
-				 buf[y][x][0] = chrcol;
-				 if( col2 != null ) {
-					 	buf[y][x][1] = colram;
-				 }
-				 buf[y][x][2] = true;
-			 }
-		 }
-
+	 getMemory() {
+		 return this.memory;
 	 }
 
 	 scrollUp() {
@@ -780,7 +808,7 @@ class C64Screen {
 	 }
 
 
-	 getChar( x, y, index ) {
+	 getChar( x, y ) {
 
 		var buf = this.txScBuf;
 		var chr = buf[y][x];
@@ -789,12 +817,22 @@ class C64Screen {
 
 	 }
 
-	 getCharCol( x, y, index ) {
+	 getCharCol( x, y ) {
 
 		var buf = this.txScBuf;
 		var chr = buf[y][x];
 
 		return chr[1];
+
+	 }
+
+
+	 setCellModified( x, y ) {
+
+	 		var buf = this.txScBuf;
+	 		var chr = buf[y][x];
+
+	 		chr[2] = true;
 
 	 }
 
@@ -942,6 +980,22 @@ class C64Screen {
 		}
    }
 
+	 writeChar2(  c ) {
+
+    var index = this._mapASCII2Screen( c );
+
+		var buf = this.txScBuf;
+ 		if( index > -1 ) {
+			buf[this.cursory][this.cursorx][2] = true;
+			buf[this.cursory][this.cursorx][1] = this.col;
+			buf[this.cursory][this.cursorx][0] = index;
+ 		}
+		this.cursorx++;
+		if(this.cursorx > 39) {
+			this.cursorx = 0;
+			this.nextLine();
+		}
+   }
 
 	 deleteChar() {
     var index = 32;
@@ -1838,6 +1892,7 @@ class C64Screen {
 		 if( this.bcolLast != this.bcol ) {
 
 			 this._updateBorder();
+			 this.bcolLast = this.bcol;
 		 }
 
 		 this._renderBuffer();

@@ -102,7 +102,8 @@
 
 	}
 
-	var program;
+	var game1, program;
+	var document_page_color = "#000000";
 
 	function start( console ) {
 
@@ -116,13 +117,20 @@
 		SCR_W = size[0];
 		SCR_H = size[1];
 
-		var pgm = new Program( console );
+		program = new Program( console );
 
-		var stateDefinitions = new StateDefinitions( pgm );
+		var stateDefinitions = new StateDefinitions( program );
 
-		//program = new Boot( 'screenCanvas', SCR_W, SCR_H, [ pgm, 'basic' ] );
-		program = new Boot( 'screenCanvas', SCR_W, SCR_H,  stateDefinitions );
+		game1 = new Boot( 'screenCanvas', SCR_W, SCR_H,  stateDefinitions );
 
+		default_Document_Page_Color();
+
+
+	}
+
+	function default_Document_Page_Color() {
+			var div0 = document.getElementById("outerdiv");
+			div0.style.backgroundColor = document_page_color;
 	}
 
 	function enableClipBoardWidget() {
