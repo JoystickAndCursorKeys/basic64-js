@@ -4,16 +4,18 @@ class BasicContext {
     this.console = console;
     this.menu = new Menu( console, this  );
     this.menuFocus = false;
+    this.borderChangedFlag = false;
     this.program = [];
     this.cursorCount = 0;
     this.runFlag = false;
+    this.breakCycleFlag;
     this.inputFlag = false;
+    this.immersiveFlag = false;
     this.gosubReturn = [];
     this.nullTime = new Date().getTime();
     this.cursorCountMaxNormal = 15;
     this.cursorCountMaxTurbo = 7;
     this.cursorCountMax = this.cursorCountMaxNormal;
-
 
     this.turboMode = false;
     this.cmdCountPerCycleDefault = 5;
@@ -72,6 +74,39 @@ class BasicContext {
       }
     }
 
+    this.exitMode = "stay";
+    var exitMode = localStorage.getItem( "BJ64_ExitMode" );
+    if( exitMode != null ) {
+      exitMode = JSON.parse( exitMode );
+      exitMode = exitMode.exitmode;
+
+      if( exitMode == "panic" ) {
+        this.setExitMode( "panic" );
+      }
+    }
+
+    this.initScale = "2.5";
+    var scale = localStorage.getItem( "BJ64_Zoom" );
+    if( scale != null ) {
+      scale = JSON.parse( scale );
+      scale = scale.zoom;
+
+      this.initScale = scale;
+      //this.setScale( scale );
+    }
+
+    this.immersiveFlag = false;
+    var immersiveMode = localStorage.getItem( "BJ64_ImmersiveMode" );
+    if( immersiveMode != null ) {
+      immersiveMode = JSON.parse( immersiveMode );
+      immersiveMode = immersiveMode.immersive;
+
+      if( immersiveMode == "immersive" ) {
+        this.immersiveFlag = true;
+        this.setBorderChangedFlag();
+      }
+    }
+
     this.code2colMap = [];
     var km = this.code2colMap;
 
@@ -122,6 +157,14 @@ class BasicContext {
 
   }
 
+  setImmersiveFlag( v ) {
+    this.immersiveFlag = v;
+  }
+
+  setExitMode( v ) {
+    this.exitMode = v;
+  }
+
   synchClock() {
 
     //var clock = new Date().getTime();
@@ -150,6 +193,8 @@ class BasicContext {
   setProgram( pgm ) {
     this.program = pgm;
     this.runFlag = false;
+    this.panicIfStopped();
+
     this.inputFlag = false;
     this.console.clearCursor();
   }
@@ -181,6 +226,8 @@ class BasicContext {
     this.program.sort( sortF );
 
     this.runFlag = false;
+    this.panicIfStopped();
+
     this.inputFlag = false;
     this.console.clearCursor();
   }
@@ -188,6 +235,22 @@ class BasicContext {
 
   getProgram() {
     return this.program;
+  }
+
+  setBorderChangedFlag() {
+    this.borderChangedFlag = true;
+  }
+
+  getBorderChangedFlag() {
+    if( this.borderChangedFlag ) {
+      this.borderChangedFlag = false;
+      return true;
+    }
+    return false;
+  }
+
+  getImmersiveFlag() {
+    return this.immersiveFlag;
   }
 
   getProgramState() {
@@ -203,6 +266,7 @@ class BasicContext {
 
   setProgramState( pgmState ) {
       this.runFlag = pgmState.runFlag;
+      this.panicIfStopped();
       this.inputFlag = pgmState.inputFlag;
       this.vars = pgmState.vars;
       this.forContext = pgmState.forContext;
@@ -313,6 +377,7 @@ class BasicContext {
 
         if( this.console.getCharRomVisible() == false ) {
             this.console.vpoke( a - 53248,b%256  );
+            this.console.pokeFlush();
         }
         else {
           //Can't poke in ROM
@@ -423,8 +488,64 @@ class BasicContext {
     this.console.cursorHome();
   }
 
+  setColorCellModified( x,y,col0, col1, col2 ) {
+    /*
+      Sets the 3 colors for a multicolor hires 8x8 cell
+      if the colors parameters are > -1
+      otherwise just set the modified flag on the color cell
+      so the pixel drawn in this color cell will be visible
+
+      col0 = low color in char ram
+      col1 = high color in char ram
+      col2 = color in color ram
+    */
+
+    if( col0 == -1 && col1 == -1 && col2 == -1) {
+        this.console.setCellModified(x,y);
+        return;
+    }
+
+    if( col0 > -1 && col1 > -1 ) {
+        this.console.setChar(x,y, col1 + ( col0 * 16 ));
+    }
+    else if( col0 >-1 && col1 == -1 ) {
+
+        var charCol = this.console.getChar( x, y );
+        //var hiVal = (charCol & 240)>>4
+        var loVal = charCol & 15;
+        this.console.setChar(x,y, loVal + (col0 * 16) );
+    }
+    else if( col0 == -1 && col1 > -1 ) {
+        var charCol = this.console.getChar( x, y );
+        var hiVal = (charCol & 240);
+        //var loVal = charCol & 15;
+        this.console.setChar(x,y, hiVal + col1 );
+    }
+
+    if( col2 > -1) {
+            this.console.setCharCol(x,y,col2);
+    }
+
+  }
+
   clearGFXScreen( col0, col1, col2 ) {
-    this.console.clearGFXScreen( col0, col1, col2 );
+
+    if( this.console.isBitMapMode() ) {
+
+      var mem = this.console.getMemory();
+      var bmaddr = this.console.getBitmapAddress();
+
+      for( var i=0; i<8000;i++) {
+        mem[ bmaddr + i] = 0;
+      }
+    }
+
+    for(var y=0;y<25;y++) {
+      for(var x=0;x<40;x++) {
+        this.setColorCellModified(
+          x,y, col0, col1, col2 );
+      }
+    }
   }
 
   setCursor(x,y) {
@@ -435,6 +556,245 @@ class BasicContext {
   setTextCol(x,y,col) {
     this.poke(55296+x+(y*40),col);
   }
+
+  drawLine( pointGen, x,y,x2,y2,colRecord, index ) {
+
+    var points = pointGen.c[pointGen.m](x,y,x2,y2);
+
+    for( var i=0; i<points.length; i++) {
+      var p=points[i];
+      this.setPixel( p.x,p.y,colRecord, index );
+    }
+
+  }
+
+  drawBox(x1,y1,x2,y2,colRecord, index) {
+
+    for( var x=x1; x<=x2; x++) {
+      for( var y=y1; y<=y2; y++) {
+        this.setPixel( x,y,colRecord, index );
+      }
+    }
+  }
+
+
+  setPixel(x,y, colRecord, index ) {
+
+    if( ! this.console.isBitMapMode() ) { throw "@bitmap mode"; }
+
+    if( x<0 || y>0 || y > 199 ) {
+      if( x<0 ) { throw "@pixel x<0"; }
+      else if( y<0 ) { throw "@pixel y<0"; }
+      else if( y>199 ) { throw "@pixel y>199"; }
+    }
+
+    if( this.console.isMultiColor() ) {
+      if( x>159) { throw "@pixel x>159"; }
+      this._setPixelMC(x,y, colRecord, index );
+    }
+    else {
+      if( x>319) { throw "@pixel x>159"; }
+      this._setPixelMono(x,y, colRecord, index );
+    }
+  }
+
+  _setPixelMono(x,y, colRecord, index ) {
+
+    var base = this.console.getBitmapAddress();
+    var colX = Math.floor(x>>3);
+    var rowY = Math.floor(y>>3); //>>3 == /8
+    var Xremainder = x-(colX<<3);
+    var Yremainder = y-(rowY<<3); //<<3 == *8
+
+    var byteAddr = base +
+          (colX*8) +
+          (rowY*(40*8)) +
+          Yremainder;
+    var oldValue = this.peek( byteAddr );
+    var mask = Math.pow(2,7-Xremainder);
+    var newValue;
+    if( index == 1 ) {
+      newValue =  oldValue | mask;
+
+      this.setColorCellModified(
+          colX,rowY, -1, colRecord.c1, -1 );
+
+    }
+    else {
+      newValue =  oldValue & (255 - mask);
+
+      this.setColorCellModified(
+          colX,rowY, colRecord.c0, -1, -1 );
+    }
+
+    this.poke(byteAddr, newValue);
+
+  }
+
+  _setPixelMC(x,y, colRecord, index ) {
+
+    var base = this.console.getBitmapAddress();
+    var colX = Math.floor(x>>2); //>>2 == /4
+    var rowY = Math.floor(y>>3); //>>3 == /8
+    var Xremainder = x-(colX<<2); //<<2 == *4
+    var Yremainder = y-(rowY<<3); //<<3 == *8
+
+    var byteAddr = base +
+          (colX*8) +
+          (rowY*(40*8)) +
+          Yremainder;
+
+    var oldValue = this.peek( byteAddr );
+    var maskSubPix1 = Math.pow(2,7-(Xremainder*2));
+    var maskSubPix2 = maskSubPix1>>1;
+    var newValue;
+    if( index == 1 ) {
+      newValue =  oldValue & (255 - maskSubPix1);
+      newValue =  newValue | maskSubPix2;
+
+      this.setColorCellModified(
+          colX,rowY, colRecord.c0, -1, -1 );
+
+    }
+    else if( index == 2 ) {
+      newValue =  oldValue | maskSubPix1;
+      newValue =  newValue & (255 - maskSubPix2);
+
+      this.setColorCellModified(
+          colX,rowY, -1, colRecord.c1, -1 );
+
+    }
+    else if( index == 3) {
+      newValue =  oldValue | maskSubPix1;
+      newValue =  newValue | maskSubPix2;
+
+      this.setColorCellModified(
+          colX,rowY, -1, -1, colRecord.c2 );
+
+    }
+    else { //0
+      newValue =  oldValue & (255 - maskSubPix1);
+      newValue =  newValue & (255 - maskSubPix2);
+
+      this.setColorCellModified(
+          colX,rowY, -1, -1, -1 );
+    }
+
+    this.poke(byteAddr, newValue);
+
+  }
+
+
+  getPixel(x,y, selector) {
+
+    if( ! this.console.isBitMapMode() ) { throw "@bitmap mode"; }
+
+    if( this.console.isMultiColor() ) {
+      this._getPixelMC(x,y, selector );
+    }
+    else {
+      this._getPixelMono(x,y, selector );
+    }
+
+  }
+
+  _getPixelMono(x,y, selector) {
+
+    var base = this.console.getBitmapAddress();
+    var colX = Math.floor(x>>3);
+    var rowY = Math.floor(y>>3); //>>3 == /8
+    var Xremainder = x-(colX<<3);
+    var Yremainder = y-(rowY<<3); //<<3 == *8
+
+    var byteAddr = base +
+          (colX*8) +
+          (rowY*(40*8)) +
+          Yremainder;
+    var oldValue = this.peek( byteAddr );
+    var mask = Math.pow(2,7-Xremainder);
+    var pixelValue = oldValue & (mask);
+
+    console.log("PixelValue",oldValue, mask);
+
+    if(  ( selector === undefined ) || selector == 0 ) {
+        if( pixelValue != 0) {
+          return 1;
+        }
+        else {
+          return 0;
+        }
+    }
+    else if( selector == 1 ) {
+        var charCol = this.console.getChar( colX, rowY );
+        var hiVal = (charCol & 240)>>4
+        var loVal = charCol & 15;
+
+        if( pixelValue != 0) {
+          return loVal;
+        }
+        else {
+          return hiVal;
+        }
+    }
+
+  }
+
+  _getPixelMC(x,y, selector) {
+//TODO
+    var base = this.console.getBitmapAddress();
+    var colX = Math.floor(x>>2); //>>2 == /4
+    var rowY = Math.floor(y>>3); //>>3 == /8
+    var Xremainder = x-(colX<<2); //<<2 == *4
+    var Yremainder = y-(rowY<<3); //<<3 == *8
+
+    var byteAddr = base +
+          (colX*8) +
+          (rowY*(40*8)) +
+          Yremainder;
+
+    var xr2 = Xremainder*2;
+    var byteValue = this.peek( byteAddr );
+    var maskSubPix1 = Math.pow(2,7-(xr2));
+    var maskSubPix2 = maskSubPix1>>1;
+    var shiftResultRight = 6-xr2;
+    var pixelValue = byteValue & (maskSubPix1 + maskSubPix2);
+    var pixelValue2 = pixelValue >> shiftResultRight;
+
+    //console.log("------------------");
+    //console.log("xr2",xr2);
+    //console.log("shiftResultRight",shiftResultRight);
+    //console.log("Xremainder",Xremainder);
+    //console.log("PixelValue",pixelValue);
+    //console.log("PixelValue2",pixelValue2);
+    //console.log("byteValue",(byteValue));
+    //console.log("Mask",(maskSubPix1 + maskSubPix2));
+
+    if(  ( selector === undefined ) || selector == 0 ) {
+        return pixelValue2;
+    }
+    else if( selector == 1 ) {
+        if( pixelValue2 == 0) {
+          return this.peek(53281);
+        }
+        else if( pixelValue2== 1 || pixelValue2==2) {
+          var charCol = this.console.getChar( colX, rowY );
+          var hiVal = (charCol & 240)>>4
+          var loVal = charCol & 15;
+
+          if( pixelValue2 == 1) {
+            return loVal;
+          }
+          else if( pixelValue2 == 1) {
+            return hiVal;
+          }
+        }
+        else {
+          return this.console.getCharCol( colX,rowY);
+        }
+    }
+
+  }
+
 
   setTextChar(x,y,c,col) {
     this.poke(1024+x+(y*40),c);
@@ -589,6 +949,7 @@ class BasicContext {
     this.console.setColor(14);
     this.inputFlag = false;
     this.runFlag = false;
+
     this.clrPGM();
 
     this.setTurbo( false );
@@ -749,6 +1110,9 @@ class BasicContext {
       if( p.data == "." ) {
         val = 0;
       }
+      else if( p.data == "~" ) {
+        val = Math.PI;
+      }
       else if((""+p.data).indexOf(".") >= 0) {
         val = parseFloat(p.data);
       }
@@ -780,6 +1144,10 @@ class BasicContext {
     else if( p.type=="array" ) {
       var varIntName = "@array_" + p.data;
       var arr = this.vars[ varIntName ];
+
+      if( arr === undefined ) {
+        throw "@no such array";
+      }
 
       if( arr.getIndexCount() != p.indices.length ) {
           throw "@bad subscript";
@@ -833,8 +1201,13 @@ class BasicContext {
 
       }
       catch ( e ) {
-        console.log(e);
-        this.printError("unexpected");
+        if( e.startsWith("@") ) {
+          this.printError(e.substr(1));
+        }
+        else {
+          this.printError("unexpected");
+        }
+
       }
     }
 
@@ -943,6 +1316,24 @@ class BasicContext {
     return val;
   }
 
+
+  panicIfStopped() {
+    if( !this.runFlag && this.exitMode == "panic") {
+
+      var bitmap = this.console.isBitMapMode();
+      this.resetVic();
+
+      if( bitmap ) {
+        this.setCursor(0,22);
+        this.printLine("");
+        this.printLine("");
+        this.printLine("");
+      }
+
+
+    }
+  }
+
   cycleToNext() { //only used after input command
     var c = this.console;
     var p = this.program;
@@ -950,10 +1341,15 @@ class BasicContext {
     this.runPointer ++;
     if( this.runPointer >=  p.length ) {
       this.runFlag = false;
+      this.panicIfStopped();
       c.clearCursor();
       this.printLine("");
       this.printLine("ready.");
     }
+  }
+
+  breakCycle() {
+    this.breakCycleFlag = true;
   }
 
   cycle() {
@@ -988,6 +1384,10 @@ class BasicContext {
 
         while (true) {
 
+          if( this.breakCycleFlag ) {
+            this.breakCycleFlag = false;
+            break;
+          }
           if(debug)console.log("START CYCLE LOOP-------------" );
           var l = p[ this.runPointer ];
           var bf = this.runPointer2;
@@ -1006,15 +1406,17 @@ class BasicContext {
           if(debug)console.log(" executedCount = " + executedCount);
           if(debug)console.log(" rv = " + rv);
 
-
           cmdCount = cmdCount - executedCount;
-
 
           if( rv[0]<=0 ) {
             if(debug)console.log(" PGM END!!!!" );
             this.runFlag = false;
             this.printLine("");
             this.printLine("ready.");
+            this.panicIfStopped();
+            if( rv[0] == END_W_ERROR ) {
+              console.log("PARAMETER DUMP:", this.vars );
+            }
             if(debug)console.log("CYCLE RETURN END");
             return;
           }
@@ -1026,6 +1428,7 @@ class BasicContext {
             if( this.runPointer >=  p.length ) {
               if(debug)console.log( "end program");
               this.runFlag = false;
+              this.panicIfStopped();
               c.clearCursor();
               this.printLine("ready.");
               break;
@@ -1060,6 +1463,8 @@ class BasicContext {
       this.printError("unexpected");
       this.printLine("ready.");
       this.runFlag = false;
+      this.panicIfStopped();
+      console.log("PARAMETER DUMP:", this.vars );
 
     }
 
@@ -1139,6 +1544,7 @@ class BasicContext {
     if( this.runFlag ) {
       var c = this.console;
       this.runFlag = false;
+      this.panicIfStopped();
       c.clearCursor();
       console.log("stop");
       this.printLine( "break in " + this.program[ this.runPointer ][0]);
@@ -1189,7 +1595,11 @@ class BasicContext {
 
   }
 
-  rebuildLineString( nr, raw, removePadding, renumbering ) {
+  rebuildLineString( nr, raw,
+      removePadding,
+      renumbering,
+      addSmartPadding )
+  {
 
     var p = new Parser( this.commands, this.extendedcommands );
     p.init();
@@ -1239,6 +1649,17 @@ class BasicContext {
       if( tokens[i].type == "str" ) {
         newString += "\"" + tokens[i].data + "\"";
       }
+      else if( tokens[i].type == "name" && addSmartPadding == true) {
+        newString += tokens[i].data + " ";
+      }
+      else if( tokens[i].type == "num" && addSmartPadding == true) {
+        if( tokens[i].data.length == 1 ) {
+            newString += " " + tokens[i].data;
+        }
+        else {
+            newString += tokens[i].data;
+        }
+      }
       else {
         newString += tokens[i].data;
       }
@@ -1266,7 +1687,7 @@ class BasicContext {
     newLineNr = start;
     for( var i=0; i<p.length; i++) {
         var line = p[ i ];
-        var lRec = this.rebuildLineString( newLineNr, line[2], false, renumbering );
+        var lRec = this.rebuildLineString( newLineNr, line[2], true, renumbering, true );
 
         line[0] = newLineNr;
         line[1] = lRec.commands;
@@ -1282,7 +1703,21 @@ class BasicContext {
     for( var i=0; i<p.length; i++) {
         var line = p[ i ];
 
-        var lRec = this.rebuildLineString( line[0], line[2], true, undefined );
+        var lRec = this.rebuildLineString( line[0], line[2], true, undefined, false );
+
+        line[1] = lRec.commands;
+        line[2] = lRec.raw;
+
+    }
+  }
+
+  normalizeProgram() {
+    var p = this.program;
+
+    for( var i=0; i<p.length; i++) {
+        var line = p[ i ];
+
+        var lRec = this.rebuildLineString( line[0], line[2], true, undefined, true );
 
         line[1] = lRec.commands;
         line[2] = lRec.raw;
@@ -1518,21 +1953,21 @@ class BasicContext {
     var cnt=0;
 
     if(!(limit == undefined )) {
-      console.log("RMM limit is defined");
-      /*if( end - i > limit ) {
-        console.log("RMM end:",end," i:",i," limit:",limit);
-        end = i + limit;
-
-        // end=5, i=2, limit=6 -> false
-        // end=5, i=2, limit=3 -> false
-        // end=5, i=2, limit=2 -> true -> end = 4
-      }*/
+      //nothing
     }
     else {
       limit = 9999; //reaching to infinite (max on line maybe  40)
     }
 
     while( i<end && cnt <limit) {
+
+      if( this.breakCycleFlag ) {
+        if(!(limit == undefined )) {
+          this.breakCycleFlag = false;
+          break;
+        }
+      }
+
       var cmd=cmds[i];
       //console.log( cmd );
       if( cmd.type == "control" )  {
@@ -2005,6 +2440,16 @@ class BasicContext {
     var container = this.vDisks.loadFile( fileName );
 
     return this.loadContainer( container );
+
+  }
+
+  setScale( xy ) {
+
+    if( xy === null ) {
+        this.console.rescale( this.initScale, this.initScale );
+        return;
+    }
+    this.console.rescale( xy, xy );
 
   }
 

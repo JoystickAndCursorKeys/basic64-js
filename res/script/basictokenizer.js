@@ -84,7 +84,7 @@ class Tokenizer {
 	}
 
 	isNumChar( ctx  ) {
-		return ctx.c.match("[0-9\.]") != null;
+		return ctx.c.match("[0-9\.~]") != null;
 	}
 
 	isPadChar( ctx  ) {
@@ -218,6 +218,7 @@ class Tokenizer {
 				var ctx = { index: 0, c:c }
 				if( this[rule[FUNCIX]]( ctx ) ) {
 						var tok = this.readChars( read, rule[TYPEIX], rule[FUNCIX], rule[STRINGTYPEIX] );
+
 						tokens.push( tok );
 						tokenFound = true;
 						break;

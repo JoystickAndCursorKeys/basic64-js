@@ -61,6 +61,10 @@ class Program {
     k2c["SHFT_:Home"]  = '\x93';
   }
 
+  rescale( xs,ys ) {
+    this.console.rescale( xs,ys);
+  }
+
   initPlayBook( properties ) {
     this.width = properties.w;
     this.height = properties.h;
@@ -152,6 +156,7 @@ class Program {
     if (action == "INIT") {
 
         //get basic code from url here:
+        this.basiccontext.setScale(null);
 
         const queryString = window.location.search;
         const urlParams = new URLSearchParams(queryString);
@@ -159,6 +164,7 @@ class Program {
         if( pgm != null ) {
           console.log("URL Program detected");
           console.log(pgm);
+
           this.basiccontext.clearScreen();
           this.basiccontext.printLine("load \"*\",99");
           this.basiccontext.printLine("");
@@ -306,7 +312,6 @@ class Program {
 
       if( evt.key == "Enter") {
 
-
           c.clearCursor();
           var line=c.getCurrentLine();
 
@@ -327,6 +332,11 @@ class Program {
       }
       else if( evt.key == "Backspace" && evt.ctrlKey) {
           this.basiccontext.reset( false );
+      }
+      else if( evt.key == "p" && evt.ctrlKey ) {
+
+        c.writeChar( '\x7e'  ); //https://sta.c64.org/cbm64pet.html
+        evt.preventDefault();
       }
       else if( evt.key == "ArrowLeft") {
 
@@ -452,8 +462,20 @@ class Program {
   playRender(context) {
 
     if( this.renderError ) { return; }
-
+    var c = this.console;
+    var cx = this.basiccontext;
     try {
+
+      if( ( c.getBorderChangedState() || cx.getBorderChangedFlag() ) &&
+            cx.getImmersiveFlag()) {
+        var col = c.getBorderColor();
+        col = c.getColorHTML( col );
+
+        var div0 = document.getElementById("outerdiv");
+        div0.style.backgroundColor = col;
+
+        console.log("Border update:  " + col);
+      }
       this.console.renderDisplay();
     }
     catch ( e ) {
