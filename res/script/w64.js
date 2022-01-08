@@ -89,6 +89,7 @@ class Program {
         const queryString = window.location.search;
         const urlParams = new URLSearchParams(queryString);
         var url = urlParams.get('linkpgm');
+        var extended = urlParams.get('x');
 
         if( url != null ) {
           var dataURLs = [];
@@ -100,6 +101,9 @@ class Program {
               dataSrcArray: dataURLs
             };
 
+          if( extended != null ) {
+            this.basiccontext.enableExtended(true);
+          }
           this.basiccontext.clearScreen();
           this.basiccontext.printLine("load \"*\",98");
           this.basiccontext.printLine("");
@@ -161,9 +165,15 @@ class Program {
         const queryString = window.location.search;
         const urlParams = new URLSearchParams(queryString);
         var pgm = urlParams.get('pgm');
+        var extended = urlParams.get('x');
+        
         if( pgm != null ) {
           console.log("URL Program detected");
           console.log(pgm);
+
+          if( extended != null ) {
+            this.basiccontext.enableExtended(true);
+          }
 
           this.basiccontext.clearScreen();
           this.basiccontext.printLine("load \"*\",99");
