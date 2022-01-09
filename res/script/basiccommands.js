@@ -36,7 +36,7 @@ class BasicCommands {
 
     for( var i=0;i<stats.length;i++) {
       if( stats[i].startsWith("_fun_")) {
-        var name = stats[i].substr(5 ).toUpperCase().replaceAll("_DLR_","$");
+        var name = stats[i].substr(5 ).toUpperCase().replace("_DLR_","$");
 
         stats2.push( name );
       }

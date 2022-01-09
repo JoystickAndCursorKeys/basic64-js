@@ -1176,7 +1176,7 @@ class BasicContext {
         var ecommands = this.extendedcommands;
         var cmds = this.commands;
 
-        var nFunName = "_fun_" + p.functionName.toLowerCase().replaceAll("$","_DLR_");
+        var nFunName = "_fun_" + p.functionName.toLowerCase().replace("$","_DLR_");
 
         var stc = commands[ nFunName ];
         if( stc === undefined ) {
@@ -1698,17 +1698,17 @@ class BasicContext {
   }
 
   compressProgram() {
-    var p = this.program;
+    //var p = this.program;
 
-    for( var i=0; i<p.length; i++) {
-        var line = p[ i ];
-
-        var lRec = this.rebuildLineString( line[0], line[2], true, undefined, false );
-
-        line[1] = lRec.commands;
-        line[2] = lRec.raw;
-
-    }
+    //for( var i=0; i<p.length; i++) {
+    //    var line = p[ i ];
+    //
+    //   var lRec = this.rebuildLineString( line[0], line[2], true, undefined, false );
+    //
+    //    line[1] = lRec.commands;
+    //    line[2] = lRec.raw;
+    //
+    //}
   }
 
   normalizeProgram() {
