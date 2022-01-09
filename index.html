@@ -70,6 +70,7 @@
 
 	</style>
 
+	<script src="res/script/polyfix.js"></script>
 	<script src="res/script/g1/core/boot.js"></script>
 	<script src="res/script/g1/screens/c64/screen.js"></script>
   <script src="res/script/basicarray.js"></script>
@@ -97,6 +98,8 @@
 	var screenCanvas;
 
 	window.onload = function() {
+
+		polyfix();
 		screenCanvas = document.getElementById("screenCanvas");
 		var console = new C64Screen( 'screenCanvas', 'res/script/g1/screens/c64', start );
 
