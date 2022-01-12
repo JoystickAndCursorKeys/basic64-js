@@ -10,6 +10,7 @@ class BasicContext {
     this.runFlag = false;
     this.breakCycleFlag;
     this.inputFlag = false;
+    this.listFlag = false;
     this.immersiveFlag = false;
     this.gosubReturn = [];
     this.nullTime = new Date().getTime();
@@ -161,6 +162,12 @@ class BasicContext {
     this.immersiveFlag = v;
   }
 
+  enterListMode( list ) {
+    this.listFlag = true;
+    this.list = list;
+    this.listPointer = 0;
+  }
+
   setExitMode( v ) {
     this.exitMode = v;
   }
@@ -177,6 +184,8 @@ class BasicContext {
     this.nullTime = nullClock;
 
   }
+
+
 
   setTurbo( on ) {
     if( on ) {
@@ -196,6 +205,7 @@ class BasicContext {
     this.panicIfStopped();
 
     this.inputFlag = false;
+    this.listFlag = false;
     this.console.clearCursor();
   }
 
@@ -229,6 +239,7 @@ class BasicContext {
     this.panicIfStopped();
 
     this.inputFlag = false;
+    this.listFlag = false;
     this.console.clearCursor();
   }
 
@@ -307,6 +318,7 @@ class BasicContext {
 
   toggleMenu() {
     if(!this.menuFocus) {
+      this.listStop();
       this.menu.start();
     }
     else  {
@@ -949,6 +961,7 @@ class BasicContext {
     this.console.setColor(14);
     this.inputFlag = false;
     this.runFlag = false;
+    this.listFlag = false;
 
     this.clrPGM();
 
@@ -1369,11 +1382,29 @@ class BasicContext {
 
     try {
 
-      if( !this.runFlag || this.menuFocus || this.inputFlag  ) {
+      if( !this.runFlag ||
+            this.menuFocus ||
+            this.inputFlag ||
+            this.listFlag
+             ) {
+
+        if( this.listFlag ) {
+           if( this.listPointer < this.list.length ) {
+               this.listCodeLine( this.list[ this.listPointer ] );
+               this.listPointer++;
+           }
+           else {
+             this.listFlag = false;
+           }
+
+        }
         if(this.cursorCount++>this.cursorCountMax) {
           this.cursorCount = 0;
 
-          if( !this.menuFocus ) { c.blinkCursor(); }
+          if( !this.menuFocus && !this.listFlag )
+            {
+              c.blinkCursor();
+            }
         }
       }
       else {
@@ -1464,6 +1495,7 @@ class BasicContext {
       this.printLine("ready.");
       this.runFlag = false;
       this.panicIfStopped();
+      console.log("Exception: ", e );
       console.log("PARAMETER DUMP:", this.vars );
 
     }
@@ -1540,6 +1572,15 @@ class BasicContext {
     }
   }
 
+  listStop() {
+    if( this.listFlag ) {
+      var c = this.console;
+      this.listFlag = false;
+      c.clearCursor();
+      this.printLine( "ready.");
+    }
+  }
+
   runStop() {
     if( this.runFlag ) {
       var c = this.console;
@@ -1554,6 +1595,10 @@ class BasicContext {
 
   isRunning() {
     return this.runFlag;
+  }
+
+  isListing() {
+    return this.listFlag;
   }
 
   isInput() {
@@ -1959,7 +2004,7 @@ class BasicContext {
       limit = 9999; //reaching to infinite (max on line maybe  40)
     }
 
-    while( i<end && cnt <limit) {
+    while( i<end && cnt<limit ) {
 
       if( this.breakCycleFlag ) {
         if(!(limit == undefined )) {
@@ -2080,10 +2125,8 @@ class BasicContext {
               cmd.statementName.toLowerCase() != "xon") {
                   this.printError( "extended not enabled" );
                   return [END_W_ERROR,i+1,cnt+1];
-                }
+            }
           }
-
-
         }
 
         var intf = mycommands[ "_if_" + cmd.statementName.toLowerCase()];
@@ -2100,7 +2143,7 @@ class BasicContext {
           if( pardefs[j] == EXPR ) {
 
             var p = this.evalExpression( cmd.params[j] );  //NOTE this one gets the trailing ;, from a "PRINT ;" command
-            //console.log("p",p);
+
             if( p != null ) {
               values.push( { type: "value", value: p } );
             }

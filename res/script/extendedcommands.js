@@ -933,8 +933,6 @@ class ExtendedCommands {
           this._intGetColorRecord(),
           colIndex );
 
-
-
     }
 
 
@@ -985,7 +983,7 @@ class ExtendedCommands {
       }
 
       if( pars.length == 2 ) {
-        throw("@col missing");
+        throw("@charcode missing");
         return;
       }
 

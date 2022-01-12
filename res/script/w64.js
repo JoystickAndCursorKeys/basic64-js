@@ -166,7 +166,7 @@ class Program {
         const urlParams = new URLSearchParams(queryString);
         var pgm = urlParams.get('pgm');
         var extended = urlParams.get('x');
-        
+
         if( pgm != null ) {
           console.log("URL Program detected");
           console.log(pgm);
@@ -227,6 +227,7 @@ class Program {
 
     var bcontext = this.basiccontext;
     var running = bcontext.isRunning();
+    var listing = bcontext.isListing();
     var menuScreen = bcontext.isMenu();
     var input = bcontext.isInput();
     var modifierKey = false;
@@ -270,11 +271,15 @@ class Program {
       evt.preventDefault();
     }
 
-    if( ! running && !menuScreen ) {
+    if( !running && !menuScreen && !listing) {
       this.handleScrEditKeys( evt, bcontext, false );
       return;
     }
-    if( running && !menuScreen && input ) {
+    else if( ! running && !menuScreen  && listing ) {
+      this.handleScrListKeys( evt, bcontext, false );
+      return;
+    }
+    else if( running && !menuScreen && input && !listing) {
       this.handleScrEditKeys( evt, bcontext, true );
       return;
     }
@@ -308,6 +313,18 @@ class Program {
 
     //this.resetKeyModifiers();
     return;
+  }
+
+
+  handleScrListKeys( evt, bcontext, isInputCommand ) {
+
+    if( evt.type == 'keydown' ) {
+
+        if( evt.key == "Escape") {
+            this.basiccontext.listStop();
+        }
+      }
+
   }
 
 

@@ -87,17 +87,18 @@ class BasicCommands {
       start = parts[0].data;
     }
 
-    this.context.printLine( "" );
     var context = this.context;
-
+    var list = [];
     for (const l of context.program)
       {
 
         var lineNr = parseInt(l[0]);
         if(  l[0] == null || (lineNr>= start && lineNr<= end) ) {
-          this.context.listCodeLine( l[2] );
+          list.push( l[2] );
         }
       }
+
+      this.context.enterListMode( list );
   }
 
   _if_get() {
