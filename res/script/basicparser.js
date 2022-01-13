@@ -740,34 +740,56 @@ class Parser {
           }
           else if( controlToken == "DIM") {
 
-            token = tokens.shift();
-            if( token.type != "name") {
-              this.Exception( context, "DIM expects var name");
+            var first = true;
+            command.params = [];
+            command.arrayNames = [];
+
+            while( true ) {
+
+              token = tokens.shift();
+              if(!first ) {
+                if( token === undefined ) {
+                  break;
+                }
+                if( ! ( token.type == "sep" && token.data == "," )) {
+                  tokens.unshift( token );
+                  break;
+                }
+                token = tokens.shift();
+              }
+
+              if( token.type != "name" ) {
+                this.Exception( context, "DIM expects var name");
+              }
+
+              nameToken = token.data;
+
+              token = tokens.shift();
+        			if( token === undefined ) {
+        				token = { type: "@@@notoken" };
+        			}
+
+              if( !(token.type=="bracket" && token.data=="(") ) {
+                this.Exception( context, "DIM expects (");
+              }
+
+              var indices = this.parseFunParList( context );
+
+              token = tokens.shift();
+        			if( token === undefined ) {
+        				token = { type: "@@@notoken" };
+        			}
+
+              if( !(token.type=="bracket" && token.data==")") ) {
+                this.Exception( context, "DIM expects )");
+              }
+
+              command.params.push( indices );
+              command.arrayNames.push( nameToken );
+
+              first = false;
             }
-            nameToken = token.data;
 
-            token = tokens.shift();
-      			if( token === undefined ) {
-      				token = { type: "@@@notoken" };
-      			}
-
-            if( !(token.type=="bracket" && token.data=="(") ) {
-              this.Exception( context, "DIM expects (");
-            }
-
-            var indices = this.parseFunParList( context );
-
-            token = tokens.shift();
-      			if( token === undefined ) {
-      				token = { type: "@@@notoken" };
-      			}
-
-            if( !(token.type=="bracket" && token.data==")") ) {
-              this.Exception( context, "DIM expects )");
-            }
-
-            command.params=indices;
-            command.arrayName = nameToken;
             commands.push( command );
           }
           else if( controlToken == "GOTO") {

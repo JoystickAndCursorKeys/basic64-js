@@ -2089,20 +2089,23 @@ class BasicContext {
         else if( cn == "dim" ) {
           var vars = this.vars;
 
-          var indices = [];
-          for( var ai=0;ai<cmd.params.length;ai++){
-            indices[ai] = this.evalExpression( cmd.params[ai] );
+          for( var ix=0; ix<cmd.params.length; ix++) {
+
+            var indices = [];
+            for( var ai=0;ai<cmd.params[ix].length;ai++){
+              indices[ai] = this.evalExpression( cmd.params[ix][ai] );
+            }
+
+            var arrRec = new BasicArray( indices, 0 );
+
+            var varIntName = "@array_" + cmd.arrayNames[ix];
+
+            if( ! ( this.vars[ varIntName ] === undefined )) {
+              this.printError( "redim'd array" );
+              return [END_W_ERROR,i+1,cnt+1];
+            }
+            this.vars[ varIntName ] = arrRec;
           }
-
-          var arrRec = new BasicArray( indices, 0 );
-
-          var varIntName = "@array_" + cmd.arrayName;
-
-          if( ! ( this.vars[ varIntName ] === undefined )) {
-            this.printError( "redim'd array" );
-            return [END_W_ERROR,i+1,cnt+1];
-          }
-          this.vars[ varIntName ] = arrRec;
 
         }
       }
