@@ -100,7 +100,7 @@ class Parser {
 
   init() {
 
-	  this.CTRL_KW = ["IF","THEN","GOTO","AND", "NOT", "OR",  "GOSUB", "RETURN", "FOR", "TO", "NEXT", "STEP", "DATA", "REM", "GOSUB", "DIM", "END", "LET", "STOP" ];
+	  this.CTRL_KW = ["IF","THEN","GOTO","AND", "NOT", "OR",  "GOSUB", "RETURN", "FOR", "TO", "NEXT", "STEP", "DATA", "REM", "GOSUB", "DIM", "END", "LET", "STOP", "DEF", "FN", "ON" ];
     this.SHORTCUT_KW = ["?"];
 
     this.KEYWORDS = this.commands.getStatements();
@@ -287,7 +287,6 @@ class Parser {
 		return params;
 	}
 
-
 	peekIfNextIsOpenBracket( context ) {
 
 		var tokens = context.tokens;
@@ -467,8 +466,10 @@ class Parser {
 
 						var name = token.data;
 						var isFunctionCallOrArray = this.peekIfNextIsOpenBracket( context );
+            var isUserDefinedFunctionCall = (name == "FN");
 
-						if( isFunctionCallOrArray ) {
+						if( isFunctionCallOrArray ) { /*We have a function or an Array */
+
 							token = tokens.shift();
 							var parameters = this.parseFunParList( context );
               tokens.shift();
@@ -495,7 +496,33 @@ class Parser {
               }
 
 						}
-						else {
+            else if( isUserDefinedFunctionCall ) {
+
+              token = tokens.shift();
+              name = token.data;
+
+              token = tokens.shift();
+              var parameters = this.parseFunParList( context ); //TODO limit to 1 par
+              tokens.shift();
+
+              part = { type: "defFnCall", params: parameters, op: op, functionName: name };
+
+              if( op == null && negate ) {
+                var subExpression = {
+                      parts: [part],
+                      negate: true,
+                      binaryNegate: false,
+                      type: "expr"
+                };
+                parts.push ( subExpression );
+              }
+							else {
+                parts.push ( part );
+              }
+
+            }
+						else { /* we have an variable*/
+
 							part = { type: "var", data: token.data, op: op };
               if( op == null && negate ) {
                 var subExpression = {
@@ -792,12 +819,59 @@ class Parser {
 
             commands.push( command );
           }
-          else if( controlToken == "GOTO") {
+          else if( controlToken == "DEF") {
+
+            token = tokens.shift();
+            if( !( token.type == "name" && token.data == "FN" ) ) {
+              this.Exception( context, "DEF expects FN");
+            }
+
+            token = tokens.shift();
+            if( token.type != "name") {
+              this.Exception( context, "DEF FN expects function name");
+            }
+            var fName = token.data;
+
+            token = tokens.shift();
+            if(! ( token.type == "bracket" && token.data == "(" )) {
+              this.Exception( context, "DEF FN expects function name and ->( varname )");
+            }
+
+            token = tokens.shift();
+            if(! ( token.type == "name"  )) {
+              this.Exception( context, "DEF FN expects function name and ( ->varname )");
+            }
+            var varName = token.data;
+
+            token = tokens.shift();
+            if(! ( token.type == "bracket" && token.data == ")" )) {
+              this.Exception( context, "DEF FN expects function name and ( varname -> )");
+            }
+
+            token = tokens.shift();
+            if(! ( token.type == "eq" && token.data == "=" )) {
+              this.Exception( context, "DEF FN expects function name and ( varname ) -> =");
+            }
+
+
+            endTokens = [];
+            var expr_fn = this.parseExpression( context, endTokens );
+
+            console.log("expr = " + expr_fn );
+
+            command.params=[];
+            command.params[0] = fName;
+            command.params[1] = varName;
+            command.params[2] = expr_fn;
+            commands.push( command );
+
+          }
+          else if( controlToken == "GOTO" || controlToken == "GOSUB") {
             var num = -1;
 
             token = tokens.shift();
             if( token.type != "num") {
-              this.Exception( context, "GOTO expects number");
+              this.Exception( context, "GOTO/GOSUB expects number");
             }
             num = parseInt(token.data);
             token = tokens.shift();
@@ -812,7 +886,55 @@ class Parser {
             commands.push( command );
 
           }
-          else if( controlToken == "GOSUB") {
+          else if( controlToken == "ON" ) {
+            var nums = [];
+
+            endTokens = [];
+            endTokens.push( { type: "name", data: "GOTO" });
+            endTokens.push( { type: "name", data: "GOSUB" });
+
+						var onExpr = this.parseExpression( context, endTokens );
+
+            token = tokens.shift();
+            if( token.type != "name") {
+              this.Exception( context, "ON expects GOTO/GOSUB");
+            }
+            if( !( token.data == "GOTO" || token.data == "GOSUB" )) {
+              this.Exception( context, "ON expects GOTO/GOSUB");
+            }
+            var onType = token.data;
+
+            token = tokens.shift();
+            if( token.type != "num") {
+              this.Exception( context, "GOTO/GOSUB expects number");
+            }
+            nums.push(  parseInt(token.data) );
+
+            while ( true ) {
+
+              token = tokens.shift();
+              if( token == undefined ) { break; }
+              if( token.type == "cmdsep") { break; }
+              if( token.type == "cmdsep") { break; }
+              if( !( token.type == "sep" && token.data == "," )) {
+                this.Exception( context, "ON GOTO/GOSUB expects numberlist");
+              }
+
+              token = tokens.shift();
+              if( token.type != "num") {
+                this.Exception( context, "GOTO/GOSUB expects number");
+              }
+              nums.push(  parseInt(token.data) );
+            }
+
+            command.params=[];
+            command.params[0] = onType.toLowerCase();
+            command.params[1] = onExpr;
+            command.params[2] = nums;
+            commands.push( command );
+
+          }
+/*          else if( controlToken == "GOSUB") {
             var num = -1;
 
             token = tokens.shift();
@@ -832,6 +954,7 @@ class Parser {
             commands.push( command );
 
           }
+*/
           else if( controlToken == "RETURN") {
             var num = -1;
 

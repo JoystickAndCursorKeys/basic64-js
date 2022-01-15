@@ -332,7 +332,6 @@ class Program {
 
     if( evt.type == 'keydown' ) {
 
-      //console.log(evt);
       var c = this.console;
       var stringMode;
       stringMode = this.stringMode;
@@ -365,6 +364,15 @@ class Program {
         c.writeChar( '\x7e'  ); //https://sta.c64.org/cbm64pet.html
         evt.preventDefault();
       }
+      else if( evt.key == "x" && evt.ctrlKey ) {
+
+        c.writeChar( '\x5e'  ); //https://sta.c64.org/cbm64pet.html
+        evt.preventDefault();
+      }
+      else if( evt.key == "^"  ) {
+        c.writeChar( '\x5e'  ); //https://sta.c64.org/cbm64pet.html
+        evt.preventDefault();
+      }
       else if( evt.key == "ArrowLeft") {
 
           c.clearCursor();
@@ -376,10 +384,14 @@ class Program {
           c.cursorRight();
           evt.preventDefault();
       }
-      else if( evt.key == "ArrowUp") {
+      else if( evt.key == "ArrowUp"  && !evt.ctrlKey) {
           c.clearCursor();
           c.cursorUp();
           evt.preventDefault();
+      }
+      else if( evt.key == "ArrowUp"  && evt.ctrlKey) {
+        c.writeChar( '\x5e'  ); //https://sta.c64.org/cbm64pet.html
+        evt.preventDefault();
       }
       else if( evt.key == "ArrowDown") {
           c.clearCursor();

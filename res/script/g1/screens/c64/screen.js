@@ -288,7 +288,8 @@ class C64Screen {
 			 map[String.fromCharCode(i)] = 64+i;
 		 }
 
-		 map['\x7e'] = 94;
+		 map['\x7e'] = 94; //PI
+		 map['\x5e'] = 30; //EXP
 
 		 map['@'] = 0;
 		 map['A'] = 1;

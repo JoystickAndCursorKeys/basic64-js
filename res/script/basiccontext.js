@@ -29,6 +29,7 @@ class BasicContext {
     this.extendedcommands = new ExtendedCommands( this );
     this.errorHandler = new ErrorHandler();
     this.vars = [];
+    this.functions = [];
     this.data = [];
     this.kbBuffer = [];
 
@@ -269,6 +270,7 @@ class BasicContext {
       runFlag: this.runFlag,
       inputFlag: this.inputFlag,
       vars: this.vars,
+      functions: this.functions,
       forContext: this.forContext,
       runPointer: this.runPointer,
       runPointer2: this.runPointer2
@@ -280,6 +282,7 @@ class BasicContext {
       this.panicIfStopped();
       this.inputFlag = pgmState.inputFlag;
       this.vars = pgmState.vars;
+      this.functions = pgmState.functions;
       this.forContext = pgmState.forContext;
       this.runPointer = pgmState.runPointer;
       this.runPointer2 = pgmState.runPointer2;
@@ -1223,6 +1226,43 @@ class BasicContext {
 
       }
     }
+    else if( p.type=="defFnCall" ) {
+
+      try {
+        var fName = p.functionName;
+        var parValue = this.evalExpression( p.params[0] );
+        var restore = null;
+
+        if( this.functions[ fName ] === undefined ) {
+          throw "@undef'd function";
+        }
+        var functRecord = this.functions[ fName ];
+
+        if(!(  this.vars[ functRecord.par ] === undefined )) {
+          restore= this.vars[ functRecord.par ];
+        }
+
+        this.vars[ functRecord.par ] = parValue;
+        val  = this.evalExpression( functRecord.expr );
+
+        if( restore != null ) {
+          this.vars[ restore.name ] = restore;
+        }
+        else {
+          this.vars[ functRecord.par ] = 0; //TODO, actually should delete it
+        }
+
+      }
+      catch ( e ) {
+        if( e.startsWith("@") ) {
+          this.printError(e.substr(1));
+        }
+        else {
+          this.printError("unexpected");
+        }
+
+      }
+    }
 
     return val;
   }
@@ -1246,6 +1286,9 @@ class BasicContext {
       if( p.op == "+" ) {
         val += this.evalExpressionPart( p );
       }
+      else if( p.op == "^" ) {
+        val = Math.pow( val, this.evalExpressionPart( p ) );
+      }
       else if( p.op == "-" ) {
         val -= this.evalExpressionPart( p );
       }
@@ -1263,11 +1306,9 @@ class BasicContext {
       }
       else if( p.op == "OR"  ) {
           val |= this.evalExpressionPart( p );
-          console.log("or");
       }
       else if( p.op == "AND"  ) {
           val &= this.evalExpressionPart( p );
-          console.log("and");
       }
       else if( p.op == "<" ) {
         if( val < (this.evalExpressionPart( p ) ) ) {
@@ -1447,6 +1488,7 @@ class BasicContext {
             this.panicIfStopped();
             if( rv[0] == END_W_ERROR ) {
               console.log("PARAMETER DUMP:", this.vars );
+              console.log("FUNCTION DUMP:", this.functions );
             }
             if(debug)console.log("CYCLE RETURN END");
             return;
@@ -1497,6 +1539,7 @@ class BasicContext {
       this.panicIfStopped();
       console.log("Exception: ", e );
       console.log("PARAMETER DUMP:", this.vars );
+      console.log("FUNCTION DUMP:", this.functions );
 
     }
 
@@ -1772,6 +1815,7 @@ class BasicContext {
 
   clrPGM() {
     this.vars = [];
+    this.functions = [];
     this.restoreDataPtr();
   }
 
@@ -1803,6 +1847,7 @@ class BasicContext {
     this.dataPointer = 0;
     this.gosubReturn = [];
     this.vars = [];
+    this.functions = [];
 
     for( var i=0; i<p.length; i++) {
 
@@ -2032,6 +2077,25 @@ class BasicContext {
           this.gosub( cmd.params[0], i );
           return [TERMINATE_W_JUMP,i+1,cnt+1];
         }
+        else if( cn == "on" ) {
+          var onCommand = cmd.params[ 0 ];
+          var onExpr = cmd.params[ 1 ];
+          var onLineNrs = cmd.params[ 2 ];
+
+          var value = this.evalExpression( onExpr );
+          if( (value-1)>=0 && (value-1)<onLineNrs.length ) {
+            if( onCommand == "goto" ) {
+              this.goto( onLineNrs[ (value-1) ] );
+              return [TERMINATE_W_JUMP,i+1,cnt+1];
+            }
+            else if( onCommand == "gosub" ) {
+              this.gosub( onLineNrs[ (value-1) ], i );
+              return [TERMINATE_W_JUMP,i+1,cnt+1];
+            }
+          }
+
+          //if not jumping, do nothing
+        }
         else if( cn == "return" ) {
           this.doReturn();
           return [TERMINATE_W_JUMP,i+1,cnt+1];
@@ -2096,7 +2160,7 @@ class BasicContext {
               indices[ai] = this.evalExpression( cmd.params[ix][ai] );
             }
 
-            var arrRec = new BasicArray( indices, 0 );
+            var arrRec = new BasicArray( cmd.arrayNames[ix], indices, 0 );
 
             var varIntName = "@array_" + cmd.arrayNames[ix];
 
@@ -2107,6 +2171,16 @@ class BasicContext {
             this.vars[ varIntName ] = arrRec;
           }
 
+        }
+        else if( cn == "def" ) {
+          this.functions[ cmd.params[0] ] = {
+            par: cmd.params[1],
+            expr: cmd.params[2]
+          };
+        }
+        else {
+          this.printError( "illegal ctrl token '" + cn  +"'");
+          return [END_W_ERROR,i+1,cnt+1];
         }
       }
       else if( cmd.type == "call" )  {
