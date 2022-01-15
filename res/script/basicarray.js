@@ -1,6 +1,7 @@
 class  BasicArray {
 
-  constructor( indices, defaultValue ) {
+  constructor( name, indices, defaultValue  ) {
+    this.name = name;
     this.indices = indices;
     this.buffer = null;
     this.defaultValue = defaultValue;
@@ -12,14 +13,14 @@ class  BasicArray {
 
   _check( indices ) {
     if( indices.length != this.indices.length ) {
-      throw "index mismatch";
+      throw "00:index dimension mismatch for array " + this.name;
     }
     for( var i=0; i<indices.length; i++) {
       if ( indices[i] > this.indices[ i ]) {
-        throw "out of bounds";
+        throw "01:index " + indices[i] + " out of bounds for array " + this.name + " for index " + i;
       }
       else if ( indices[i] < 0) {
-        throw "index smaller then zero";
+        throw "02:index smaller then zero for array " + this.name;
       }
 
     }

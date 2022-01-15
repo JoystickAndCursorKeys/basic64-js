@@ -539,13 +539,16 @@ class ExtendedCommands {
     _stat_debug( pars ) {
 
         var context = this.context;
+        var ln = context.runPointer;
+
+        var prefix = "DEBUG["+context.program[ln][0]+"]: ";
         if( pars.length == 0 ) {
-          console.log( "---------------" );
+          console.log( prefix+" ---------------" );
           return;
         }
         else if( pars.length == 1 ) {
           if( pars[0].parts.length == 0 ) {
-            console.log( "---------------" );
+            console.log( prefix+" ---------------" );
             return;
           }
         }
@@ -585,12 +588,12 @@ class ExtendedCommands {
 
           buffer += value;
           if( newLine ) {
-            console.log("DEBUG: " + buffer );
+            console.log(prefix + buffer );
             buffer = "";
           }
         }
         if( buffer != "" ) {
-          console.log("DEBUG: " + buffer );
+          console.log(prefix + buffer );
         }
     }
 
@@ -933,8 +936,6 @@ class ExtendedCommands {
           this._intGetColorRecord(),
           colIndex );
 
-
-
     }
 
 
@@ -985,7 +986,7 @@ class ExtendedCommands {
       }
 
       if( pars.length == 2 ) {
-        throw("@col missing");
+        throw("@charcode missing");
         return;
       }
 

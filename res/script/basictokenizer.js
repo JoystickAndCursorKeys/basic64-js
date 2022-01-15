@@ -45,7 +45,7 @@ class Tokenizer {
 
 	isOpChar( ctx ) {
 
-		return ctx.c.match("[+]|[-]|[*]|[/]|[;]") != null;
+		return ctx.c.match("[+]|[-]|[*]|[/]|[\\^]|[;]") != null;
 
 	}
 
