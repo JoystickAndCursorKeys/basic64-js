@@ -197,6 +197,9 @@ class Parser {
   mergeCompTokens( tokens ) {
 		var tokens2 = [];
 
+    /* Convert token sequences like ("<","=")
+       into single token "<=" */
+
 		for( 	var i=0;
 					i<tokens.length;
 					i++)
@@ -267,7 +270,7 @@ class Parser {
       }
 
 			if( even ) {
-        var expr = this.parseExpression( context, endTokens );
+        var expr = this.parseBoolExpression( context, endTokens );
         expr.type = "expr";
 				params.push( expr );
 			}
@@ -310,7 +313,7 @@ class Parser {
 		var endTokens = [];
 		endTokens.push( { type: "bracket", data: ")" });
 
-		var expr = this.parseExpression( context, endTokens );
+		var expr = this.parseBoolExpression( context, endTokens );
 		context.tokens.shift();
 
 		expr.type = "expr";
@@ -363,6 +366,7 @@ class Parser {
 
     var endLoop;
 		var tokens = context.tokens;
+
     if( tokens.length == 0) {
       return undefined;
     }
@@ -379,6 +383,13 @@ class Parser {
       this.Exception( context, "empty simple expression");
     }
 
+
+    if( token.type == "op" && token.data == "-" ) {
+				var pair = this.parseSimpleExpression( context, endTokens );
+        pair[0].data = -pair[0].data;
+        return pair;
+		}
+
 		if( token.type == "num" ) {
         returnValue= { type: "num", data: token.data };
 		}
@@ -386,9 +397,13 @@ class Parser {
 				returnValue= { type: "str", data: token.data };
 		}
 
+
     token = tokens.shift();
     if( token ) {
       endLoop = this.isEndToken( token, endTokens );
+      if( ! endLoop ) {
+        endLoop = context.tokens.length == 0;
+      }
       if( !endLoop ) {
         this.Exception( context, "empty simple expression end expected");
       }
@@ -396,6 +411,78 @@ class Parser {
 
 		return [returnValue, token];
 	}
+
+
+  parseBoolExpression( context, endTokens0 ) {
+
+    var endTokens = [];
+    var tokens = context.tokens;
+
+    for( var i=0; i < endTokens0.length; i++ ) {
+      endTokens.push( endTokens0[ i ] );
+    }
+
+    endTokens.push( { type: "bop", data: "OR" });
+    endTokens.push( { type: "bop", data: "AND" });
+
+    var first = true;
+    var eList = [];
+    var op = null;
+    while( true ) {
+
+      var expr = this.parseExpression( context, endTokens );
+      if( first && tokens.length == 0) {
+        return expr;
+      }
+      first = false;
+
+      var opData = null;
+      if( op != null ) {
+          opData = op.data;
+      }
+
+      //if( expr.parts.length == 1) {
+      //    expr.parts[0].op = opData;
+      //    expr.parts[0].dbg = "1";
+      //    eList.push(  expr.parts[0] );
+      //}
+      //else {
+          expr.op = opData;
+          expr.type = "expr";
+          expr.dbg = "1";
+          eList.push(  expr );
+      //}
+
+      if( tokens.length > 0) {
+        if( tokens[0].type == "bop" ) {
+          var op = tokens.shift();
+          continue;
+        }
+      }
+      break;
+    }
+
+    if( eList.length == 1 ) {
+        eList[0].dbg2 = "len=1";
+        return eList[0];
+    }
+
+
+    var retExpr = {
+      negate: false,
+      binaryNegate: false,
+      type: "expr",
+      parts: [],
+      op: null
+    };
+
+    for( i=0; i<eList.length; i++) {
+      retExpr.parts.push( eList[ i ] );
+    }
+
+    return retExpr;
+
+  }
 
 	parseExpression( context, endTokens ) {
 
@@ -629,6 +716,572 @@ class Parser {
     return x;
   }
 
+  parseAssignment( context, preTokens, commands, command, nameToken, token0  ) {
+
+    var token = token0;
+		var tokens = context.tokens;
+
+    command.type = "assignment";
+    command.var = nameToken;
+    command.arrayAssignment = false;
+
+    var endTokens = [];
+    endTokens.push( { type: "cmdsep", data: "@@@all" });
+
+    command.expression = this.parseBoolExpression( context, endTokens );
+    commands.push( command );
+  }
+
+  parseArrayAssignment( context, preTokens, commands, command, nameToken, token0  ) {
+
+    var token = token0;
+		var tokens = context.tokens;
+
+    command.type = "assignment";
+    command.var = nameToken;
+    command.arrayAssignment = true;
+
+    //token = tokens.shift();
+    var indices = this.parseFunParList( context );
+    command.indices = indices;
+
+    tokens.shift();
+    console.log("tokens after:",tokens)
+
+    token = tokens.shift();
+    if( token === undefined ) {
+      token = { type: "@@@notoken" };
+    }
+
+    if( token.type != "eq") {
+      this.Exception( context, "Expected =");
+    }
+
+    var endTokens = [];
+    endTokens.push( { type: "cmdsep", data: "@@@all" });
+
+    command.expression = this.parseBoolExpression( context, endTokens );
+    commands.push( command );
+
+  }
+
+  parseControlStructure(  context, preTokens, commands, command, nameToken, token0  ) {
+
+    var token = token0;
+		var tokens = context.tokens;
+
+    if( true ) {
+
+      command.type = "control";
+      var controlToken = nameToken;
+      command.controlKW = nameToken.toLowerCase();
+      if( token.type != "@@@notoken") {
+        tokens.unshift( token );
+      }
+
+      if( controlToken == "LET") {
+
+        token = tokens.shift();
+        if( token.type != "name") {
+          this.Exception( context, "LET expects var name");
+        }
+        nameToken = token.data;
+
+        token = tokens.shift();
+        if( token === undefined ) {
+          token = { type: "@@@notoken" };
+        }
+
+        if( token.type != "eq") {
+          this.Exception( context, "LET expects =");
+        }
+
+        cmdType = "assignment";
+        command.type = cmdType;
+        command.var = nameToken;
+
+        var endTokens = [];
+        endTokens.push( { type: "cmdsep", data: "@@@all" });
+
+        command.expression = this.parseBoolExpression( context, endTokens );
+        commands.push( command );
+      }
+      else if( controlToken == "DIM") {
+
+        var first = true;
+        command.params = [];
+        command.arrayNames = [];
+
+        while( true ) {
+
+          token = tokens.shift();
+          if(!first ) {
+            if( token === undefined ) {
+              break;
+            }
+            if( ! ( token.type == "sep" && token.data == "," )) {
+              tokens.unshift( token );
+              break;
+            }
+            token = tokens.shift();
+          }
+
+          if( token.type != "name" ) {
+            this.Exception( context, "DIM expects var name");
+          }
+
+          nameToken = token.data;
+
+          token = tokens.shift();
+          if( token === undefined ) {
+            token = { type: "@@@notoken" };
+          }
+
+          if( !(token.type=="bracket" && token.data=="(") ) {
+            this.Exception( context, "DIM expects (");
+          }
+
+          var indices = this.parseFunParList( context );
+
+          token = tokens.shift();
+          if( token === undefined ) {
+            token = { type: "@@@notoken" };
+          }
+
+          if( !(token.type=="bracket" && token.data==")") ) {
+            this.Exception( context, "DIM expects )");
+          }
+
+          command.params.push( indices );
+          command.arrayNames.push( nameToken );
+
+          first = false;
+        }
+
+        commands.push( command );
+      }
+      else if( controlToken == "DEF") {
+
+        token = tokens.shift();
+        if( !( token.type == "name" && token.data == "FN" ) ) {
+          this.Exception( context, "DEF expects FN");
+        }
+
+        token = tokens.shift();
+        if( token.type != "name") {
+          this.Exception( context, "DEF FN expects function name");
+        }
+        var fName = token.data;
+
+        token = tokens.shift();
+        if(! ( token.type == "bracket" && token.data == "(" )) {
+          this.Exception( context, "DEF FN expects function name and ->( varname )");
+        }
+
+        token = tokens.shift();
+        if(! ( token.type == "name"  )) {
+          this.Exception( context, "DEF FN expects function name and ( ->varname )");
+        }
+        var varName = token.data;
+
+        token = tokens.shift();
+        if(! ( token.type == "bracket" && token.data == ")" )) {
+          this.Exception( context, "DEF FN expects function name and ( varname -> )");
+        }
+
+        token = tokens.shift();
+        if(! ( token.type == "eq" && token.data == "=" )) {
+          this.Exception( context, "DEF FN expects function name and ( varname ) -> =");
+        }
+
+
+        endTokens = [];
+        var expr_fn = this.parseBoolExpression( context, endTokens );
+
+        console.log("expr = " + expr_fn );
+
+        command.params=[];
+        command.params[0] = fName;
+        command.params[1] = varName;
+        command.params[2] = expr_fn;
+        commands.push( command );
+
+      }
+      else if( controlToken == "GOTO" || controlToken == "GOSUB") {
+        var num = -1;
+
+        token = tokens.shift();
+        if( token.type != "num") {
+          this.Exception( context, "GOTO/GOSUB expects number");
+        }
+        num = parseInt(token.data);
+        token = tokens.shift();
+        if( token !== undefined ) {
+          if( token.type != "cmdsep") {
+            this.Exception( context, "expected cmdsep, instead of "+token.type+"/"+token.data);
+          }
+        }
+
+        command.params=[];
+        command.params[0] = num;
+        commands.push( command );
+
+      }
+      else if( controlToken == "ON" ) {
+        var nums = [];
+
+        endTokens = [];
+        endTokens.push( { type: "name", data: "GOTO" });
+        endTokens.push( { type: "name", data: "GOSUB" });
+
+        var onExpr = this.parseBoolExpression( context, endTokens );
+
+        token = tokens.shift();
+        if( token.type != "name") {
+          this.Exception( context, "ON expects GOTO/GOSUB");
+        }
+        if( !( token.data == "GOTO" || token.data == "GOSUB" )) {
+          this.Exception( context, "ON expects GOTO/GOSUB");
+        }
+        var onType = token.data;
+
+        token = tokens.shift();
+        if( token.type != "num") {
+          this.Exception( context, "GOTO/GOSUB expects number");
+        }
+        nums.push(  parseInt(token.data) );
+
+        while ( true ) {
+
+          token = tokens.shift();
+          if( token == undefined ) { break; }
+          if( token.type == "cmdsep") { break; }
+          if( token.type == "cmdsep") { break; }
+          if( !( token.type == "sep" && token.data == "," )) {
+            this.Exception( context, "ON GOTO/GOSUB expects numberlist");
+          }
+
+          token = tokens.shift();
+          if( token.type != "num") {
+            this.Exception( context, "GOTO/GOSUB expects number");
+          }
+          nums.push(  parseInt(token.data) );
+        }
+
+        command.params=[];
+        command.params[0] = onType.toLowerCase();
+        command.params[1] = onExpr;
+        command.params[2] = nums;
+        commands.push( command );
+
+      }
+/*          else if( controlToken == "GOSUB") {
+        var num = -1;
+
+        token = tokens.shift();
+        if( token.type != "num") {
+          this.Exception( context, "GOSUB expects number");
+        }
+        num = parseInt(token.data);
+        token = tokens.shift();
+        if( token !== undefined ) {
+          if( token.type != "cmdsep") {
+            this.Exception( context, "expected cmdsep, instead of "+token.type+"/"+token.data);
+          }
+        }
+
+        command.params=[];
+        command.params[0] = num;
+        commands.push( command );
+
+      }
+*/
+      else if( controlToken == "RETURN") {
+        var num = -1;
+
+        command.params=[];
+        commands.push( command );
+
+      }
+      else if( controlToken == "END") {
+        var num = -1;
+
+        command.params=[];
+        commands.push( command );
+
+      }
+      else if( controlToken == "STOP") {
+        var num = -1;
+
+        command.params=[];
+        commands.push( command );
+
+      }
+      else if( controlToken == "FOR") {
+
+        var variable, expr_from, expr_to, expr_step;
+        var endTokens = [];
+
+        token = tokens.shift();
+        if( token.type != "name" ) {
+          this.Exception( context,
+                "For expects variable, no var found, found " + token.type+"/"+token.data);
+        }
+
+        variable = token.data;
+
+        token = tokens.shift();
+        if( !( token.type == "eq" && token.data == "=" )) {
+          this.Exception( context,
+                "For expects '=', not found, found " + token.type+"/"+token.data);
+        }
+
+        endTokens = [];
+        endTokens.push( { type: "name", data: "TO" });
+
+        expr_from = this.parseBoolExpression( context, endTokens );
+
+        token = tokens.shift();
+        if( !( token.type == "name" && token.data == "TO" ) ) {
+          this.Exception( context, "For expects 'to', not found, found " + token.type+"/"+token.data);
+        }
+
+        endTokens = [];
+        endTokens.push( { type: "cmdsep", data: ":" });
+        endTokens.push( { type: "name", data: "STEP" });
+
+        expr_to = this.parseBoolExpression( context, endTokens );
+        expr_step = { parts: [ { data: "1", op: null, type: "num"} ] };
+
+        token = tokens.shift();
+        if( !( token === undefined ) ) {
+          if( token.type == "name" && token.data == "STEP") {
+
+              endTokens = [];
+              endTokens.push( { type: "cmdsep", data: ":" });
+              expr_step = this.parseBoolExpression( context, endTokens );
+          }
+          else {
+            if(! ( token.type == "cmdsep" && token.data == ":")) {
+              throw "FOR unexpected token " + token.type + "/" + token.data;
+            }
+          }
+        }
+
+        command.controlKW = "for:init";
+        command.params=[];
+        command.params[0] = expr_from;
+        command.params[1] = expr_to;
+        command.params[2] = expr_step;
+        command.variable = variable;
+        commands.push( command );
+        console.log("command=", command);
+
+      }
+      else if( controlToken == "NEXT") {
+
+        var variable;
+
+        var explicit = false;
+        while( true ) {
+
+          var token = tokens.shift();
+          if( ! token ) {
+            break;
+          }
+          if( token.type == "cmdsep" ) {
+            break;
+          }
+
+          if( token.type != "name" ) {
+            throw "next expected var or nothing";
+          }
+
+          var nextcommand = {
+            controlKW: "for:next",
+            nextVar: token.data,
+            lineNumber: command.lineNumber,
+            type: command.type
+          };
+
+          commands.push( nextcommand );
+          explicit = true;
+
+          var token = tokens.shift();
+          if( ! token ) {
+            break;
+          }
+          if( token.type == "cmdsep" ) {
+            break;
+          }
+          if( !( token.type == "sep" && token.data == "," )) {
+            throw "expected comma, found " + token.type + "/"+token.data;
+          }
+        }
+
+        if( ! explicit ) {
+          command.controlKW = "for:next";
+          command.nextVar = null;
+          commands.push( command );
+        }
+
+      }
+      else if( controlToken == "IF") {
+
+        var expr1, expr2, comp;
+        endTokens = [];
+        endTokens.push( { type: "name", data: "THEN" });
+        endTokens.push( { type: "name", data: "GOTO" });
+        var expr1 = this.parseBoolExpression( context, endTokens );
+        command.params= [ expr1 ];
+
+        token = tokens.shift();
+
+        if( token.type == "name" && token.data == "GOTO") {
+          var insert = {};
+          insert.data = "GOTO";
+          insert.type = "name";
+          tokens.unshift( insert );
+        } else {
+          if( tokens.length > 0 ) {
+            if( tokens[0].type == "num" ) {
+              var insert = {};
+              insert.data = "GOTO";
+              insert.type = "name";
+              tokens.unshift( insert );
+            }
+          }
+        }
+
+        var block = this.parseLineCommands( context );
+
+        console.log( block );
+        commands.push( command );
+
+        for( var bi=0; bi<block.length; bi++) {
+          commands.push( block[bi] );
+        }
+
+      }
+      else if( controlToken == "DATA") {
+
+        var dataArray = [];
+        var endTokens;
+
+        endTokens = [];
+        endTokens.push( { type: "cmdsep", data: ":" });
+        endTokens.push( { type: "sep", data: "," });
+
+        while ( true ) {
+            var pair = this.parseSimpleExpression( context, endTokens );
+
+            var expr1 = pair[0];
+
+
+            if( expr1 === undefined ) {
+              throw "data expected data";
+            }
+
+            dataArray.push( expr1 );
+
+            token = pair[1];
+            if( token === undefined ) {
+              break;
+            }
+            if( token.type == "cmdsep" && token.data == ":" ) {
+              break;
+            }
+            else if( token.type == "sep" && token.data ==",") {
+              continue;
+            }
+            else {
+              this.Exception( context, "data unknown token found " + token.type+"/"+token.data);
+            }
+        }
+
+        command.params=dataArray;
+        commands.push( command );
+
+      }
+      else if( controlToken == "REM") {
+
+        while( true ) {
+            if( token.type == "cmdsep" ) {
+               break;
+            }
+
+            token = tokens.shift();
+            if( token == null ) { break ; }
+        }
+
+        commands.push( command );
+
+      }
+      else {
+        this.Exception( context, command.controlKW + " not implemented");
+      }
+    }
+  }
+
+  parseStatementCall(  context, preTokens, commands, command, nameToken, token0 ) {
+
+    var token = token0;
+		var tokens = context.tokens;
+
+    command.statementName = this.normalizeStatementName( nameToken );
+    command.type = "call";
+
+
+    if( token.type != "@@@notoken") {
+      tokens.unshift( token );
+    }
+
+    command.params = [];
+
+    while ( true ) {
+
+      var endCommand = false;
+      var endTokens = [];
+      endTokens.push( { type: "sep", data: "@@@all" });
+      endTokens.push( { type: "cmdsep", data: "@@@all" });
+
+      var expression = this.parseBoolExpression( context, endTokens );
+      console.log( expression );
+
+      if( expression != null ) {
+        command.params.push( expression );
+
+        token = tokens.shift();
+        if( token != undefined ) {
+          if( token === undefined ) {
+            endCommand = true;
+          }
+          if( token.type == "cmdsep" ) {
+            endCommand = true;
+          }
+          else if( token.type == "sep") {
+            continue;
+          }
+          else {
+            this.Exception( context, "unexpected chars in statement call: '" + token.data +"'");
+          }
+        }
+        else {
+          endCommand = true;
+        }
+
+      }
+      else {
+        endCommand = true;
+      }
+
+      if( endCommand  ) {
+        commands.push( command );
+        break;
+      }
+    }
+  }
+
 	parseLineCommands( context, preTokens ) {
 
 		var tokens = context.tokens;
@@ -639,6 +1292,8 @@ class Parser {
 
 			var command = {};
 			var token;
+      var keyword = false;
+      var control = false;
 
 			command.lineNumber = context.lineNumber;
 
@@ -659,598 +1314,44 @@ class Parser {
 			var cmdType = "unknown";
 
 			if( this.CTRL_KW.indexOf( token.data ) > -1) {
-					cmdType = "control";
+					control = true;
 			}
 
-			token = tokens.shift();
+      if( this.KEYWORDS.indexOf( token.data ) > -1) {
+					keyword = true;
+			}
+      else {
+        if( this.SHORTCUT_KW.indexOf( token.data ) > -1) {
+  					keyword = true;
+  			}
+      }
+
+		  token = tokens.shift();
 			if( token === undefined ) {
 				token = { type: "@@@notoken" };
 			}
 
-			if( token.type == "eq") {
-				if( cmdType == "control" ) {
-					this.Exception( context, "Unexpected symbol name, '"+nameToken+"' is a control keyword");
-				}
-				cmdType = "assignment";
-				command.type = cmdType;
-				command.var = nameToken;
-        command.arrayAssignment = false;
+      if (  control ) {
 
-				var endTokens = [];
-				endTokens.push( { type: "cmdsep", data: "@@@all" });
-
-				command.expression = this.parseExpression( context, endTokens );
-				commands.push( command );
-			}
-      //tokens[0].type=="bracket" && tokens[0].data==")")
-      /*
-      if( this.KEYWORDS.indexOf( name ) == -1 ) {
-        //isArray  example: x=a(5)
-        part = { type: "array", data: name, op: op, indices: parameters };
+        this.parseControlStructure( context, preTokens, commands, command, nameToken, token );
 
       }
+			else if( token.type == "eq") {
 
-      var isFunctionCallOrArray = this.peekIfNextIsOpenBracket( context );
-
-      if( isFunctionCallOrArray ) {
-        token = tokens.shift();
-        var parameters = this.parseFunParList( context );
-        tokens.shift();
-      */
-      else if( token.type == "bracket" && token.data=="(" ) {
-				if( cmdType == "control" ) {
-					this.Exception( context, "Unexpected symbol name, '"+nameToken+"' is a control keyword");
-				}
-				cmdType = "assignment";
-				command.type = cmdType;
-				command.var = nameToken;
-        command.arrayAssignment = true;
-
-        //token = tokens.shift();
-        var indices = this.parseFunParList( context );
-        command.indices = indices;
-
-        tokens.shift();
-        console.log("tokens after:",tokens)
-
-        token = tokens.shift();
-        if( token === undefined ) {
-          token = { type: "@@@notoken" };
-        }
-
-        if( token.type != "eq") {
-					this.Exception( context, "Expected =");
-				}
-
-				var endTokens = [];
-				endTokens.push( { type: "cmdsep", data: "@@@all" });
-
-				command.expression = this.parseExpression( context, endTokens );
-				commands.push( command );
+				this.parseAssignment( context, preTokens, commands, command, nameToken, token );
 			}
-			else {
-				if( cmdType == "control" ) {
-					cmdType = "control";
-					command.type = cmdType;
-          var controlToken = nameToken;
-					command.controlKW = nameToken.toLowerCase();
-          if( token.type != "@@@notoken") {
-						tokens.unshift( token );
-					}
+      else if( token.type == "bracket" && token.data=="(" && !keyword ) {
 
-          if( controlToken == "LET") {
+				this.parseArrayAssignment( context, preTokens, commands, command, nameToken, token );
 
-            token = tokens.shift();
-            if( token.type != "name") {
-              this.Exception( context, "LET expects var name");
-            }
-            nameToken = token.data;
-
-            token = tokens.shift();
-      			if( token === undefined ) {
-      				token = { type: "@@@notoken" };
-      			}
-
-            if( token.type != "eq") {
-              this.Exception( context, "LET expects =");
-            }
-
-            cmdType = "assignment";
-            command.type = cmdType;
-            command.var = nameToken;
-
-            var endTokens = [];
-    				endTokens.push( { type: "cmdsep", data: "@@@all" });
-
-    				command.expression = this.parseExpression( context, endTokens );
-    				commands.push( command );
-          }
-          else if( controlToken == "DIM") {
-
-            var first = true;
-            command.params = [];
-            command.arrayNames = [];
-
-            while( true ) {
-
-              token = tokens.shift();
-              if(!first ) {
-                if( token === undefined ) {
-                  break;
-                }
-                if( ! ( token.type == "sep" && token.data == "," )) {
-                  tokens.unshift( token );
-                  break;
-                }
-                token = tokens.shift();
-              }
-
-              if( token.type != "name" ) {
-                this.Exception( context, "DIM expects var name");
-              }
-
-              nameToken = token.data;
-
-              token = tokens.shift();
-        			if( token === undefined ) {
-        				token = { type: "@@@notoken" };
-        			}
-
-              if( !(token.type=="bracket" && token.data=="(") ) {
-                this.Exception( context, "DIM expects (");
-              }
-
-              var indices = this.parseFunParList( context );
-
-              token = tokens.shift();
-        			if( token === undefined ) {
-        				token = { type: "@@@notoken" };
-        			}
-
-              if( !(token.type=="bracket" && token.data==")") ) {
-                this.Exception( context, "DIM expects )");
-              }
-
-              command.params.push( indices );
-              command.arrayNames.push( nameToken );
-
-              first = false;
-            }
-
-            commands.push( command );
-          }
-          else if( controlToken == "DEF") {
-
-            token = tokens.shift();
-            if( !( token.type == "name" && token.data == "FN" ) ) {
-              this.Exception( context, "DEF expects FN");
-            }
-
-            token = tokens.shift();
-            if( token.type != "name") {
-              this.Exception( context, "DEF FN expects function name");
-            }
-            var fName = token.data;
-
-            token = tokens.shift();
-            if(! ( token.type == "bracket" && token.data == "(" )) {
-              this.Exception( context, "DEF FN expects function name and ->( varname )");
-            }
-
-            token = tokens.shift();
-            if(! ( token.type == "name"  )) {
-              this.Exception( context, "DEF FN expects function name and ( ->varname )");
-            }
-            var varName = token.data;
-
-            token = tokens.shift();
-            if(! ( token.type == "bracket" && token.data == ")" )) {
-              this.Exception( context, "DEF FN expects function name and ( varname -> )");
-            }
-
-            token = tokens.shift();
-            if(! ( token.type == "eq" && token.data == "=" )) {
-              this.Exception( context, "DEF FN expects function name and ( varname ) -> =");
-            }
-
-
-            endTokens = [];
-            var expr_fn = this.parseExpression( context, endTokens );
-
-            console.log("expr = " + expr_fn );
-
-            command.params=[];
-            command.params[0] = fName;
-            command.params[1] = varName;
-            command.params[2] = expr_fn;
-            commands.push( command );
-
-          }
-          else if( controlToken == "GOTO" || controlToken == "GOSUB") {
-            var num = -1;
-
-            token = tokens.shift();
-            if( token.type != "num") {
-              this.Exception( context, "GOTO/GOSUB expects number");
-            }
-            num = parseInt(token.data);
-            token = tokens.shift();
-            if( token !== undefined ) {
-              if( token.type != "cmdsep") {
-                this.Exception( context, "expected cmdsep, instead of "+token.type+"/"+token.data);
-              }
-            }
-
-            command.params=[];
-            command.params[0] = num;
-            commands.push( command );
-
-          }
-          else if( controlToken == "ON" ) {
-            var nums = [];
-
-            endTokens = [];
-            endTokens.push( { type: "name", data: "GOTO" });
-            endTokens.push( { type: "name", data: "GOSUB" });
-
-						var onExpr = this.parseExpression( context, endTokens );
-
-            token = tokens.shift();
-            if( token.type != "name") {
-              this.Exception( context, "ON expects GOTO/GOSUB");
-            }
-            if( !( token.data == "GOTO" || token.data == "GOSUB" )) {
-              this.Exception( context, "ON expects GOTO/GOSUB");
-            }
-            var onType = token.data;
-
-            token = tokens.shift();
-            if( token.type != "num") {
-              this.Exception( context, "GOTO/GOSUB expects number");
-            }
-            nums.push(  parseInt(token.data) );
-
-            while ( true ) {
-
-              token = tokens.shift();
-              if( token == undefined ) { break; }
-              if( token.type == "cmdsep") { break; }
-              if( token.type == "cmdsep") { break; }
-              if( !( token.type == "sep" && token.data == "," )) {
-                this.Exception( context, "ON GOTO/GOSUB expects numberlist");
-              }
-
-              token = tokens.shift();
-              if( token.type != "num") {
-                this.Exception( context, "GOTO/GOSUB expects number");
-              }
-              nums.push(  parseInt(token.data) );
-            }
-
-            command.params=[];
-            command.params[0] = onType.toLowerCase();
-            command.params[1] = onExpr;
-            command.params[2] = nums;
-            commands.push( command );
-
-          }
-/*          else if( controlToken == "GOSUB") {
-            var num = -1;
-
-            token = tokens.shift();
-            if( token.type != "num") {
-              this.Exception( context, "GOSUB expects number");
-            }
-            num = parseInt(token.data);
-            token = tokens.shift();
-            if( token !== undefined ) {
-              if( token.type != "cmdsep") {
-                this.Exception( context, "expected cmdsep, instead of "+token.type+"/"+token.data);
-              }
-            }
-
-            command.params=[];
-            command.params[0] = num;
-            commands.push( command );
-
-          }
-*/
-          else if( controlToken == "RETURN") {
-            var num = -1;
-
-            command.params=[];
-            commands.push( command );
-
-          }
-          else if( controlToken == "END") {
-            var num = -1;
-
-            command.params=[];
-            commands.push( command );
-
-          }
-          else if( controlToken == "STOP") {
-            var num = -1;
-
-            command.params=[];
-            commands.push( command );
-
-          }
-          else if( controlToken == "FOR") {
-
-            var variable, expr_from, expr_to, expr_step;
-            var endTokens = [];
-
-            token = tokens.shift();
-            if( token.type != "name" ) {
-              this.Exception( context,
-                    "For expects variable, no var found, found " + token.type+"/"+token.data);
-            }
-
-            variable = token.data;
-
-            token = tokens.shift();
-            if( !( token.type == "eq" && token.data == "=" )) {
-              this.Exception( context,
-                    "For expects '=', not found, found " + token.type+"/"+token.data);
-            }
-
-            endTokens = [];
-            endTokens.push( { type: "name", data: "TO" });
-
-						expr_from = this.parseExpression( context, endTokens );
-
-            token = tokens.shift();
-            if( !( token.type == "name" && token.data == "TO" ) ) {
-              this.Exception( context, "For expects 'to', not found, found " + token.type+"/"+token.data);
-            }
-
-            endTokens = [];
-            endTokens.push( { type: "cmdsep", data: ":" });
-            endTokens.push( { type: "name", data: "STEP" });
-
-						expr_to = this.parseExpression( context, endTokens );
-            expr_step = { parts: [ { data: "1", op: null, type: "num"} ] };
-
-            token = tokens.shift();
-            if( !( token === undefined ) ) {
-              if( token.type == "name" && token.data == "STEP") {
-
-                  endTokens = [];
-                  endTokens.push( { type: "cmdsep", data: ":" });
-                  expr_step = this.parseExpression( context, endTokens );
-              }
-              else {
-                if(! ( token.type == "cmdsep" && token.data == ":")) {
-                  throw "FOR unexpected token " + token.type + "/" + token.data;
-                }
-              }
-            }
-
-            command.controlKW = "for:init";
-            command.params=[];
-            command.params[0] = expr_from;
-            command.params[1] = expr_to;
-            command.params[2] = expr_step;
-            command.variable = variable;
-            commands.push( command );
-            console.log("command=", command);
-
-          }
-          else if( controlToken == "NEXT") {
-
-            var variable;
-
-            var explicit = false;
-            while( true ) {
-
-              var token = tokens.shift();
-              if( ! token ) {
-                break;
-              }
-              if( token.type == "cmdsep" ) {
-                break;
-              }
-
-              if( token.type != "name" ) {
-                throw "next expected var or nothing";
-              }
-
-              var nextcommand = {
-                controlKW: "for:next",
-                nextVar: token.data,
-                lineNumber: command.lineNumber,
-                type: command.type
-              };
-
-              commands.push( nextcommand );
-              explicit = true;
-
-              var token = tokens.shift();
-              if( ! token ) {
-                break;
-              }
-              if( token.type == "cmdsep" ) {
-                break;
-              }
-              if( !( token.type == "sep" && token.data == "," )) {
-                throw "expected comma, found " + token.type + "/"+token.data;
-              }
-            }
-
-            if( ! explicit ) {
-              command.controlKW = "for:next";
-              command.nextVar = null;
-              commands.push( command );
-            }
-
-          }
-          else if( controlToken == "IF") {
-
-            var expr1, expr2, comp;
-            var endTokens = [];
-            endTokens.push( { type: "eq", data: "=" });
-            endTokens.push( { type: "comp", data: "<" });
-            endTokens.push( { type: "comp", data: ">" });
-            endTokens.push( { type: "comp", data: "<=" });
-            endTokens.push( { type: "comp", data: ">=" });
-            endTokens.push( { type: "comp", data: "<>" });
-						var expr1 = this.parseExpression( context, endTokens );
-
-            token = tokens.shift();
-            if( token.type != "eq" && token.type != "comp" ) {
-              this.Exception( context, "If expects expr [comp|eq] expr, no expr found, found " + token.type+"/"+token.data);
-            }
-            comp = token.data;
-
-            endTokens = [];
-            endTokens.push( { type: "name", data: "THEN" });
-            endTokens.push( { type: "name", data: "GOTO" });
-
-            var expr2 = this.parseExpression( context, endTokens );
-            token = tokens.shift();
-
-            command.params=[];
-            command.params[0] = expr1;
-            command.params[1] = expr2;
-            command.comp = comp;
-
-//------------------
-
-            if( token.type == "name" && token.data == "GOTO") {
-              var insert = {};
-              insert.data = "GOTO";
-              insert.type = "name";
-              tokens.unshift( insert );
-            } else {
-              if( tokens.length > 0 ) {
-                if( tokens[0].type == "num" ) {
-                  var insert = {};
-                  insert.data = "GOTO";
-                  insert.type = "name";
-                  tokens.unshift( insert );
-                }
-              }
-            }
-
-            var block = this.parseLineCommands( context );
-
-            console.log( block );
-            commands.push( command );
-
-            for( var bi=0; bi<block.length; bi++) {
-              commands.push( block[bi] );
-            }
-
-          }
-          else if( controlToken == "DATA") {
-
-            var dataArray = [];
-            var endTokens;
-
-            endTokens = [];
-            endTokens.push( { type: "cmdsep", data: ":" });
-            endTokens.push( { type: "sep", data: "," });
-
-            while ( true ) {
-				        var pair = this.parseSimpleExpression( context, endTokens );
-
-                var expr1 = pair[0];
-
-
-                if( expr1 === undefined ) {
-                  throw "data expected data";
-                }
-
-                dataArray.push( expr1 );
-
-                token = pair[1];
-                if( token === undefined ) {
-                  break;
-                }
-                if( token.type == "cmdsep" && token.data == ":" ) {
-                  break;
-                }
-                else if( token.type == "sep" && token.data ==",") {
-            			continue;
-            		}
-                else {
-                  this.Exception( context, "data unknown token found " + token.type+"/"+token.data);
-                }
-            }
-
-            command.params=dataArray;
-            commands.push( command );
-
-          }
-          else if( controlToken == "REM") {
-            commands.push( command );
-            tokens = [];
-          }
-          else {
-            this.Exception( context, command.controlKW + " not implemented");
-          }
-
-
-				}
-				else {
-					cmdType = "call";
-					command.statementName = this.normalizeStatementName( nameToken );
-					command.type = cmdType;
-
-					if( token.type != "@@@notoken") {
-						tokens.unshift( token );
-					}
-
-
-					command.params = [];
-
-					while ( true ) {
-
-						var endCommand = false;
-						var endTokens = [];
-						endTokens.push( { type: "sep", data: "@@@all" });
-						endTokens.push( { type: "cmdsep", data: "@@@all" });
-
-						var expression = this.parseExpression( context, endTokens );
-            console.log( expression );
-
-						if( expression != null ) {
-							command.params.push( expression );
-
-							token = tokens.shift();
-							if( token != undefined ) {
-								if( token === undefined ) {
-									endCommand = true;
-								}
-								if( token.type == "cmdsep" ) {
-									endCommand = true;
-								}
-								else if( token.type == "sep") {
-									continue;
-								}
-								else {
-									this.Exception( context, "unexpected chars in statement call: '" + token.data +"'");
-								}
-							}
-							else {
-								endCommand = true;
-							}
-
-						}
-						else {
-							endCommand = true;
-						}
-
-						if( endCommand  ) {
-							commands.push( command );
-							break;
-						}
-
-					}
-				}
 			}
+      else {
+          if( !keyword ) {
+            this.Exception( context, "statement without keyword");
+          }
+          this.parseStatementCall( context, preTokens, commands, command, nameToken, token );
 
+      }
 
 		}
     return commands;
@@ -1290,7 +1391,7 @@ class Parser {
 
       detail="PARSING TOKENS";
       var tokens = toker.tokenize();
-      //this.logTokens( tokens );
+      this.logTokens( tokens );
 
       detail="INTERNAL";
       tokens = this.removePadding( tokens );

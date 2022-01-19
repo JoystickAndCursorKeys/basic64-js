@@ -186,8 +186,6 @@ class BasicContext {
 
   }
 
-
-
   setTurbo( on ) {
     if( on ) {
       this.cmdCountPerCycle = this.cmdCountPerCycleTurbo ;
@@ -229,7 +227,6 @@ class BasicContext {
       }
     }
 
-
     var sortF = function compare( a, b ) {
       return a[0] - b[0];
     }
@@ -243,7 +240,6 @@ class BasicContext {
     this.listFlag = false;
     this.console.clearCursor();
   }
-
 
   getProgram() {
     return this.program;
@@ -917,10 +913,8 @@ class BasicContext {
   }
 
   setCursXPos( p ) {
-    console.log("Error still exist here: " + p)
-    this.console.cursorX( p );
+    this.console.setCursorX( p );
   }
-
 
   resetVic() {
     this.vpoke(53280,14);
@@ -930,7 +924,6 @@ class BasicContext {
     this.vpoke(53272,21);
     this.vpoke(53265,155);
     this.console.setColor(14);
-
   }
 
   getJiffyTime() {
@@ -1876,50 +1869,6 @@ class BasicContext {
     }
   }
 
-  doIf( a,b,comp ) {
-    var IF_ERROR = -1;
-    var IF_TRUE = 1;
-    var IF_FALSE = 0;
-
-    if( a==null || b == null || comp == null ) {
-      this.printError("if expression")
-      return IF_ERROR;
-    }
-
-    var result = IF_FALSE;
-    if( comp == "=" ) {
-      if( this.evalExpression(a) == this.evalExpression(b) ) {
-        result = IF_TRUE;
-      }
-    }
-    else if( comp == "<" ) {
-      if( this.evalExpression(a) < this.evalExpression(b) ) {
-        result = IF_TRUE;
-      }
-    }
-    else if( comp == ">" ) {
-      if( this.evalExpression(a) > this.evalExpression(b) ) {
-        result = IF_TRUE;
-      }
-    }
-    else if( comp == "<=" ) {
-      if( this.evalExpression(a) <= this.evalExpression(b) ) {
-        result = IF_TRUE;
-      }
-    }
-    else if( comp == ">=" ) {
-      if( this.evalExpression(a) >= this.evalExpression(b) ) {
-        result = IF_TRUE;
-      }
-    }
-    else if( comp == "<>" ) {
-      if( this.evalExpression(a) != this.evalExpression(b) ) {
-        result = IF_TRUE;
-      }
-    }
-    return result;
-  }
-
 
   doForInit( from, to, step, varName, cmdPointer, cmdArrayLen, linePointersLen ) {
 
@@ -2105,11 +2054,8 @@ class BasicContext {
           var IF_TRUE = 1;
           var IF_FALSE = 0;
 
-          var ifresult = this.doIf( cmd.params[0], cmd.params[1], cmd.comp );
-          if( ifresult == IF_ERROR ) {
-             return [END_W_ERROR,i+1,cnt+1];
-          }
-          else if( ifresult == IF_TRUE ) {
+          var ifresult = this.evalExpression( cmd.params[0] );
+          if( ifresult != IF_FALSE ) {
              //return [MIDLINE_INTERUPT,i+1];
           }
           else  {
