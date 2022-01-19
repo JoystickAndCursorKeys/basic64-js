@@ -7,6 +7,13 @@ class BasicCommands {
     this.func = {};
     this.statementList = null;
 
+    this.randnrs = [];
+    for(var i=0; i<10000;i++) {
+      this.randnrs.push( Math.random() );
+    }
+    this.randIndex = 0;
+    this.randStep = 1;
+
   }
 
   getStatements() {
@@ -382,8 +389,6 @@ class BasicCommands {
     return pars[0].value.charCodeAt(0);
   }
 
-
-
   _fun_val( pars ) {
     return parseInt( pars[0].value );
   }
@@ -392,8 +397,29 @@ class BasicCommands {
     return Math.exp( pars[0].value );
   }
 
+  intGetNextRand() {
+    this.randIndex = (this.randIndex + this.randStep) % this.randnrs.length;
+    return this.randnrs[ this.randIndex ];
+  }
+
+  intSeedRand( x ) {
+    var base = Math.floor( x * 11 );
+    this.randIndex= base % this.randnrs.length;
+    this.randStep = 1+(base % 7);
+  }
+
+
   _fun_rnd( pars ) {
-    return Math.random();
+
+    if( pars.length <1) {
+      throw "?syntax";
+    }
+
+    if( pars[0].value < 0) {
+      this.intSeedRand( -pars[0].value );
+    }
+
+    return this.intGetNextRand();
   }
 
   _fun_sqr( pars ) {
