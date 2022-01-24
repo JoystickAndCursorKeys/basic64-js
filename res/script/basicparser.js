@@ -247,6 +247,51 @@ class Parser {
 	}
 
 
+  mergeStopTokens( tokens ) {
+		var tokens2 = [];
+    var tokens3 = [];
+
+    /* Convert "S","TO","P" into "STOP" */
+
+		for( 	var i=0;
+					i<tokens.length;
+					i++)
+		{
+      tokens2[i] = tokens[i];
+		}
+
+    for( 	var i=2;
+					i<tokens2.length;
+					i++)
+		{
+      if( tokens2[i-2].type == "name" &&
+         tokens2[i-1].type == "name" &&
+         tokens2[i-0].type == "name" ) {
+
+           if( tokens2[i-2].data == "S" &&
+              tokens2[i-1].data == "TO" &&
+              tokens2[i-0].data == "P" ) {
+                tokens2[i-2].data = "STOP";
+                tokens2[i-1].type = "removeme";
+                tokens2[i-0].type = "removeme";
+              }
+         }
+		}
+
+    var j=0;
+    for( 	var i=0;
+					i<tokens2.length;
+					i++)
+		{
+      if( tokens2[i].type != "removeme" ) {
+          tokens3[i] = tokens2[j];
+          j++;
+      }
+		}
+
+		return tokens3;
+	}
+
 	parseFunParList( context ) {
 
 		var tokens = context.tokens;
@@ -503,6 +548,7 @@ class Parser {
 		var parts = expression.parts;
     var first = true;
     var negate = false;
+
     var binaryNegate = false;
 
 
@@ -530,10 +576,12 @@ class Parser {
           }
 					parts.push( part );
           first = false;
+          negate = false;
 				}
 				else if( token.type == "str" ) {
 					part = { type: "str", data: token.data, op: op };
 					parts.push( part );
+          if( negate ) { throw "@type mismatch"; }
           first = false;
 				}
 				else if( token.type=="bracket" && token.data=="(") {
@@ -548,6 +596,7 @@ class Parser {
             expr.binaryNegate = binaryNegate;
 						parts.push ( expr );
             first = false;
+            negate = false;
 				}
 				else if( token.type=="name" ) {
 
@@ -625,11 +674,11 @@ class Parser {
               }
 
 						}
+            negate = false;
             first = false;
 				}
-        else if( token.type=="op" && token.data=="-" && first ) {
+        else if( token.type=="op" && token.data=="-" ) {
           negate = ! negate;
-
           continue;
         }
         else if( token.type=="bop" && token.data=="NOT" && first ) {
@@ -1206,9 +1255,6 @@ class Parser {
       else if( controlToken == "REM") {
 
         while( true ) {
-            if( token.type == "cmdsep" ) {
-               break;
-            }
 
             token = tokens.shift();
             if( token == null ) { break ; }
@@ -1391,12 +1437,15 @@ class Parser {
 
       detail="PARSING TOKENS";
       var tokens = toker.tokenize();
+      console.log("Tokens after tokenizer");
       this.logTokens( tokens );
 
       detail="INTERNAL";
       tokens = this.removePadding( tokens );
       tokens = this.mergeCompTokens( tokens );
+      tokens = this.mergeStopTokens( tokens );
 
+      console.log("Tokens after merge");
       this.logTokens( tokens );
 
 

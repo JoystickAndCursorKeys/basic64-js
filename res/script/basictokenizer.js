@@ -14,6 +14,11 @@ class StringReader {
 		return this.buffer.substr( this.index,2 );
 	}
 
+
+	unconsume( x ) {
+		this.index -= x;
+	}
+
 	consume() {
 
 		var c = this.buffer.substr( this.index,1 );
@@ -45,21 +50,23 @@ class Tokenizer {
 
 	isOpChar( ctx ) {
 
-		return ctx.c.match("[+]|[-]|[*]|[/]|[\\^]|[;]") != null;
+		var rv = ctx.c.match("[+]|[-]|[*]|[/]|[\\^]|[;]") != null;
+
+		return [rv,0];
 
 	}
 
 	isCompChar( ctx ) {
 
-		return (ctx.c == "<" || ctx.c == ">");
-
+		var rv =  (ctx.c == "<" || ctx.c == ">");
+		return [rv,0];
 	}
 
 	isEqChar( ctx ) {
 			if( ctx.c == "=" ) {
-				return true;
+				return [true,0];
 			}
-			return false;
+			return [false,0];
 	}
 
 
@@ -67,7 +74,7 @@ class Tokenizer {
 
 		//console.log("SEQ: " + ctx.seq);
 		if( ctx.endFound ) {
-			return false;
+			return [false,0];
 		}
 		var rv = ctx.c.match("[a-zA-Z0-9$?]") != null;
 
@@ -79,70 +86,86 @@ class Tokenizer {
 			//console.log("Found Keyword: " + ctx.seq );
 			ctx.endFound = true;
 		}
+		else if( ! (ctx.seq === undefined )) {
+			var trappedKW = false;
+			var trapped = null;
+			for( var i=0; i<this.keywords.length; i++) {
+				var kw = this.keywords[i];
+				if( ctx.seq.indexOf( kw ) > 0 )  {
+					trappedKW = true;
+					trapped = kw;
+					console.log( "trapped-------------" );
+					console.log( kw );
+					console.log( ctx.seq );
+					console.log( ctx );
+					return [rv, kw.length ];
+				}
+			}
 
-		return rv;
+		}
+		return [rv,0];
 	}
 
 	isNumChar( ctx  ) {
-		return ctx.c.match("[0-9\.~]") != null;
+		return [(ctx.c.match("[0-9\.~]") != null),0];
 	}
 
 	isPadChar( ctx  ) {
 			if( ctx.c == " " || ctx.c == "\t" || ctx.c == "\n" || ctx.c == "\r") {
-				return true;
+				return [true,0];
 			}
-			return false;
+			return [false,0];
 	}
 
 	isCommandSepChar( ctx  ) {
 			if( ctx.c == ":" ) {
-				return true;
+				return [true,0];
 			}
-			return false;
+			return [false,0];
 	}
 
 
 	isSepChar( ctx  ) {
 			if( ctx.c == "," ) {
-				return true;
+				return [true,0];
 			}
-			return false;
+			return [false,0];
 	}
 
 	isAnyChar( ctx  ) {
-			return  true; /* Will be executed last */
+			return [true,0]; /* Will be executed last */
 	}
 
 
 	isBracket( ctx  ) {
 		if( ctx.c == "(" || ctx.c == ")" || ctx.c == "[" || ctx.c == "]") {
-			return true;
+			return [true,0];
 		}
-		return false;
+		return [false,0];
 	}
 
 
 	isStrChar( ctx ) {
 
 		if( ctx.endFound ) {
-			return false;
+			return [false,0];
 		}
 
 		if( ctx.index == 0) {
 			if( ctx.c=="\"" ) {
 				ctx.inString = true;
-				return true;
+				return [true,0];
 			}
-			return false;
+			return [false,0];
 		}
 		else if( ctx.inString ) {
 			if ( ctx.index > 0 && ctx.c=="\"") {
 				ctx.endFound = true;
 			}
-			return true;
+			return [true,0];
 		}
 
-		return false;
+		return [false,0];
 
 	}
 
@@ -168,7 +191,15 @@ class Tokenizer {
 			ctx.seq += c;
 			ctx.c = c;
 
-			if( !this[compareF ] ( ctx ) ) {
+			var rv = this[compareF ] ( ctx );
+			if( rv[1] > 0 ) {
+					read.unconsume( rv[1]-1 );
+					ctx.seq = ctx.seq.substr(0,ctx.seq.length-rv[1]) ;
+					tok.data = ctx.seq;
+					break;
+			}
+
+			if( !rv[0] ) {
 				return this.normalizeToken( tok );
 			}
 			tok.data += c;
@@ -216,7 +247,8 @@ class Tokenizer {
 				var rule = parseRules[ i ];
 
 				var ctx = { index: 0, c:c }
-				if( this[rule[FUNCIX]]( ctx ) ) {
+				var rv = this[rule[FUNCIX]]( ctx );
+				if( rv[0] ) {
 						var tok = this.readChars( read, rule[TYPEIX], rule[FUNCIX], rule[STRINGTYPEIX] );
 
 						tokens.push( tok );
