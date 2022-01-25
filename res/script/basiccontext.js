@@ -2202,10 +2202,14 @@ class BasicContext {
         }
         catch ( e ) {
           console.log(e);
-          if( e.startsWith("@") ) {
-            this.printError(e.substr(1));
+          var done=false;
+          if( (typeof e) == "string" ) {
+            if( e.startsWith("@") ) {
+              this.printError(e.substr(1));
+              done=true;
+            }
           }
-          else {
+          if(!done ) {
             this.printError("unexpected");
           }
           return [END_W_ERROR,i+1,cnt];

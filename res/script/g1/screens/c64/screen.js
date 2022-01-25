@@ -567,7 +567,7 @@ class C64Screen {
 
 		 if( this.useHires ) {
 
-			 if( a >= this.videoBMRam && a< this.videoBMRam + 8192 ) {
+			 if( a >= this.videoBMRam && a< this.videoBMRam + 8000 ) {
 
 				 var buf  = this.txScBuf;
 				 var addr = Math.floor  (( a-this.videoBMRam ) / 8 );
