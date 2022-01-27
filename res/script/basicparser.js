@@ -254,6 +254,11 @@ class Parser {
 
     splits.push( { p1: "S", p2: "TO", p3: "P", whole: "STOP" } );
     splits.push( { p1: "B", p2: "OR", p3: "DER", whole: "BORDER" } );
+    splits.push( { p1: "G", p2: "COLOR", p3: "S", whole: "GCOLORS" } );
+    splits.push( { p1: "CHAR", p2: "COL", p3: null, whole: "CHARCOL" } );
+    splits.push( { p1: "S", p2: "POS", p3: null, whole: "SPOS" } );
+    splits.push( { p1: "S", p2: "POKE", p3: null, whole: "SPOKE" } );
+    splits.push( { p1: "WJ", p2: "IF", p3: "FY", whole: "WJIFFY" } );
 
     var tokens2 = tokens;
 
@@ -279,23 +284,40 @@ class Parser {
       tokens2[i] = tokens[i];
 		}
 
-    for( 	var i=2;
+    for( 	var i=1;
 					i<tokens2.length;
 					i++)
 		{
-      if(
-        ( tokens2[i-2].type == "name" || tokens2[i-2].type == "bop" ) &&
-         ( tokens2[i-1].type == "name" || tokens2[i-1].type == "bop" ) &&
-         ( tokens2[i-0].type == "name" || tokens2[i-0].type == "bop" ) ) {
+      if( record.p3 == null ) {
+        if(
+           ( tokens2[i-1].type == "name" || tokens2[i-1].type == "bop" ) &&
+           ( tokens2[i-0].type == "name" || tokens2[i-0].type == "bop" ) ) {
+             if(
+                tokens2[i-1].data == record.p1 &&
+                tokens2[i-0].data == record.p2 ) {
+                  tokens2[i-1].data = record.whole;
+                  tokens2[i-0].type = "removeme";
+                }
+           }
+      }
+      else {
+        if(i<2) {
+          continue;
+        }
+        if(
+          ( tokens2[i-2].type == "name" || tokens2[i-2].type == "bop" ) &&
+           ( tokens2[i-1].type == "name" || tokens2[i-1].type == "bop" ) &&
+           ( tokens2[i-0].type == "name" || tokens2[i-0].type == "bop" ) ) {
 
-           if( tokens2[i-2].data == record.p1 &&
-              tokens2[i-1].data == record.p2 &&
-              tokens2[i-0].data == record.p3 ) {
-                tokens2[i-2].data = record.whole;
-                tokens2[i-1].type = "removeme";
-                tokens2[i-0].type = "removeme";
-              }
-         }
+             if( tokens2[i-2].data == record.p1 &&
+                tokens2[i-1].data == record.p2 &&
+                tokens2[i-0].data == record.p3 ) {
+                  tokens2[i-2].data = record.whole;
+                  tokens2[i-1].type = "removeme";
+                  tokens2[i-0].type = "removeme";
+                }
+           }
+      }
 		}
 
     var j=0;

@@ -275,7 +275,6 @@ class C64Screen {
 
 		 }
 
-
 	 }
 
 	 _setCharMapping() {
@@ -580,6 +579,9 @@ class C64Screen {
 			 if( a >= this.videoRam && a< (this.videoRam + (256*8)) ) {
 				 this.screenRefresh = true;
 			 }
+			 //else if( a >= 2040 && a< 2048 ) {
+			 //	 this.screenRefresh = true;
+			 //}
 		 }
 	 }
 
@@ -1080,6 +1082,8 @@ class C64Screen {
 
 	 setSpriteAddress( no, addr ) {
 		 this.sprites[no].addr = addr;
+
+		 this.screenRefresh = true;
 	 }
 
 

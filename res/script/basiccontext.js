@@ -411,6 +411,7 @@ class BasicContext {
         var addr = b * 64;
 
         this.console.setSpriteAddress(sn,addr);
+        console.log("setSpriteAddress ", sn,b,addr);
       }
       else if( a>55295 && a<56296) {
         var v = a - 55296;
@@ -492,6 +493,81 @@ class BasicContext {
   print( s ) {
     this.sendChars(s.toUpperCase(), false);
     this.reverseOn = false;
+  }
+
+
+
+
+  spriteColor( s, c ) {
+    var base = 53287 + s;
+
+    this.poke( base, c );
+
+  }
+
+
+  spritePos( s, x, y ) {
+    var base = 53248 + (2*s);
+
+    this.poke( base, x ); //TODO most significant bit
+    this.poke( base + 1 , y );
+
+  }
+
+  spriteFrame( s, f ) {
+
+    var addr = 2040 + s;
+    this.poke( addr , f );
+
+  }
+
+  spritePoke( s, a, v ) {
+
+    var baddr = this.peek( 2040 + s ) * 64;
+
+    this.poke( baddr + (a%64) , v );
+
+  }
+
+  spriteDouble( s, xflag, yflag ) {
+    var mask = 1<<s;
+    var old = this.peek( 53277 );
+    if( xflag == 1 ) {
+      this.poke( 53277 , old | mask );
+    }
+    else {
+      this.poke( 53277 , old & (255-mask) );
+    }
+
+    old = this.peek( 53271 );
+    if( yflag == 1 ) {
+      this.poke( 53271 , old | mask );
+    }
+    else {
+      this.poke( 53271 , old & (255-mask) );
+    }
+  }
+
+  spriteEnable( s, flag ) {
+    var mask = 1<<s;
+    var old = this.peek( 53269 );
+    if( flag == 1 ) {
+      this.poke( 53269 , old | mask );
+    }
+    else {
+      this.poke( 53269 , old & (255-mask) );
+    }
+  }
+
+  spriteMultiCol( s, flag ) {
+    var mask = 1<<s;
+    var old = this.peek( 53276 );
+    if( flag == 1 ) {
+      this.poke( 53276 , old | mask );
+    }
+    else {
+      this.poke( 53276 , old & (255-mask) );
+    }
   }
 
   clearScreen() {
