@@ -247,7 +247,31 @@ class Parser {
 	}
 
 
-  mergeStopTokens( tokens ) {
+
+  mergeBrokenUpTokens( tokens ) {
+
+    var splits = [];
+
+    splits.push( { p1: "S", p2: "TO", p3: "P", whole: "STOP" } );
+    splits.push( { p1: "B", p2: "OR", p3: "DER", whole: "BORDER" } );
+    splits.push( { p1: "G", p2: "COLOR", p3: "S", whole: "GCOLORS" } );
+    splits.push( { p1: "CHAR", p2: "COL", p3: null, whole: "CHARCOL" } );
+    splits.push( { p1: "S", p2: "POS", p3: null, whole: "SPOS" } );
+    splits.push( { p1: "S", p2: "POKE", p3: null, whole: "SPOKE" } );
+    splits.push( { p1: "WJ", p2: "IF", p3: "FY", whole: "WJIFFY" } );
+
+    var tokens2 = tokens;
+
+    for( var i=0; i<splits.length; i++) {
+      var r=splits[i];
+      tokens2 = this.mergeTokenRange( tokens2, r );
+    }
+
+    return tokens2;
+  }
+
+
+  mergeTokenRange( tokens, record ) {
 		var tokens2 = [];
     var tokens3 = [];
 
@@ -260,22 +284,40 @@ class Parser {
       tokens2[i] = tokens[i];
 		}
 
-    for( 	var i=2;
+    for( 	var i=1;
 					i<tokens2.length;
 					i++)
 		{
-      if( tokens2[i-2].type == "name" &&
-         tokens2[i-1].type == "name" &&
-         tokens2[i-0].type == "name" ) {
+      if( record.p3 == null ) {
+        if(
+           ( tokens2[i-1].type == "name" || tokens2[i-1].type == "bop" ) &&
+           ( tokens2[i-0].type == "name" || tokens2[i-0].type == "bop" ) ) {
+             if(
+                tokens2[i-1].data == record.p1 &&
+                tokens2[i-0].data == record.p2 ) {
+                  tokens2[i-1].data = record.whole;
+                  tokens2[i-0].type = "removeme";
+                }
+           }
+      }
+      else {
+        if(i<2) {
+          continue;
+        }
+        if(
+          ( tokens2[i-2].type == "name" || tokens2[i-2].type == "bop" ) &&
+           ( tokens2[i-1].type == "name" || tokens2[i-1].type == "bop" ) &&
+           ( tokens2[i-0].type == "name" || tokens2[i-0].type == "bop" ) ) {
 
-           if( tokens2[i-2].data == "S" &&
-              tokens2[i-1].data == "TO" &&
-              tokens2[i-0].data == "P" ) {
-                tokens2[i-2].data = "STOP";
-                tokens2[i-1].type = "removeme";
-                tokens2[i-0].type = "removeme";
-              }
-         }
+             if( tokens2[i-2].data == record.p1 &&
+                tokens2[i-1].data == record.p2 &&
+                tokens2[i-0].data == record.p3 ) {
+                  tokens2[i-2].data = record.whole;
+                  tokens2[i-1].type = "removeme";
+                  tokens2[i-0].type = "removeme";
+                }
+           }
+      }
 		}
 
     var j=0;
@@ -284,7 +326,7 @@ class Parser {
 					i++)
 		{
       if( tokens2[i].type != "removeme" ) {
-          tokens3[i] = tokens2[j];
+          tokens3[j] = tokens2[i];
           j++;
       }
 		}
@@ -841,6 +883,10 @@ class Parser {
           token = { type: "@@@notoken" };
         }
 
+/*        if( token.type != "bracket") { #TODO array assignments, ex: LET a(8) = 2
+          this.Exception( context, "LET expects =");
+        }
+*/
         if( token.type != "eq") {
           this.Exception( context, "LET expects =");
         }
@@ -1443,11 +1489,10 @@ class Parser {
       detail="INTERNAL";
       tokens = this.removePadding( tokens );
       tokens = this.mergeCompTokens( tokens );
-      tokens = this.mergeStopTokens( tokens );
+      tokens = this.mergeBrokenUpTokens( tokens );
 
       console.log("Tokens after merge");
       this.logTokens( tokens );
-
 
       if( tokens.length == 0 ) {
   			return null;

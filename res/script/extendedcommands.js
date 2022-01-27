@@ -682,6 +682,179 @@ class ExtendedCommands {
 
     }
 
+
+    _stat_sprite( pars ) {
+
+      if( pars.length == 0 ) {
+        throw("@sprite nr missing");
+        return;
+      }
+
+      if( pars.length == 1 ) {
+        throw("@on/off flag");
+        return;
+      }
+
+      if( pars.length > 2 ) {
+        throw("@too many parameters");
+        return;
+      }
+
+      this.context.spriteEnable( pars[0].value %8, pars[1].value %2 );
+
+    }
+
+    _stat_spmcol( pars ) {
+
+      if( pars.length == 0 ) {
+        throw("@sprite nr missing");
+        return;
+      }
+
+      if( pars.length == 1 ) {
+        throw("@mode flag");
+        return;
+      }
+
+      if( pars.length > 2 ) {
+        throw("@too many parameters");
+        return;
+      }
+
+
+      this.context.spriteMultiCol( pars[0].value %8, pars[1].value %2 );
+
+    }
+
+    _stat_sx2( pars ) {
+
+      if( pars.length == 0 ) {
+        throw("@sprite nr missing");
+        return;
+      }
+
+      if( pars.length == 1 ) {
+        throw("@x flag");
+        return;
+      }
+
+      if( pars.length == 2 ) {
+        throw("@y flag");
+        return;
+      }
+
+      if( pars.length > 3 ) {
+        throw("@too many parameters");
+        return;
+      }
+
+      this.context.spriteDouble( pars[0].value %8, pars[1].value %2, pars[2].value %2 );
+
+    }
+
+
+    _stat_sframe( pars ) {
+
+      if( pars.length == 0 ) {
+        throw("@sprite nr missing");
+        return;
+      }
+
+      if( pars.length == 1 ) {
+        throw("@frame");
+        return;
+      }
+
+      if( pars.length > 2 ) {
+        throw("@too many parameters");
+        return;
+      }
+
+      this.context.spriteFrame( pars[0].value %8, pars[1].value );
+    }
+
+    _stat_scol( pars ) {
+
+      if( pars.length == 0 ) {
+        throw("@sprite nr missing");
+        return;
+      }
+
+      if( pars.length == 1 ) {
+        throw("@color");
+        return;
+      }
+
+      if( pars.length > 2 ) {
+        throw("@too many parameters");
+        return;
+      }
+
+      this.context.spriteColor( pars[0].value %8, pars[1].value %16 );
+
+    }
+
+
+    _stat_spoke( pars ) {
+
+      if( pars.length == 0 ) {
+        throw("@sprite nr missing");
+        return;
+      }
+
+      if( pars.length == 1 ) {
+        throw("@address");
+        return;
+      }
+
+      if( pars.length == 2 ) {
+        throw("@value");
+        return;
+      }
+
+      if( pars.length > 3 ) {
+        throw("@too many parameters");
+        return;
+      }
+
+      this.context.spritePoke(
+          pars[0].value % 8,
+          pars[1].value % 64,
+          pars[2].value % 256,
+          );
+
+    }
+
+    _stat_spos( pars ) {
+
+      if( pars.length == 0 ) {
+        throw("@sprite nr missing");
+        return;
+      }
+
+      if( pars.length == 1 ) {
+        throw("@x");
+        return;
+      }
+
+      if( pars.length == 2 ) {
+        throw("@y");
+        return;
+      }
+
+      if( pars.length > 3 ) {
+        throw("@too many parameters");
+        return;
+      }
+
+      this.context.spritePos(
+          pars[0].value,
+          pars[1].value % 320,
+          pars[2].value % 256,
+          );
+
+    }
+
     _if_path() {
         var EXPR = 0, PAR = 1, RAW=2;
         return [EXPR,EXPR,EXPR,EXPR,EXPR,PAR,PAR];
