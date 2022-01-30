@@ -357,7 +357,7 @@ class BasicContext {
   }
 
 
-  poke( a, b0 ) {
+  poke( a, b0, noVicFlush ) {
 
       var b = Math.floor( b0 ) % 256;
 
@@ -388,10 +388,13 @@ class BasicContext {
 
         if( this.console.getCharRomVisible() == false ) {
             this.console.vpoke( a - 53248,b%256  );
-            this.console.pokeFlush();
+            if( noVicFlush === undefined ) {
+              this.console.pokeFlush();
+            }
         }
         else {
           //Can't poke in ROM
+          //Since now VIC registers are hidden, and char rom is showed here
         }
 
       }
@@ -411,7 +414,7 @@ class BasicContext {
         var addr = b * 64;
 
         this.console.setSpriteAddress(sn,addr);
-        console.log("setSpriteAddress ", sn,b,addr);
+
       }
       else if( a>55295 && a<56296) {
         var v = a - 55296;
@@ -509,8 +512,21 @@ class BasicContext {
   spritePos( s, x, y ) {
     var base = 53248 + (2*s);
 
-    this.poke( base, x ); //TODO most significant bit
-    this.poke( base + 1 , y );
+    var lbx = x & 255;
+    var hbx = (x & 256) >> 8;
+
+    this.poke( base, lbx, true ); //TODO most significant bit
+    var ohbx = this.peek( 53264 );
+    if( hbx > 0 ) {
+        this.poke( 53264, ohbx | (1 << s), true ); //TODO most significant bit
+    }
+    else {
+      this.poke( 53264, ohbx & (255-(1 << s)), true ); //TODO most significant bit
+    }
+
+    this.poke( base + 1 , y, true );
+
+    this.console.pokeFlush();
 
   }
 
@@ -521,10 +537,9 @@ class BasicContext {
 
   }
 
-  spritePoke( s, a, v ) {
+  spritePoke( f, a, v ) {
 
-    var baddr = this.peek( 2040 + s ) * 64;
-
+    var baddr = f * 64;
     this.poke( baddr + (a%64) , v );
 
   }
