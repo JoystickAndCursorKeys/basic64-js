@@ -7,11 +7,11 @@
 15 sprite t,1: sprite t,1
 20 scol t,1+t
 25 next 
-40 for f=0to7 : sframe 0,192+f:  for t=0to62:read b
-45 spoke 0,t,b : next : next
+40 for f=0to7:for t=0to62:read b
+45 spoke 192+f,t,b : next : next
 90 fc = 0 :
-95 dx=1:x=20
-100 for t=1 to 200
+95 dx=1:x=30
+100 for t=1 to 300
 135 for s=0 to 7
 136 gosub 1500
 137 next 
@@ -35,7 +35,7 @@
 1500 rem move all sprites
 1501 fors=0to7
 1502 if ev(s)=1then spos s,x,200-(s*15)-(x/10) 
-1503 if ev(s)=0then spos s,255-x,200-(s*15)-(x/15)
+1503 if ev(s)=0then spos s,330-x,200-(s*15)-(x/15)
 1504 next
 1505 return
 5000 data 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 62, 0, 0, 127, 0, 0, 125, 0, 0, 127, 0
