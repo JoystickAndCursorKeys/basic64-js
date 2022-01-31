@@ -96,6 +96,7 @@ class Parser {
     this.commands = cmds;
     this.extendedcommands = ecmds;
     this.errorHandler = new ErrorHandler();
+    this.debugFlag = false;
   }
 
   init() {
@@ -143,8 +144,7 @@ class Parser {
      }
      //this.padArray( this.KWCODES, 256 );
 
-     console.log("KEYWORDS:" , this.KEYWORDS );
-     //console.log("KWCODES:" , this.KWCODES );
+     if( this.debugFlag ) { console.log("KEYWORDS:" , this.KEYWORDS ); }
 
      this.screenCodes2CTRLTable = [];
      var tab = this.screenCodes2CTRLTable;
@@ -727,7 +727,9 @@ class Parser {
         else if( token.type=="bop" && token.data=="NOT" && first ) {
           binaryNegate = ! binaryNegate;
           expression.binaryNegate = binaryNegate;
-          console.log("NOT")
+          if( this.debugFlag ) {
+            console.log("NOT")
+          }
           continue;
         }
 				else {
@@ -797,7 +799,6 @@ class Parser {
       }
     }
 
-//    console.log(expression);
 		return expression;
 	}
 
@@ -838,7 +839,9 @@ class Parser {
     command.indices = indices;
 
     tokens.shift();
-    console.log("tokens after:",tokens)
+    if( this.debugFlag ) {
+      console.log("tokens after:",tokens)
+    }
 
     token = tokens.shift();
     if( token === undefined ) {
@@ -994,7 +997,9 @@ class Parser {
         endTokens = [];
         var expr_fn = this.parseBoolExpression( context, endTokens );
 
-        console.log("expr = " + expr_fn );
+        if( this.debugFlag ) {
+          console.log("expr = " + expr_fn );
+        }
 
         command.params=[];
         command.params[0] = fName;
@@ -1171,7 +1176,9 @@ class Parser {
         command.params[2] = expr_step;
         command.variable = variable;
         commands.push( command );
-        console.log("command=", command);
+        if( this.debugFlag ) {
+          console.log("command=", command);
+        }
 
       }
       else if( controlToken == "NEXT") {
@@ -1251,7 +1258,10 @@ class Parser {
 
         var block = this.parseLineCommands( context );
 
-        console.log( block );
+        if( this.debugFlag ) {
+          console.log( block );
+        }
+
         commands.push( command );
 
         for( var bi=0; bi<block.length; bi++) {
@@ -1339,7 +1349,9 @@ class Parser {
       endTokens.push( { type: "cmdsep", data: "@@@all" });
 
       var expression = this.parseBoolExpression( context, endTokens );
-      console.log( expression );
+      if( this.debugFlag ) {
+        console.log( expression );
+      }
 
       if( expression != null ) {
         command.params.push( expression );
@@ -1461,11 +1473,15 @@ class Parser {
       tokensStr += tokStr;
     }
 
-    console.log( tokensStr );
+    if( this.debugFlag ) {
+      console.log( tokensStr );
+    }
 
+    if( this.debugFlag ) {
     for( var i=0; i<tokens.length; i++) {
-      var tok = tokens[i];
-      console.log("token: ",tok);
+        var tok = tokens[i];
+        console.log("token: ",tok);
+      }
     }
   }
 
@@ -1484,7 +1500,9 @@ class Parser {
 
       detail="PARSING TOKENS";
       var tokens = toker.tokenize();
-      console.log("Tokens after tokenizer");
+      if( this.debugFlag ) {
+        console.log("Tokens after tokenizer");
+      }
       this.logTokens( tokens );
 
       detail="INTERNAL";
@@ -1492,7 +1510,10 @@ class Parser {
       tokens = this.mergeCompTokens( tokens );
       tokens = this.mergeBrokenUpTokens( tokens );
 
-      console.log("Tokens after merge");
+
+      if( this.debugFlag ) {
+        console.log("Tokens after merge");
+      }
       this.logTokens( tokens );
 
       if( tokens.length == 0 ) {

@@ -18,6 +18,7 @@ class GameState {
     this.defaultSuffix = stateDefinitions.defaultSuffix;
     this.properties = properties;
     this.exception = false;
+    this.debugFlag = false;
 
     this.stateTypes = [];
     var type;
@@ -113,8 +114,10 @@ class GameState {
 
   gotoPlayBook( newPlayBookId, properties ) {
 
-    console.log( "----------------" );
-    console.log( "Goto PlayBook "+ newPlayBookId );
+    if( this.debugFlag ) {
+      console.log( "----------------" );
+      console.log( "Goto PlayBook "+ newPlayBookId );
+    }
 
       if( this.playbooks[ newPlayBookId ] == undefined ) {
         return "error";
@@ -162,8 +165,10 @@ class GameState {
       return;
     }
 
-    console.log( "----------------" );
-    console.log( "Initialize State "+ stateId );
+    if( this.debugFlag ) {
+      console.log( "----------------" );
+      console.log( "Initialize State "+ stateId );
+    }
     this.stateId = stateId;
     this.state = this.states[ this.stateId ];
 
@@ -175,8 +180,10 @@ class GameState {
       throw "no state defined for id='" + stateId + "'";
     }
 
-    console.log( "State dump:" );
-    console.log( state );
+    if( this.debugFlag ) {
+      console.log( "State dump:" );
+      console.log( state );
+    }
 
     this.method = stateId;
     this.methodRender = null;
@@ -195,7 +202,9 @@ class GameState {
 
       this.method = parts[ 1 ] ;
 
-      console.log( this.stateClass );
+      if( this.debugFlag ) {
+        console.log( this.stateClass );
+      }
     }
 
     var myClass = this.stateClass;
@@ -221,7 +230,9 @@ class GameState {
 
       if( data.urls == null ) {
         var newState = this.state[ 'next' ];
-        console.log( "seturls ended, no resources, nextstate => " + newState );
+        if( this.debugFlag ) {
+          console.log( "seturls ended, no resources, nextstate => " + newState );
+        }
         this.gotoState( newState );
         return;
       }
@@ -236,7 +247,9 @@ class GameState {
       if( this.state.__typedef.REN == false && this.state.__typedef.PRO == false )
       {
         var newState = this.state[ 'next' ];
-        console.log( "init ended, nothing more to do, nextstate => " + newState );
+        if( this.debugFlag ) {
+          console.log( "init ended, nothing more to do, nextstate => " + newState );
+        }
         this.gotoState( newState );
         return;
       }
@@ -427,14 +440,19 @@ class GameState {
       myDestArray = dstArrays[ h ];
       myState = states[ h ];
 
-      console.log("h=" + h);
-      console.log(myState);
+      if( this.debugFlag ) {
+        console.log("h=" + h);
+        console.log(myState);
+      }
 
       for( var i=0; i<myState.count; i++ )  {
         var key = myState.keys[i];
         var url = myState.urls[ key ];
         var browserResource = false;
-        console.log(key + ":" + url + " " + i);
+
+        if( this.debugFlag ) {
+          console.log(key + ":" + url + " " + i);
+        }
         res = myDestArray[ key ];
 
         if( h==0 ) { /* images */
@@ -480,7 +498,10 @@ class GameState {
         .then(response => response.json())
         .then((data) => {
           var evt = { currentTarget: { id: 'jsondata.'+url } };
-          console.log(data)
+
+          if( __this.debugFlag ) {
+            console.log(data)
+          }
           res.data = data;
 
           __this.onLoadedResource( evt,  myClass, loadedResources );
@@ -491,7 +512,9 @@ class GameState {
         .then(response => response.text())
         .then((data) => {
           var evt = { currentTarget: { id: 'txtdata.'+url } };
-          console.log(data)
+          if( __this.debugFlag ) {
+            console.log(data)
+          }
           res.data = data;
 
           __this.onLoadedResource( evt,  myClass, loadedResources );
@@ -501,17 +524,28 @@ class GameState {
 
   onLoadedResource( evt, myClass, loadedResources ) {
 
-    console.log("resource is loaded " + evt.currentTarget.id );
+    if( this.debugFlag ) {
+      console.log("resource is loaded " + evt.currentTarget.id );
+    }
+
     this.loadedCount ++;
-    console.log("resources loaded " + this.loadedCount );
-    console.log("resources to be loaded " + this.loadingCount );
+
+    if( this.debugFlag ) {
+      console.log("resources loaded " + this.loadedCount );
+      console.log("resources to be loaded " + this.loadingCount );
+    }
+
     if( this.loadedCount == this.loadingCount ) {
-      console.log("all loaded, signalling");
+      if( this.debugFlag ) {
+        console.log("all loaded, signalling");
+      }
 
       var data  = { currentState: this.stateId , resources: loadedResources  };
       this.stateClass[ this.method ]( 'LOADED', data );
 
-      console.log("goto next state " + this.state.next);
+      if( this.debugFlag ) {
+        console.log("goto next state " + this.state.next);
+      }
       this.gotoState(this.state.next );
     }
   }
@@ -590,19 +624,11 @@ class GameState {
     }
 
     var stateChange = false;
-    //try {
-      if( this.methodProcess != null ) {
+
+    if( this.methodProcess != null ) {
         stateChange = myClass[this.methodProcess]();
-      }
-    //}
-    /*catch ( except ) {
-      var err = {};
-      err.message="Exception[" +
-          myClass.constructor.name +  ".cycle(...) at chapter '" + this.getCurrentPlayBookId()+ "']:" + except.message;
-      err.exception = except;
-      err.myClass = myClass;
-      throw err;
-    }*/
+    }
+
 
     if( stateChange != false ) {
         if( this.state._type == "WATCH" && stateChange != 'next' ) {
@@ -733,16 +759,9 @@ class Boot {
 
         this.loopTimer = setInterval(
           function() {
-            //try {
-              __this.state.processIteration();
-            /*}
-            //catch(except) {
-              clearInterval( __this.loopTimer );
 
-              __this.state.exception = true;
-              __this.logException( except );
-              }
-              */
+              __this.state.processIteration();
+
           }
           , 20
         );
@@ -752,17 +771,6 @@ class Boot {
         this.renderCanvas.addEventListener("keydown", this.state, true);
 
   }
-
-
-/*
-  doException( obj ) {
-
-    clearInterval( this.loopTimer );
-    //clearInterval( this.renderTimer );
-    this.logException( obj );
-
-  }
-*/
 
 
   doException( obj ) {

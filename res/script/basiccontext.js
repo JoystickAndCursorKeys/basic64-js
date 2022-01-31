@@ -1,6 +1,8 @@
 class BasicContext {
 
   constructor( console ) {
+
+    this.debugFlag = false;
     this.console = console;
     this.menu = new Menu( console, this  );
     this.menuFocus = false;
@@ -1157,14 +1159,22 @@ class BasicContext {
             }
             num += String.fromCharCode( c );
 
-            console.log("found ESC seq char " + String.fromCharCode( c ) );
-            console.log("found ESC seq char code " + c);
+            if( this.debugFlag ) {
+              console.log("found ESC seq char " + String.fromCharCode( c ) );
+              console.log("found ESC seq char code " + c);
+            }
             i++;
         }
 
-        console.log("found ESC seq " + num);
+        if( this.debugFlag ) {
+          console.log("found ESC seq " + num);
+        }
+
         num = this.ResolveStringSymbolToCode(num.toLowerCase());
-        console.log("found resolved ESC seq " + num);
+
+        if( this.debugFlag ) {
+          console.log("found resolved ESC seq " + num);
+        }
 
         dst += String.fromCharCode( parseInt( num, 10) );
       }
@@ -1184,7 +1194,10 @@ class BasicContext {
       escape 94 - 255
       {}  123 + 125
     */
-    console.log("dst:" + dst);
+    if( this.debugFlag ) {
+      console.log("dst:" + dst);
+    }
+
     return dst;
   }
 
@@ -1290,6 +1303,7 @@ class BasicContext {
 
             this.printError("no such function " + p.functionName);
             console.log("Cannot find functionName " + nFunName );
+
             throw "no such function " + p.functionName;
 
           }
@@ -1502,7 +1516,7 @@ class BasicContext {
     var c = this.console;
 
     var cmdCount = this.cmdCountPerCycle;
-    var debug=false;
+
 
     try {
 
@@ -1533,7 +1547,7 @@ class BasicContext {
       }
       else {
 
-        if(debug) console.log("START CYCLE------------------------------" );
+        if(this.debugFlag) console.log("START CYCLE------------------------------" );
 
         var p = this.program;
 
@@ -1543,11 +1557,11 @@ class BasicContext {
             this.breakCycleFlag = false;
             break;
           }
-          if(debug)console.log("START CYCLE LOOP-------------" );
+          if(this.debugFlag) console.log("START CYCLE LOOP-------------" );
           var l = p[ this.runPointer ];
           var bf = this.runPointer2;
-          if(debug)console.log(" this.runPointer = " + this.runPointer, " this.runPointer2 = " + this.runPointer2 );
-          if(debug)console.log(" cmdCount = " + cmdCount);
+          if(this.debugFlag) console.log(" this.runPointer = " + this.runPointer, " this.runPointer2 = " + this.runPointer2 );
+          if(this.debugFlag) console.log(" cmdCount = " + cmdCount);
           var rv = this.runCommands( l[1], cmdCount );
           var af = rv[ 1 ];
 
@@ -1557,14 +1571,14 @@ class BasicContext {
 
           var executedCount = rv[2];
 
-          if(debug)console.log(" bf = " + bf, " af = " + af);
-          if(debug)console.log(" executedCount = " + executedCount);
-          if(debug)console.log(" rv = " + rv);
+          if(this.debugFlag) console.log(" bf = " + bf, " af = " + af);
+          if(this.debugFlag) console.log(" executedCount = " + executedCount);
+          if(this.debugFlag) console.log(" rv = " + rv);
 
           cmdCount = cmdCount - executedCount;
 
           if( rv[0]<=0 ) {
-            if(debug)console.log(" PGM END!!!!" );
+            if(this.debugFlag) console.log(" PGM END!!!!" );
             this.runFlag = false;
             this.printLine("");
             this.printLine("ready.");
@@ -1573,16 +1587,16 @@ class BasicContext {
               console.log("PARAMETER DUMP:", this.vars );
               console.log("FUNCTION DUMP:", this.functions );
             }
-            if(debug)console.log("CYCLE RETURN END");
+            if(this.debugFlag) console.log("CYCLE RETURN END");
             return;
           }
           else if( rv[0] == LINE_FINISHED ) {
             this.runPointer ++;
             this.runPointer2 = 0;
-            if(debug)console.log(" new this.runPointer = " + this.runPointer, " this.runPointer2 = " + this.runPointer2 );
+            if(this.debugFlag) console.log(" new this.runPointer = " + this.runPointer, " this.runPointer2 = " + this.runPointer2 );
 
             if( this.runPointer >=  p.length ) {
-              if(debug)console.log( "end program");
+              if(this.debugFlag) console.log( "end program");
               this.runFlag = false;
               this.panicIfStopped();
               c.clearCursor();
@@ -1592,24 +1606,24 @@ class BasicContext {
           }
           else if( rv[0] == TERMINATE_W_JUMP ) {
 
-            if(debug)console.log(" jump to new this.runPointer = " + this.runPointer, " this.runPointer2 = " + this.runPointer2 );
+            if(this.debugFlag) console.log(" jump to new this.runPointer = " + this.runPointer, " this.runPointer2 = " + this.runPointer2 );
 
           }
           else if( rv[0] == PAUSE_F_INPUT ) {
 
-            if(debug)console.log("CYCLE PAUSE 4 INPUT");
+            if(this.debugFlag) console.log("CYCLE PAUSE 4 INPUT");
             break;
 
           }
 
           if( cmdCount<=0 ) {
-            if(debug)console.log("Breaking cmdCount=" + cmdCount)
+            if(this.debugFlag) console.log("Breaking cmdCount=" + cmdCount)
             break;
           }
 
         }
 
-        if(debug)console.log(" this.runPointer = " + this.runPointer, " this.runPointer2 = " + this.runPointer2 );
+        if(this.debugFlag) console.log(" this.runPointer = " + this.runPointer, " this.runPointer2 = " + this.runPointer2 );
 
       }
 
@@ -1677,8 +1691,6 @@ class BasicContext {
     var len=this.program.length;
     var found = false;
 
-    //console.log("GOTO "+ line);
-
     for( var i=0; i<len; i++) {
       var l = pgm[i];
 
@@ -1715,6 +1727,7 @@ class BasicContext {
       this.runFlag = false;
       this.panicIfStopped();
       c.clearCursor();
+
       console.log( "break in " + this.program[ this.runPointer ][0] );
       this.printLine( "break in " + this.program[ this.runPointer ][0]);
       this.printLine( "ready.");
@@ -1950,7 +1963,11 @@ class BasicContext {
           }
         }
     }
-    console.log("data dump:",this.data);
+
+    if( this.debugFlag ) {
+      console.log("data dump:",this.data);
+    }
+
 
     if( this.program.length > 0) {
       this.runFlag = true;
@@ -2001,8 +2018,6 @@ class BasicContext {
       }
     }
 
-    //console.log("ctxv:", ctxv);
-    //console.log("var:"+varName + " set to " + this.vars[ varName ]);
   }
 
   doForNext( nextVarName ) {
@@ -2020,7 +2035,7 @@ class BasicContext {
     this.vars[ varName ] += ctxv.step;
     if( ctxv.step > 0) {
       if(this.vars[ varName ]<=ctxv.to) {
-        //console.log( "Next: " , ctxv.jumpTo );
+
         return ctxv.jumpTo;
       }
     }
@@ -2100,7 +2115,7 @@ class BasicContext {
       }
 
       var cmd=cmds[i];
-      //console.log( cmd );
+
       if( cmd.type == "control" )  {
         var cn = cmd.controlKW;
         if( cn == "goto" ) {
@@ -2502,8 +2517,10 @@ class BasicContext {
     var fileName = "default";
 
 
-    console.log( "saving..." );
-    console.log( this.program );
+    if( this.debugFlag ) {
+      console.log( "saving..." );
+      console.log( this.program );
+    }
 
 
     if( fileName0 ) {
@@ -2524,9 +2541,10 @@ class BasicContext {
 
     var fileName = "default";
 
-    console.log( "saving..." );
-    console.log( this.program );
-
+    if( this.debugFlag ) {
+      console.log( "saving..." );
+      console.log( this.program );
+    }
 
     if( fileName0 ) {
       fileName = fileName0;
@@ -2673,7 +2691,10 @@ class BasicContext {
   textLinesToBas( lines ) {
 
     var myProgram = [];
-    console.log( "textLinesToBas" );
+
+    if( this.debugFlag ) {
+      console.log( "textLinesToBas" );
+    }
     for( var i = 0; i<lines.length; i++ ) {
 
       var line = this.prepareLineForImport( lines[ i ] );
@@ -2699,8 +2720,10 @@ class BasicContext {
         throw "Error, command must start with number to be part of program";
       }
 
-      console.log("program:",myProgram);
-      console.log("Line: ", l );
+      if( this.debugFlag ) {
+        console.log("program:",myProgram);
+        console.log("Line: ", l );
+      }
     }
     return myProgram;
   }
@@ -2711,7 +2734,10 @@ class BasicContext {
 
 
   startConsoleDataInput( vars ) {
-    console.log("inputvars=",vars);
+
+    if( this.debugFlag ) {
+      console.log("inputvars=",vars);
+    }
     this.inputFlag = true;
     this.inputVars = vars;
     this.inputVarsPointer = 0;
@@ -2720,7 +2746,9 @@ class BasicContext {
 
   handleLineInput( str, isInputCommand ) {
 
-    console.log("handleLineInput: start debug / isInputCommand=" + isInputCommand + " -------------");
+    if( this.debugFlag ) {
+      console.log("handleLineInput: start debug / isInputCommand=" + isInputCommand + " -------------");
+    }
 
     if( isInputCommand ) {
 
@@ -2731,13 +2759,14 @@ class BasicContext {
           qMark = input.indexOf("?");
         }
 
-        console.log("handleLineInput: start debug / input, name -------------");
-        console.log( "InputVarsPointer:" , this.inputVarsPointer );
-        console.log( "InputVars:" , this.inputVars );
+        if( this.debugFlag ) {
+          console.log("handleLineInput: start debug / input, name -------------");
+          console.log( "InputVarsPointer:" , this.inputVarsPointer );
+          console.log( "InputVars:" , this.inputVars );
 
-        console.log( "Input String:" ,input );
-        console.log( "Input Vars[current]:" ,this.inputVars[ this.inputVarsPointer ] );
-
+          console.log( "Input String:" ,input );
+          console.log( "Input Vars[current]:" ,this.inputVars[ this.inputVarsPointer ] );
+        }
 
 
         var vName = this.inputVars[ this.inputVarsPointer ];
@@ -2764,11 +2793,15 @@ class BasicContext {
           this.sendChars( "?? " , false);
         }
 
-        console.log("handleLineInput: end debug -------------");
+        if( this.debugFlag ) {
+          console.log("handleLineInput: end debug -------------");
+        }
         return;
     }
 
-    console.log( str );
+    if( this.debugFlag ) {
+      console.log( str );
+    }
     var p = new Parser( this.commands, this.extendedcommands );
     p.init();
     try {
@@ -2785,7 +2818,9 @@ class BasicContext {
       this.printLine("ready.");
     }
     if( l == null ) {
-      console.log("handleLineInput: end debug -------------");
+      if( this.debugFlag ) {
+        console.log("handleLineInput: end debug -------------");
+      }
       return;
     }
     if( l.lineNumber != -1 ) {
@@ -2807,10 +2842,12 @@ class BasicContext {
 
     }
 
-    console.log("program:",this.program);
-    console.log("Line: ", l );
+    if( this.debugFlag ) {
+      console.log("program:",this.program);
+      console.log("Line: ", l );
 
-    console.log("handleLineInput: end debug -------------");
+      console.log("handleLineInput: end debug -------------");
+    }
   }
 
 }
