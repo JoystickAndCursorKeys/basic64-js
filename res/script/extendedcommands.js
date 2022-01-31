@@ -752,7 +752,6 @@ class ExtendedCommands {
 
     }
 
-
     _stat_sframe( pars ) {
 
       if( pars.length == 0 ) {
@@ -798,7 +797,7 @@ class ExtendedCommands {
     _stat_spoke( pars ) {
 
       if( pars.length == 0 ) {
-        throw("@sprite nr missing");
+        throw("@frame nr missing");
         return;
       }
 
@@ -818,9 +817,9 @@ class ExtendedCommands {
       }
 
       this.context.spritePoke(
-          pars[0].value % 8,
-          pars[1].value % 64,
-          pars[2].value % 256,
+          pars[0].value % 256, //frame
+          pars[1].value % 64,  //offset
+          pars[2].value % 256, //value
           );
 
     }
@@ -849,7 +848,7 @@ class ExtendedCommands {
 
       this.context.spritePos(
           pars[0].value,
-          pars[1].value % 320,
+          pars[1].value % 512,
           pars[2].value % 256,
           );
 

@@ -34,8 +34,11 @@ class C64Screen {
 			this.rcanvas =  document.getElementById( rcanvasid );
       this.rcontext = this.rcanvas.getContext('2d');
 
-			this.iwidth = 320;
-			this.iheight = 200;
+			this.vwidth = 320;
+			this.vheight = 200;
+
+			this.iwidth = 320 + 48;
+			this.iheight = 200 + 42;
       this.canvas.width=this.iwidth;
       this.canvas.height=this.iheight;
 
@@ -50,7 +53,7 @@ class C64Screen {
 
 			this.border0 = {
 				w: 32+16,
-				h: 32
+				h: 32,
 			}
 
 
@@ -411,14 +414,22 @@ class C64Screen {
 		return results;
 	 }
 
-	 _intVpokesProcess() {
+	 _intVICMem2VICVRegs() {
 		 if( this.vicUsed.length == 0) {
 			 return;
 		 }
 
 		 var vu = this.vicUsed;
-		 var vul = vu.length;
+		 if( vu.indexOf( 16 ) > -1 ) {
+			 for( var sp=0; sp<8; sp++) {
+				 var addr = sp*2;
+				 if( vu.indexOf( addr ) == -1) {
+					 	vu.push(addr);
+				 }
+			 }
+		 }
 
+		 var vul = vu.length;
 		 for( var i=0; i<vul; i++ ) {
 			 var index = vu[ i ];
 			 var nr = index + 53248;
@@ -535,7 +546,12 @@ class C64Screen {
 				//console.log("coord #" + v);
 
 				if( xcoord ) {
-					this.spriteXPos( sprno, v );
+
+					var val_9thbit = this.vic[ 16 ];
+					var bits_9thbit = this._getByteBits( val_9thbit );
+
+					this.spriteXPos( sprno, v + (bits_9thbit[ sprno ] * 256) );
+					//TODO D010 / 53264 for hi bit
 				}
 				else {
 					this.spriteYPos( sprno, v );
@@ -558,7 +574,7 @@ class C64Screen {
 
 
 	 pokeFlush() {
-		 this._intVpokesProcess();
+		 this._intVICMem2VICVRegs();
 	 }
 
 	 poke( a, b ) {
@@ -1506,14 +1522,13 @@ class C64Screen {
 
 		         if ( (byte & mask ) > 0 ) {
 
+
 								 iDta[ dBase + 0 ] = fgCol.r;
 				         iDta[ dBase + 1 ] = fgCol.g;
 				         iDta[ dBase + 2 ] = fgCol.b;
 				         iDta[ dBase + 3 ] = 255;
 
 		         }
-
-
 						 mask = mask >> 1;
 		         xd+=4;
 					 }
@@ -1892,7 +1907,7 @@ class C64Screen {
 
 	 renderDisplay( ) {
 
-		 this._intVpokesProcess();
+		 this._intVICMem2VICVRegs();
 
 		 if( this.bcolLast != this.bcol ) {
 
@@ -1926,8 +1941,14 @@ class C64Screen {
 		var dw = this.WIDTH;
 		var dh = this.HEIGHT;
 		var b = this.border;
+		var b0=this.border0;
 
-		dCtx.drawImage( sCvs, b.w, b.h, dw, dh);
+		//void ctx.drawImage(image, dx, dy);
+		//void ctx.drawImage(image, dx, dy, dWidth, dHeight);
+		//void ctx.drawImage(image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight);
+		//dCtx.drawImage( sCvs, b.w, b.h, dw, dh);
+
+		dCtx.drawImage( sCvs, 24, 21, w, h, b.w, b.h, dw, dh );
 	 }
 
 	 _renderBackGround() {
@@ -1949,6 +1970,8 @@ class C64Screen {
 
 		 //ctx.fillStyle = this._htmlColor( this.colors[ this.bgcol ] );
 
+		 var xo=24, yo=21;
+
 		 if( this.useHires ) {
 
 			 this.renderChr = this.renderCharHires;
@@ -1962,13 +1985,13 @@ class C64Screen {
 						|| this.multiColorLast != this.multiColor
 						|| this.useHiresLast != this.useHires
 
-					) {
+					) { //update whole screen
 				 for( var y=0; y<25; y++) {
 				 	for( var x=0; x<40; x++) {
 
 								var chr = (y*40+x);
 								buf[y][x][2] = false;
-							 	this.renderChr(x*8, y*8, chr, buf[y][x][0], buf[y][x][1] );
+							 	this.renderChr(xo+x*8, yo+y*8, chr, buf[y][x][0], buf[y][x][1] );
 
 				 	}
 				 }
@@ -1979,7 +2002,7 @@ class C64Screen {
 				 this.useHiresLast = this.useHires;
 
 			 }
-			 else {
+			 else {  //update only certain chars on screen
 
 				 for( var y=0; y<25; y++) {
 				 	for( var x=0; x<40; x++) {
@@ -1988,7 +2011,7 @@ class C64Screen {
 
 						if( buf[y][x][2] ) {
 								buf[y][x][2] = false;
-							 this.renderChr(x*8, y*8, chr, buf[y][x][0], buf[y][x][1] );
+							 this.renderChr(xo+x*8, yo+y*8, chr, buf[y][x][0], buf[y][x][1] );
 						}
 				 	}
 				 }
@@ -2002,6 +2025,7 @@ class C64Screen {
 			 }
 
 
+
 			 if( this.bgcolLast != this.bgcol
 			 			|| this.mcol1Last != this.mcol1
 						|| this.mcol2Last != this.mcol2
@@ -2009,11 +2033,12 @@ class C64Screen {
 						|| this.useHiresLast != this.useHires
 						|| this.screenRefresh
 					) {
+
 				 for( var y=0; y<25; y++) {
 				 	for( var x=0; x<40; x++) {
 
 								buf[y][x][2] = false;
-							 	this.renderChr(x*8, y*8, buf[y][x][0], buf[y][x][1] );
+							 	this.renderChr(xo+x*8, yo+y*8, buf[y][x][0], buf[y][x][1] );
 
 				 	}
 				 }
@@ -2029,7 +2054,7 @@ class C64Screen {
 				 	for( var x=0; x<40; x++) {
 						if( buf[y][x][2] ) {
 								buf[y][x][2] = false;
-							 this.renderChr(x*8, y*8, buf[y][x][0], buf[y][x][1] );
+							 this.renderChr(xo+x*8, yo+y*8, buf[y][x][0], buf[y][x][1] );
 						}
 				 	}
 				 }
@@ -2042,7 +2067,7 @@ class C64Screen {
 
 					//console.log( "Draw sprite " + i,sp.x,sp.y);
 				 	//bufctx.drawImage( sp.canvas, sp.x-24, sp.y-21 );
-					this.renderSprite( i, sp.x-24, sp.y-21 );
+					this.renderSprite( i, sp.x, sp.y );
 			 }
 		 }
 
