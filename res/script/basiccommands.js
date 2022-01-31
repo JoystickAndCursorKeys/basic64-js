@@ -330,7 +330,7 @@ class BasicCommands {
         if( exparts.parts[j].type == "uniop" &&
             exparts.parts[j].op == ";" && j==(exparts.parts.length-1)
             && (i == pars.length-1)) {
-              console.log( "i="+i+" newline: set to false");
+              //console.log( "i="+i+" newline: set to false");
           newLine = false;
         }
         else {

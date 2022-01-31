@@ -537,6 +537,15 @@ class BasicContext {
 
   }
 
+  spriteFrameCopy( f1, f2 ) {
+    var baddr1 = f1 * 64;
+    var baddr2 = f2 * 64;
+
+    for( var i=0; i<64; i++ ) {
+        this.poke( baddr2 + i , this.peek( baddr1 + i)  );
+    }
+  }
+
   spritePoke( f, a, v ) {
 
     var baddr = f * 64;
@@ -816,8 +825,6 @@ class BasicContext {
     var mask = Math.pow(2,7-Xremainder);
     var pixelValue = oldValue & (mask);
 
-    console.log("PixelValue",oldValue, mask);
-
     if(  ( selector === undefined ) || selector == 0 ) {
         if( pixelValue != 0) {
           return 1;
@@ -862,14 +869,6 @@ class BasicContext {
     var pixelValue = byteValue & (maskSubPix1 + maskSubPix2);
     var pixelValue2 = pixelValue >> shiftResultRight;
 
-    //console.log("------------------");
-    //console.log("xr2",xr2);
-    //console.log("shiftResultRight",shiftResultRight);
-    //console.log("Xremainder",Xremainder);
-    //console.log("PixelValue",pixelValue);
-    //console.log("PixelValue2",pixelValue2);
-    //console.log("byteValue",(byteValue));
-    //console.log("Mask",(maskSubPix1 + maskSubPix2));
 
     if(  ( selector === undefined ) || selector == 0 ) {
         return pixelValue2;
@@ -926,7 +925,7 @@ class BasicContext {
         }
         else if( c==0x12 ) {
           //this.console.setColor(8); Set reverse
-          console.log("reverse");
+
           this.reverseOn = true;
         }
         else if( c==0x92 ) {
@@ -1085,7 +1084,6 @@ class BasicContext {
 
     for( var i=0; i<kws.length; i++) {
       var kw = kws[i];
-      //console.log(i, kw);
       if( !(kw===undefined || kw === null )) {
           txt2 = txt2.replaceAll( kw.toLowerCase() , String.fromCharCode(i));
       }
@@ -1259,6 +1257,9 @@ class BasicContext {
       }
 
       val = arr.get( indices );
+      if( val === undefined ) {
+        val = 0;
+      }
 
     }
     else if( p.type=="expr" ) {
@@ -1357,9 +1358,7 @@ class BasicContext {
       return null;
     }
 
-    //console.log( "parse ", expr);
     if( expr.parts.length == 0 ) {
-      //console.log( "parse -> null");
       return null;
     }
 
@@ -1678,6 +1677,8 @@ class BasicContext {
     var len=this.program.length;
     var found = false;
 
+    //console.log("GOTO "+ line);
+
     for( var i=0; i<len; i++) {
       var l = pgm[i];
 
@@ -1714,7 +1715,7 @@ class BasicContext {
       this.runFlag = false;
       this.panicIfStopped();
       c.clearCursor();
-      console.log("stop");
+      console.log( "break in " + this.program[ this.runPointer ][0] );
       this.printLine( "break in " + this.program[ this.runPointer ][0]);
       this.printLine( "ready.");
     }
@@ -1839,7 +1840,7 @@ class BasicContext {
     }
 
     var rec = p.parseLine( newString );
-    console.log( "Renum Tokens:" , tokens );
+
     return rec;
   }
 
@@ -1949,7 +1950,7 @@ class BasicContext {
           }
         }
     }
-    console.log("data:",this.data);
+    console.log("data dump:",this.data);
 
     if( this.program.length > 0) {
       this.runFlag = true;
@@ -2719,6 +2720,8 @@ class BasicContext {
 
   handleLineInput( str, isInputCommand ) {
 
+    console.log("handleLineInput: start debug / isInputCommand=" + isInputCommand + " -------------");
+
     if( isInputCommand ) {
 
         var input=str;
@@ -2728,12 +2731,14 @@ class BasicContext {
           qMark = input.indexOf("?");
         }
 
-        console.log("INPUT: input, name");
-        console.log( this.inputVarsPointer );
-        console.log( this.inputVars );
+        console.log("handleLineInput: start debug / input, name -------------");
+        console.log( "InputVarsPointer:" , this.inputVarsPointer );
+        console.log( "InputVars:" , this.inputVars );
 
-        console.log( input );
-        console.log( this.inputVars[ this.inputVarsPointer ] );
+        console.log( "Input String:" ,input );
+        console.log( "Input Vars[current]:" ,this.inputVars[ this.inputVarsPointer ] );
+
+
 
         var vName = this.inputVars[ this.inputVarsPointer ];
         if( vName.indexOf("$") >-1 ) {
@@ -2759,6 +2764,7 @@ class BasicContext {
           this.sendChars( "?? " , false);
         }
 
+        console.log("handleLineInput: end debug -------------");
         return;
     }
 
@@ -2767,6 +2773,7 @@ class BasicContext {
     p.init();
     try {
       var l = p.parseLine( str );
+
     }
     catch( e ) {
 
@@ -2778,6 +2785,7 @@ class BasicContext {
       this.printLine("ready.");
     }
     if( l == null ) {
+      console.log("handleLineInput: end debug -------------");
       return;
     }
     if( l.lineNumber != -1 ) {
@@ -2801,6 +2809,8 @@ class BasicContext {
 
     console.log("program:",this.program);
     console.log("Line: ", l );
+
+    console.log("handleLineInput: end debug -------------");
   }
 
 }
