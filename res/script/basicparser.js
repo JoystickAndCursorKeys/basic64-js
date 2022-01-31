@@ -256,6 +256,7 @@ class Parser {
     splits.push( { p1: "B", p2: "OR", p3: "DER", whole: "BORDER" } );
     splits.push( { p1: "G", p2: "COLOR", p3: "S", whole: "GCOLORS" } );
     splits.push( { p1: "CHAR", p2: "COL", p3: null, whole: "CHARCOL" } );
+    splits.push( { p1: "SFRAME", p2: "CP", p3: null, whole: "SFRAMECP" } );
     splits.push( { p1: "S", p2: "POS", p3: null, whole: "SPOS" } );
     splits.push( { p1: "S", p2: "POKE", p3: null, whole: "SPOKE" } );
     splits.push( { p1: "WJ", p2: "IF", p3: "FY", whole: "WJIFFY" } );

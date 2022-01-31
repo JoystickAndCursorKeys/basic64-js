@@ -752,6 +752,28 @@ class ExtendedCommands {
 
     }
 
+
+    _stat_sframecp( pars ) {
+
+      if( pars.length == 0 ) {
+        throw("@srcframe");
+        return;
+      }
+
+      if( pars.length == 1 ) {
+        throw("@dstframe");
+        return;
+      }
+
+      if( pars.length > 2 ) {
+        throw("@too many parameters");
+        return;
+      }
+
+      this.context.spriteFrameCopy( pars[0].value %256, pars[1].value %256 );
+    }
+
+
     _stat_sframe( pars ) {
 
       if( pars.length == 0 ) {
