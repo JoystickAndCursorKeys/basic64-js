@@ -1,10 +1,10 @@
 class BasicContext {
 
-  constructor( console ) {
+  constructor( _console ) {
 
     this.debugFlag = false;
-    this.console = console;
-    this.menu = new Menu( console, this  );
+    this.console = _console;
+    this.menu = new Menu( _console, this  );
     this.menuFocus = false;
     this.borderChangedFlag = false;
     this.program = [];
@@ -158,6 +158,14 @@ class BasicContext {
     this.symbolTable["light green"]  = 153;
     this.symbolTable["light blue"]  = 154;
     this.symbolTable.grey3  = 155; //light grey
+
+
+    var backmap = []
+    var mapInfo = Object.entries(this.symbolTable);
+    for( var i=0; i<mapInfo.length; i++) {
+      backmap[ mapInfo[i][1]] = mapInfo[i][0];
+    }
+    this.symbolTableBM = backmap;
 
   }
 
@@ -1115,7 +1123,14 @@ class BasicContext {
       //var c = txt.charAt( i );
       var c = txt.charCodeAt( i );
       if( c<31 || c==92 || c>=94 ) {
-        dst += "{"+c+"}"
+        var symdef = this.symbolTableBM[ c ];
+        if( ! ( symdef === undefined ) ) {
+            dst += "{" + symdef + "}";
+        }
+        else {
+            dst += "{"+c+"}"
+        }
+
       }
       else {
         dst += txt.charAt( i );
@@ -1178,7 +1193,7 @@ class BasicContext {
 
         dst += String.fromCharCode( parseInt( num, 10) );
       }
-      else if( c == 8221 || c == 8220) { //almost a double quote
+      else if( c == 8221 || c == 8220) { //looks like a double quote
         dst += "\"";
         i++;
       }
@@ -1485,18 +1500,63 @@ class BasicContext {
     }
   }
 
-  cycleToNext() { //only used after input command
+  exitInputState() {
     var c = this.console;
     var p = this.program;
 
-    this.runPointer ++;
-    if( this.runPointer >=  p.length ) {
-      this.runFlag = false;
-      this.panicIfStopped();
-      c.clearCursor();
-      this.printLine("");
-      this.printLine("ready.");
+    this.inputFlag = false;
+
+
+    var l = this.program[ this.runPointer ];
+    var cmds = l[1];
+    //console.log(cmds);
+
+
+    if( this.runPointer > -1 ) {
+
+        var l=this.program[this.runPointer];
+        //console.log( l[0] + "after input >>(" + this.runPointer + ":"  + this.runPointer2 +")");
     }
+
+    this.runPointer2++;
+
+    if( this.runPointer > -1 ) {
+
+        var l=this.program[this.runPointer];
+        //console.log( l[0] + "after input >>>(" + this.runPointer + ":"  + this.runPointer2 +")");
+    }
+
+    if( this.runPointer2 >=  cmds.length ) {
+
+
+      this.runPointer2 = 0;
+      this.runPointer++;
+
+      if( this.runPointer > -1 ) {
+
+          var l=this.program[this.runPointer];
+          //console.log( l[0] + "after input >>>>(" + this.runPointer + ":"  + this.runPointer2 +")");
+      }
+
+
+      if( this.runPointer >=  p.length ) {
+
+        if( this.runPointer > -1 ) {
+
+            var l=this.program[this.runPointer];
+            //console.log( l[0] + "after input >>>>>(" + this.runPointer + ":"  + this.runPointer2 +")");
+        }
+
+        this.runFlag = false;
+        this.panicIfStopped();
+        c.clearCursor();
+        this.printLine("");
+        this.printLine("ready.");
+      }
+
+    }
+
+
   }
 
   breakCycle() {
@@ -1563,6 +1623,7 @@ class BasicContext {
           if(this.debugFlag) console.log(" this.runPointer = " + this.runPointer, " this.runPointer2 = " + this.runPointer2 );
           if(this.debugFlag) console.log(" cmdCount = " + cmdCount);
           var rv = this.runCommands( l[1], cmdCount );
+          //console.log(" rv = ", rv);
           var af = rv[ 1 ];
 
           if( rv[0] == MIDLINE_INTERUPT) {
@@ -1611,7 +1672,10 @@ class BasicContext {
           }
           else if( rv[0] == PAUSE_F_INPUT ) {
 
-            if(this.debugFlag) console.log("CYCLE PAUSE 4 INPUT");
+            this.runPointer2 = af;
+            //console.log("CYCLE PAUSE 4 INPUT");
+            //console.log("CYCLE PAUSE 4 INPUT" + this.runPointer + "," + this.runPointer2);
+            if(this.debugFlag) console.log("CYCLE PAUSE 4 INPUT" + this.runPointer + "," + this.runPointer2);
             break;
 
           }
@@ -2070,6 +2134,20 @@ class BasicContext {
     return "";
   }
 
+
+  commandToString( cmd ) {
+    if( cmd.type == "control" )  {
+      return cmd.controlKW.toUpperCase();
+    }
+    else if( cmd.type == "call" ) {
+      return cmd.statementName;
+    }
+    else if( cmd.type == "assignment" )  {
+      return "assign ->" + cmd.var;
+    }
+    return "????";
+  }
+
   runCommands( cmds, limit ) {
     /* return values
       false -> error or end program
@@ -2105,7 +2183,10 @@ class BasicContext {
       limit = 9999; //reaching to infinite (max on line maybe  40)
     }
 
+
+
     while( i<end && cnt<limit ) {
+
 
       if( this.breakCycleFlag ) {
         if(!(limit == undefined )) {
@@ -2115,6 +2196,12 @@ class BasicContext {
       }
 
       var cmd=cmds[i];
+
+      var l=this.program[this.runPointer];
+
+      //if( this.runPointer > -1 ) {
+      //  console.log( l[0] + "(" + this.runPointer + ":" + i +")" + this.commandToString( cmd ) );
+      //}
 
       if( cmd.type == "control" )  {
         var cn = cmd.controlKW;
@@ -2786,8 +2873,8 @@ class BasicContext {
 
         this.inputVarsPointer++;
         if( this.inputVarsPointer >= this.inputVars.length ) {
-          this.inputFlag = false;
-          this.cycleToNext();
+
+          this.exitInputState();
         }
         else {
           this.sendChars( "?? " , false);

@@ -216,6 +216,7 @@ class Tokenizer {
 		return this.normalizeToken( tok );
 	}
 
+
 	tokenize() {
 		var read = this.reader;
 
