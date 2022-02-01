@@ -3,14 +3,20 @@ class Uploader {
 	setCallback ( callbackC, callbackM ) {
 		this.callbackC = callbackC;
 		this.callbackM = callbackM;
+		this.debugFlag = false;
 	}
 
 	handleEvent(evt) {
-		console.log("handleEvent " + evt.type);
+		if( this.debugFlag ) {
+			console.log("handleEvent " + evt.type);
+		}
+
 		switch(evt.type) {
 		case "change":
-			console.log("--------------handle upload event");
-			console.log(evt);
+			if( this.debugFlag ) {
+				console.log("--------------handle upload event");
+				console.log(evt);
+			}
 			this.handleUpload( evt );
 
 		break;
@@ -19,7 +25,10 @@ class Uploader {
 
 	handleUpload(e){
 
-    console.log("handleUpload " + e);
+		if( this.debugFlag ) {
+    	console.log("handleUpload " + e);
+		}
+
 		var reader = new FileReader();
 
 		var thisFileName = e.target.files[0].name;
@@ -27,17 +36,24 @@ class Uploader {
 
 		reader.onload = function(event){
 
-				console.log("reader onload " + thisFileName);
+				if( this.debugFlag ) {
+					console.log("reader onload " + thisFileName);
+				}
 
 				var text =  event.target.result ;
-				console.log( text );
+				if( this.debugFlag ) {
+					console.log( text );
+				}
 
 				_this.callbackC[ _this.callbackM ]( text, thisFileName );
 
 		}
 
-		console.log("read " + e.target.files[0]);
-		console.log(e.target.files[0]);
+		if( this.debugFlag ) {
+			console.log("read " + e.target.files[0]);
+			console.log(e.target.files[0]);
+		}
+
 		reader.readAsText(e.target.files[0]);
 
 	}
@@ -47,8 +63,11 @@ class Uploader {
 class Menu {
 
   constructor( screen, context ) {
+
+		this.debugFlag = false;
     this.console = screen;
     this.context = context;
+
 
     this.uploader = new Uploader( );
 
@@ -586,7 +605,9 @@ class Menu {
       this.stateMemory[ i ] = mem[ i ];
     }
 
-    console.log( this.vmState );
+		if( this.debugFlag ) {
+    	console.log( this.vmState );
+		}
     this.initLogo();
     this.rendervmState();
 
@@ -632,7 +653,9 @@ class Menu {
   }
 
   stop() {
-    console.log( "End menu");
+		if( this.debugFlag ) {
+    	console.log( "End menu");
+		}
 
     this.console.setState( this.vmState.console );
 
@@ -675,8 +698,10 @@ class Menu {
 
 					var listIndex = this.optSelect;
 
-					console.log("List selected " + listIndex );
-					console.log("List selected item " + this.listItems[listIndex].id );
+					if( this.debugFlag ) {
+						console.log("List selected " + listIndex );
+						console.log("List selected item " + this.listItems[listIndex].id );
+					}
 
 					if( this.listAtExit != "stay" ) {
 
@@ -697,7 +722,9 @@ class Menu {
 			else {
 				var options = this.options[ this.menuvmState ];
 
-	      console.log( this.optSelect );
+				if( this.debugFlag ) {
+	      	console.log( this.optSelect );
+				}
 
 	      var opt = options[ this.optSelect ];
 
@@ -793,11 +820,15 @@ class Menu {
 
       this.optSelect = no;
 
-      console.log( this.optSelect );
+			if( this.debugFlag ) {
+      	console.log( this.optSelect );
+			}
 
       var opt = options[ this.optSelect ];
 
-      console.log( opt );
+			if( this.debugFlag ) {
+      	console.log( opt );
+			}
       this[ "do_" +  opt.opt ]();
 
     }
@@ -856,10 +887,12 @@ class Menu {
 							"?pgm=" +
 							encodeURIComponent(btoa( text ));
 
-	  console.log( url );
-		console.log( btoa( text ) );
+		if( this.debugFlag ) {
+	  	console.log( url );
+			console.log( btoa( text ) );
 
-		console.log( atob( btoa( text ) ) );
+			console.log( atob( btoa( text ) ) );
+		}
 
 		navigator.clipboard.writeText( url );
 
@@ -903,7 +936,10 @@ class Menu {
 
 	do_pastePGMFromClipAppendCallback( text ) {
 
-    console.log("callback3");
+		if( this.debugFlag ) {
+    	console.log("callback3");
+		}
+
     var lines = text.split(/\r?\n/);
 
     try {
@@ -917,7 +953,10 @@ class Menu {
         for (const l of pgm )
           {
             this.context.listCodeLine( l[2] );
-            console.log(l[2]);
+
+						if( this.debugFlag ) {
+            	console.log(l[2]);
+						}
           }
 
     }
@@ -928,7 +967,10 @@ class Menu {
 
   do_pastePGMFromClipCallback( text ) {
 
-    console.log("callback2");
+		if( this.debugFlag ) {
+    	console.log("callback2");
+		}
+
     var lines = text.split(/\r?\n/);
 
     try {
@@ -941,7 +983,9 @@ class Menu {
       var pgm = this.context.getProgramLines();
       for (const l of pgm )   {
           this.context.listCodeLine( l[2] );
-          console.log(l[2]);
+          if( this.debugFlag ) {
+						console.log(l[2]);
+					}
       }
     }
     catch (e) {
@@ -1006,7 +1050,9 @@ class Menu {
 	}
 
 	select_Clock( id ) {
-		console.log( id );
+		if( this.debugFlag ) {
+			console.log( id );
+		}
 
 		localStorage.setItem( "BJ64_Clock", JSON.stringify( { synchronized: id } ) );
 
@@ -1017,7 +1063,9 @@ class Menu {
 
 
 	select_Extended( id ) {
-		console.log( id );
+		if( this.debugFlag ) {
+			console.log( id );
+		}
 
 		localStorage.setItem( "BJ64_Extended", JSON.stringify( { extended: id } ) );
 
@@ -1039,10 +1087,15 @@ class Menu {
 		if( !this.context.confirmCookies() ) {
 			return;
 		}
-		console.log( "do_FormatDisk" );
 
-		//this.context.formatDisk();
-		console.log("Formating Disk...");
+		if( this.debugFlag ) {
+			console.log( "do_FormatDisk" );
+		}
+		this.context.formatDisk();
+
+		if( this.debugFlag ) {
+			console.log("Formating Disk...");
+		}
 
 		this.infoBox("Disk has been formatted");
 	}
@@ -1065,7 +1118,10 @@ class Menu {
 		this.chooseYesCallBack = callback;
 		list.callback = "chooseYesOrNoCallBack";
 
-		console.log("list options");
+		if( this.debugFlag ) {
+			console.log("list options");
+		}
+
 		this.startList( list );
 
 	}
@@ -1108,13 +1164,18 @@ class Menu {
 		list.callback = "select_Zoom";
 		list.atExit = "stay";
 
-		console.log("list options");
+		if( this.debugFlag ) {
+			console.log("list options");
+		}
+
 		this.startList( list );
 
 	}
 
 	select_Zoom( id ) {
-		console.log( id );
+		if( this.debugFlag ) {
+			console.log( id );
+		}
 
 		localStorage.setItem( "BJ64_Zoom", JSON.stringify( { zoom: id } ) );
 
@@ -1134,13 +1195,18 @@ class Menu {
 
 		list.callback = "select_Extended";
 
-		console.log("list options");
+		if( this.debugFlag ) {
+			console.log("list options");
+		}
+
 		this.startList( list );
 
 	}
 
 	select_Turbo( id ) {
-		console.log( id );
+		if( this.debugFlag ) {
+			console.log( id );
+		}
 
 		localStorage.setItem( "BJ64_Turbo", JSON.stringify( { turbo: id } ) );
 
@@ -1150,7 +1216,9 @@ class Menu {
 	}
 
 	select_List( id, page ) {
-		console.log( id, page  );
+		if( this.debugFlag ) {
+			console.log( id, page  );
+		}
 		this.endMenuWithMessage("LISTING PAGE");
 
 		var pgm = this.context.getProgramLines();
@@ -1163,7 +1231,7 @@ class Menu {
 					display = l[2].substr(0,34)+"..";
 				}
 				this.context.listCodeLine( l[2] );
-				//console.log(l[2]);
+
 		}
 
 	}
@@ -1187,8 +1255,10 @@ class Menu {
 					display = l[2].substr(0,34)+"..";
 				}
 				list.items.push({name: display, id: i});
-//				this.context.listCodeLine( l[2] );
-				console.log(l[2]);
+
+				if( this.debugFlag ) {
+					console.log(l[2]);
+				}
 		}
 
 		this.startList( list );
@@ -1261,7 +1331,10 @@ class Menu {
 
 		list.callback = "select_Extended";
 
-		console.log("list options");
+		if( this.debugFlag ) {
+			console.log("list options");
+		}
+
 		this.startList( list );
 
 	}
@@ -1269,7 +1342,11 @@ class Menu {
 	select_File( id ) {
 
 		this.endMenu();
-		console.log( id );
+
+		if( this.debugFlag ) {
+			console.log( id );
+		}
+
 		this.context.load( id );
 
 		this.context.printLine("list");
@@ -1278,7 +1355,9 @@ class Menu {
 		for (const l of pgm )
 			{
 				this.context.listCodeLine( l[2] );
-				console.log(l[2]);
+				if( this.debugFlag ) {
+					console.log(l[2]);
+				}
 			}
 	}
 
@@ -1299,7 +1378,9 @@ class Menu {
 
 		list.callback = "select_File";
 
-		console.log("list dir");
+		if( this.debugFlag ) {
+			console.log("list dir");
+		}
 		this.startList( list );
   }
 
@@ -1317,7 +1398,9 @@ class Menu {
     for (const l of pgm )
       {
         this.context.listCodeLine( l[2] );
-        console.log(l[2]);
+				if( this.debugFlag ) {
+        	console.log(l[2]);
+				}
       }
   }
 
@@ -1331,7 +1414,9 @@ class Menu {
     for (const l of pgm )
       {
         this.context.listCodeLine( l[2] );
-        console.log(l[2]);
+				if( this.debugFlag ) {
+        	console.log(l[2]);
+				}
       }
   }
 
@@ -1345,7 +1430,9 @@ class Menu {
     for (const l of pgm )
       {
         this.context.listCodeLine( l[2] );
-        console.log(l[2]);
+        if( this.debugFlag ) {
+					console.log(l[2]);
+				}
       }
   }
 
@@ -1374,13 +1461,18 @@ class Menu {
     this.uploader.setCallback( this, "do_importVDiskCallBack" );
 
 		uploadElement.click();
-		console.log( "clicked" );
+		if( this.debugFlag ) {
+			console.log( "clicked" );
+		}
 
   }
 
   do_importVDiskCallBack( text, fName ) {
-    console.log("import vdisk " + text);
-    console.log("import vdisk " + fName);
+		if( this.debugFlag ) {
+    	console.log("import vdisk " + text);
+    	console.log("import vdisk " + fName);
+		}
+
     var diskName = fName;
 
     if( diskName == null || diskName == "") {
@@ -1420,7 +1512,10 @@ class Menu {
     this.uploader.setCallback( this, "do_importBasCallBack" );
 
 		uploadElement.click();
-		console.log( "clicked" );
+
+		if( this.debugFlag ) {
+			console.log( "clicked" );
+		}
 
   }
 
@@ -1432,7 +1527,10 @@ class Menu {
     this.uploader.setCallback( this, "do_importBasCallBack" );
 
 		uploadElement.click();
-		console.log( "clicked" );
+
+		if( this.debugFlag ) {
+			console.log( "clicked" );
+		}
 
   }
 
@@ -1473,7 +1571,9 @@ class Menu {
       for (const l of pgm )
         {
           this.context.listCodeLine( l[2] );
-          console.log(l[2]);
+					if( this.debugFlag ) {
+          	console.log(l[2]);
+					}
         }
     }
 
@@ -1503,13 +1603,17 @@ class Menu {
     this.uploader.setCallback( this, "do_importSnapshotCallBack" );
 
 		uploadElement.click();
-		console.log( "clicked" );
+		if( this.debugFlag ) {
+			console.log( "clicked" );
+		}
 
   }
 
   do_importSnapshotCallBack( text, fName ) {
 
-    console.log("Import Snapshot");
+		if( this.debugFlag ) {
+    	console.log("Import Snapshot");
+		}
 
     this.endMenuWithMessage("snapshot restore");
 

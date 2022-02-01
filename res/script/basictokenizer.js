@@ -94,10 +94,10 @@ class Tokenizer {
 				if( ctx.seq.indexOf( kw ) > 0 )  {
 					trappedKW = true;
 					trapped = kw;
-					console.log( "trapped-------------" );
-					console.log( kw );
-					console.log( ctx.seq );
-					console.log( ctx );
+					//console.log( "trapped-------------" );
+					//console.log( kw );
+					//console.log( ctx.seq );
+					//console.log( ctx );
 					return [rv, kw.length ];
 				}
 			}
@@ -215,6 +215,7 @@ class Tokenizer {
 
 		return this.normalizeToken( tok );
 	}
+
 
 	tokenize() {
 		var read = this.reader;

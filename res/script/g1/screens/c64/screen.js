@@ -7,6 +7,7 @@ class C64Screen {
 
 		  var __this = this;
 
+			this.debugFlag = false;
 			this._setColors();
 
 		  var font = new Image();
@@ -372,8 +373,8 @@ class C64Screen {
 		 }
 		 backmap[32] = " ";
 		 this.backmap = backmap;
-		 console.log( map );
-		 console.log( backmap );
+		 if( this.debugFlag ) { console.log( map ); }
+		 if( this.debugFlag ) { console.log( backmap ); }
 	 }
 
 	 _setColors() {
@@ -458,7 +459,7 @@ class C64Screen {
 				 for( var j=0; j<8; j++) {
 					 spr[ j ].enabled = bits[j];
 					 this.screenRefresh = true;
-					 //console.log("Sprite[" +j+"].enable=" + bits[j])
+
 				 }
 			 }
 			 else if( nr == 53270)  {
@@ -473,8 +474,9 @@ class C64Screen {
 
 				 this.useHires = (v & 32) > 0; //bit 5 (starting w bit 0)
 
-				 //console.log("poke 53265 -> " + v);
-				 console.log("this.useHires -> " + this.useHires);
+				 if( this.debugFlag ) {
+				 	console.log("this.useHires -> " + this.useHires);
+				}
 
 
 			 }
@@ -509,14 +511,16 @@ class C64Screen {
 				 } else {
 					 this.videoBMRam = 0;
 				 }
-				 console.log("BitMapRam set to: " + this.videoBMRam);
+				 if( this.debugFlag ) {
+				 	console.log("BitMapRam set to: " + this.videoBMRam);
+				}
 			 }
 			 else if(nr == 53276) {
 				 var bits = this._getByteBits( v );
 				 var spr = this.sprites;
 				 for( var j=0; j<8; j++) {
 					 spr[ j ].multiCol = bits[j];
-					 //console.log("Sprite[" +j+"].multiCol=" + bits[j])
+
 				 }
 				 this.screenRefresh = true;
 			 }
@@ -525,7 +529,7 @@ class C64Screen {
 				 var spr = this.sprites;
 				 for( var j=0; j<8; j++) {
 					 spr[ j ].fat = bits[j];
-					 //console.log("Sprite[" +j+"].fat=" + bits[j])
+
 				 }
 				 this.screenRefresh = true;
 			 }
@@ -534,16 +538,13 @@ class C64Screen {
 				 var spr = this.sprites;
 				 for( var j=0; j<8; j++) {
 					 spr[ j ].long = bits[j];
-					 //console.log("Sprite[" +j+"].long=" + bits[j])
+
 				 }
 				 this.screenRefresh = true;
 			 }
 			 else if( nr>53247 && nr < 53264 ) { //sprite pos
 				var sprno = Math.floor((nr -53248) / 2);
 				var xcoord = !(nr % 2);
-				//console.log("sprite #" + sprno);
-				//console.log("is xcoord " + xcoord);
-				//console.log("coord #" + v);
 
 				if( xcoord ) {
 
@@ -551,7 +552,6 @@ class C64Screen {
 					var bits_9thbit = this._getByteBits( val_9thbit );
 
 					this.spriteXPos( sprno, v + (bits_9thbit[ sprno ] * 256) );
-					//TODO D010 / 53264 for hi bit
 				}
 				else {
 					this.spriteYPos( sprno, v );
@@ -560,8 +560,6 @@ class C64Screen {
 			 }
 			 else if( nr>53286 && nr < 53295 ) {
 				var sprno = nr - 53287;
-				//console.log("sprite #" + sprno);
-				//console.log("col " + v);
 
 				this.spriteCol( sprno, v % 16);
 
@@ -687,7 +685,9 @@ class C64Screen {
 
 	 _postLoadFontImage() {
 
-     console.log("_postLoadFontImage reached");
+		 if( this.debugFlag ) {
+     	console.log("_postLoadFontImage reached");
+		}
 
 		 //this.fontImageData = this._prepareFontImageData(this.srcImage);
 		 this.fontImageRom = this.preparefontImageRom(this.srcImage);
@@ -745,8 +745,6 @@ class C64Screen {
 
 	 spriteXPos( n, x ) {
  		 this.sprites[ n ].x = x;
-		 //console.log("sprite.x " + n + " = " +x);
-		 //console.log(this.sprites[ n ]);
  	 }
 
 	 spriteYPos( n, y ) {
@@ -1047,8 +1045,6 @@ class C64Screen {
 		 for( var x=0; x<39; x++) {
 			 var c=this.backmap[ buf[this.cursory][x][0] ];
 			 if( !c ) { c=" "};
-			 //console.log("Csrc: '"+buf[this.cursory][x][0]+"'");
-			 //console.log("C: '"+c.charCodeAt(0)+"'");
 			 line = line + c;
 		 }
 		 return line;
@@ -2065,8 +2061,6 @@ class C64Screen {
 			 var sp = this.sprites[ i ];
 				 if( sp.enabled ) {
 
-					//console.log( "Draw sprite " + i,sp.x,sp.y);
-				 	//bufctx.drawImage( sp.canvas, sp.x-24, sp.y-21 );
 					this.renderSprite( i, sp.x, sp.y );
 			 }
 		 }
