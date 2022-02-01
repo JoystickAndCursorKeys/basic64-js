@@ -257,6 +257,7 @@ class Parser {
     splits.push( { p1: "G", p2: "COLOR", p3: "S", whole: "GCOLORS" } );
     splits.push( { p1: "CHAR", p2: "COL", p3: null, whole: "CHARCOL" } );
     splits.push( { p1: "SFRAME", p2: "CP", p3: null, whole: "SFRAMECP" } );
+    splits.push( { p1: "X", p2: "ON", p3: null, whole: "XON" } );
     splits.push( { p1: "S", p2: "POS", p3: null, whole: "SPOS" } );
     splits.push( { p1: "S", p2: "POKE", p3: null, whole: "SPOKE" } );
     splits.push( { p1: "WJ", p2: "IF", p3: "FY", whole: "WJIFFY" } );
@@ -1422,7 +1423,7 @@ class Parser {
 					control = true;
 			}
 
-      if( this.KEYWORDS.indexOf( token.data ) > -1) {
+      if( this.KEYWORDS.indexOf( token.data ) > -1 || token.data == "XON") {
 					keyword = true;
 			}
       else {
