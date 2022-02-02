@@ -167,6 +167,20 @@ class BasicContext {
     }
     this.symbolTableBM = backmap;
 
+
+    /*for( var ii=0; ii<256; ii++) {
+
+      var bits = this._getByteBits( ii );
+      var byte2 = this._setByteBits( bits );
+      var bits2 = this._getByteBits( byte2 );
+
+      console.log( "byte: ", ii );
+      console.log( "bits: ", bits );
+      console.log( "byte2: ", byte2 );
+      console.log( "bits2: ", bits2 );
+
+    }*/
+
   }
 
   setImmersiveFlag( v ) {
@@ -348,6 +362,22 @@ class BasicContext {
   vpoke(a,b) { this.console.vpoke( a - 53248,b%256  ); }
   /* todo remove vpoke */
 
+
+
+  _setByteBits( bits ) {
+
+   var byte = 0b00000000;
+
+   for( var i=0; i<8; i++) {
+     if(i>0) {
+       byte = byte >> 1;
+     }
+     if( bits[i]) {
+       byte = byte | 128;
+     }
+   }
+   return byte;
+  }
 
   _getByteBits( byte ) {
     var masks = [
@@ -554,6 +584,26 @@ class BasicContext {
     for( var i=0; i<64; i++ ) {
         this.poke( baddr2 + i , this.peek( baddr1 + i)  );
     }
+  }
+
+  spriteFrameSet( f1, data ) {
+    var baddr1 = f1 * 64;
+
+    for( var i=0; i<64; i++ ) {
+
+        this.poke( baddr1 + i , data[ i ]  );
+    }
+  }
+
+  spriteFrameGet( f1 ) {
+    var baddr1 = f1 * 64;
+    var data = [];
+
+    for( var i=0; i<64; i++ ) {
+        data.push( this.peek( baddr1 + i)  );
+    }
+
+    return data;
   }
 
   spritePoke( f, a, v ) {

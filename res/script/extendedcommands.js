@@ -94,6 +94,18 @@ class ExtendedCommands {
     return points;
   }
 
+  _intMirrorByte( b ) {
+    var c=this.context;
+    var bits = c._getByteBits( b );
+    var bits2 = [];
+
+    for(var i=0; i<bits.length; i++) {
+      bits2[ 7-i ] = bits[ i ];
+    }
+
+    var byte2 = c._setByteBits( bits2 );
+    return byte2;
+  }
 
   _intGFXPointOnLine( _x0, _y0, _x1, _y1, progress0 ) {
 
@@ -771,6 +783,113 @@ class ExtendedCommands {
       }
 
       this.context.spriteFrameCopy( pars[0].value %256, pars[1].value %256 );
+    }
+
+    _stat_sframeflipx( pars ) {
+
+      if( pars.length == 0 ) {
+        throw("@frame missing");
+        return;
+      }
+
+      if( pars.length > 1 ) {
+        throw("@too many parameters");
+        return;
+      }
+
+      var data = this.context.spriteFrameGet( pars[0].value %256 );
+      for( var i=0;i<data.length;i++) {
+        data[ i ] = this._intMirrorByte( data[ i ] );
+      }
+
+      for( var y=0;y<21;y++) {
+        var o=(y*3);
+        var tmp = data[o];
+        data[o] = data[o+2];
+        data[o+2] = tmp;
+      }
+
+      this.context.spriteFrameSet( pars[0].value %256, data );
+
+    }
+
+    _stat_sframeflipy( pars ) {
+
+      if( pars.length == 0 ) {
+        throw("@frame missing");
+        return;
+      }
+
+      if( pars.length > 1 ) {
+        throw("@too many parameters");
+        return;
+      }
+
+      var data = this.context.spriteFrameGet( pars[0].value %256 );
+
+      for( var y=0;y<11;y++) {
+        var o1=(y*3);
+        var o2=((20-y)*3);
+        var tmp;
+
+        tmp = data[o1];
+        data[o1] = data[o2];
+        data[o2] = tmp;
+
+        tmp = data[o1+1];
+        data[o1+1] = data[o2+1];
+        data[o2+1] = tmp;
+
+        tmp = data[o1];
+        data[o1+2] = data[o2+2];
+        data[o2+2] = tmp;
+
+      }
+
+      this.context.spriteFrameSet( pars[0].value %256, data );
+
+    }
+
+    _stat_sframefx( pars ) {
+
+      if( pars.length == 0 ) {
+        throw("@frame missing");
+        return;
+      }
+
+      if( pars.length == 1 ) {
+        throw("@fx missing");
+        return;
+      }
+
+      if( pars.length > 2 ) {
+        throw("@too many parameters");
+        return;
+      }
+
+      var fx = pars[1].value;
+      if( ! ( fx == 0 || fx == 1)) {
+        throw("@unknown fx");
+        return;
+      }
+
+      var data = this.context.spriteFrameGet( pars[0].value %256 );
+
+      if( fx == 0 || fx == 1) {
+        var mask = [];
+        mask.push(128+32+8+2);
+        mask.push(64+16+4+1);
+        var flip = fx;
+        for( var i=0;i<63;i+=3) {
+          data[i] = data[i] & mask[flip];
+          data[i+1] = data[i+1] & mask[flip];
+          data[i+2] = data[i+2] & mask[flip];
+          flip = 1 - flip;
+        }
+      }
+
+      this.context.spriteFrameSet( pars[0].value %256, data );
+
     }
 
 
