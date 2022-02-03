@@ -2,7 +2,7 @@
 101 rem program adapted from version 
 102 rem at https://www.calormen.com/jsbasic/
 103 rem adapted by cursorkeys 2022 for basic64js
-105 border 0
+105 turbo: border 0
 110 mode 2: gpen 1:gcolors 0,1 : gcls
 120 for x = 0 to 279:for y = 0 to 95
 130 x1 = x / 280 * 3 - 2:y1 = y / 191 * 2 - 1
