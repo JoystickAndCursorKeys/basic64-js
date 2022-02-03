@@ -2481,6 +2481,14 @@ class BasicContext {
           if( cmd.var.endsWith("%") ) {
               arr.set( indices, Math.floor( this.evalExpression( cmd.expression ) ) );
           }
+          else if( ! cmd.var.endsWith("$") ) {
+              var v = this.evalExpression( cmd.expression );
+              if( ! (typeof v == "number") ) {
+                this.printError("type mismatch");
+                return [END_W_ERROR,i+1,cnt];
+              }
+              arr.set( indices, this.evalExpression( cmd.expression ) );
+          }
           else {
               arr.set( indices, this.evalExpression( cmd.expression ) );
           }
@@ -2496,6 +2504,14 @@ class BasicContext {
           }
           if(cmd.var.endsWith("%")) {
             this.vars[ cmd.var ] = Math.floor( this.evalExpression( cmd.expression ) );
+          }
+          else if( ! cmd.var.endsWith("$") ) {
+              var v = this.evalExpression( cmd.expression );
+              if( ! (typeof v == "number") ) {
+                this.printError("type mismatch");
+                return [END_W_ERROR,i+1,cnt];
+              }
+              this.vars[ cmd.var ] = this.evalExpression( cmd.expression );
           }
           else {
             this.vars[ cmd.var ] = this.evalExpression( cmd.expression );
