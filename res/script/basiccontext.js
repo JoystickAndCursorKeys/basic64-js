@@ -2477,7 +2477,14 @@ class BasicContext {
           for( var ai=0;ai<cmd.indices.length;ai++){
             indices[ai] = this.evalExpression( cmd.indices[ai] );
           }
-          arr.set( indices, this.evalExpression( cmd.expression ) );
+
+          if( cmd.var.endsWith("%") ) {
+              arr.set( indices, Math.floor( this.evalExpression( cmd.expression ) ) );
+          }
+          else {
+              arr.set( indices, this.evalExpression( cmd.expression ) );
+          }
+
         }
         else { //single var (not an array)
           if( this.vars[ cmd.var ] === undefined ) {
@@ -2487,7 +2494,12 @@ class BasicContext {
             }
             this.vars[ cmd.var ] = 0;
           }
-          this.vars[ cmd.var ] = this.evalExpression( cmd.expression );
+          if(cmd.var.endsWith("%")) {
+            this.vars[ cmd.var ] = Math.floor( this.evalExpression( cmd.expression ) );
+          }
+          else {
+            this.vars[ cmd.var ] = this.evalExpression( cmd.expression );
+          }
         }
       }
       //cnt++;
