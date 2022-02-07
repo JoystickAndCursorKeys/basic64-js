@@ -10,6 +10,7 @@ class BasicContext {
     this.program = [];
     this.cursorCount = 0;
     this.runFlag = false;
+    this.goPlayExampleFlag = false;
     this.breakCycleFlag;
     this.inputFlag = false;
     this.listFlag = false;
@@ -181,6 +182,14 @@ class BasicContext {
 
     }*/
 
+  }
+
+  getPlayExampleFlag() {
+    if ( this.goPlayExampleFlag )  {
+      this.goPlayExampleFlag = false;
+      return true;
+    }
+    return false;
   }
 
   setImmersiveFlag( v ) {
@@ -1152,6 +1161,20 @@ class BasicContext {
     return txt2;
   }
 
+
+  getProgramAsTextNoPETSCII() {
+    var text = "";
+    for (const l of this.program)
+      {
+        if( text != "") {
+          text += "\n";
+        }
+        text +=  this.prepareLineForExportNoPETSCII( l[2].trim() );
+      }
+    return text;
+  }
+
+
   getProgramAsText() {
     var text = "";
     for (const l of this.program)
@@ -1170,7 +1193,6 @@ class BasicContext {
     var dst = "";
 
     for( var i=0; i<txt.length; i++) {
-      //var c = txt.charAt( i );
       var c = txt.charCodeAt( i );
       if( c<31 || c==92 || c>=94 ) {
         var symdef = this.symbolTableBM[ c ];
@@ -1186,14 +1208,69 @@ class BasicContext {
         dst += txt.charAt( i );
       }
     }
-
-    /*
-      escape 0-31
-      escape 92
-      escape 94 - 255
-      {}  123 + 125
-    */
     return dst.toLowerCase();
+  }
+
+  replaceAll( src, str1, str2 ) {
+
+    var rv = src;
+    while( rv.indexOf( str1 ) > -1 ) {
+      rv = rv.replace( str1, str2 );
+    }
+    return rv;
+  }
+
+  prepareLineForExportNoPETSCII( txt0 ) {
+    var txt;
+    txt = txt0.trim();
+    var dst = "";
+    var last= "";
+
+    for( var i=0; i<txt.length; i++) {
+      var c = txt.charCodeAt( i );
+      var cc = txt.charAt( i );
+      if( c<31 || c==92 || c>=94 ) {
+
+        var prevCharIsQuote = false, nextCharIsQuote=false;
+        if( (i+1)<txt.length) {
+          var cc2 = txt.charAt( i+1 );
+          if( cc2 == "\"" ) {
+            nextCharIsQuote = true;
+          }
+        }
+        if( last == "\"" ) {
+            prevCharIsQuote = true;
+          }
+
+//
+//7 print"{home}{white}":print spc(9);"game over sc:";s;" top:";tp:ifs>tpthentp=s
+//
+        if( prevCharIsQuote && !nextCharIsQuote ) {
+            dst = dst.substr( 0, dst.length-1 );
+            dst += "chr$("+c+");\"";
+        }
+        else if( prevCharIsQuote && nextCharIsQuote ) {
+            dst = dst.substr( 0, dst.length-1 );
+            dst += "chr$("+c+")";
+            i++;
+        }
+        else if( !prevCharIsQuote && nextCharIsQuote ) {
+            dst += "\";chr$("+c+")";
+            i++;
+        }
+
+        else {
+            dst += "\";chr$("+c+");\"";
+        }
+      }
+      else {
+        dst += txt.charAt( i );
+      }
+      last = cc;
+    }
+
+    var dst2= this.replaceAll( dst, ";\"\";",";");
+    return dst2.toLowerCase();
   }
 
   ResolveStringSymbolToCode( x ) {
@@ -2988,6 +3065,7 @@ class BasicContext {
       }
       return;
     }
+
     if( l.lineNumber != -1 ) {
       if( l.commands.length > 0) {
         this.insertPgmLine( l.lineNumber, l.commands, l.raw);
