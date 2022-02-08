@@ -1,5 +1,5 @@
 100 fort=0to39:poke1024+t,102:next
-110 print""
+110 print"{clear}"
 120 fort=0to39:poke1024+t,102:next
 130 fort=0to39:poke1984+t,102:next
 140 fort=0to23:poke1024+(t*40),102:next
@@ -13,7 +13,7 @@
 220 sl=sl-1:ifsl>0thengoto170
 230 sl=sw:sc=sc+1
 240 poke1024+x+(y*40),81
-250 print"";sc:sl=sl-1
+250 print"{home}";sc:sl=sl-1
 260 x=x+dx:y=y+dy
 270 ad=1024+x+(y*40)
 280 ifpeek(ad)<>32thengoto300
