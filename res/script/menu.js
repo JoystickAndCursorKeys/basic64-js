@@ -122,10 +122,12 @@ class Menu {
     opts.push({opt: "list", display: "List" });
     opts.push({opt: "renumber", display: "Renumber Basic Program" });
     opts.push({opt: "compress", display: "Remove Spaces" });
+    opts.push({opt: "compress2", display: "Compress" });
+		opts.push({opt: "PETSCIIreplace", display: "Strip PETSCII Chars" });
     opts.push({opt: "normalize", display: "Normalize Spaces" });
     this.options["basic"] = opts;
     this.menus["basic"] = "basic";
-    this.menuOffset["basic"] = 7;
+    this.menuOffset["basic"] = 4;
 
     opts = [];
 		opts.push({opt: "importBas", display: "Import Basic Program" });
@@ -1406,7 +1408,7 @@ class Menu {
   }
 
 	do_compress() {
-    this.context.compressProgram();
+    this.context.compressProgram( false );
 
     this.endMenuWithMessage("compress ok");
     this.context.printLine("list");
@@ -1420,6 +1422,39 @@ class Menu {
 				}
       }
   }
+
+	do_compress2() {
+    this.context.compressProgram( true );
+
+    this.endMenuWithMessage("compress ok");
+    this.context.printLine("list");
+
+    var pgm = this.context.getProgramLines();
+    for (const l of pgm )
+      {
+        this.context.listCodeLine( l[2] );
+				if( this.debugFlag ) {
+        	console.log(l[2]);
+				}
+      }
+  }
+
+	do_PETSCIIreplace() {
+
+		this.context.PETSCIIreplace( true );
+
+		this.endMenuWithMessage("PETSCIIreplace");
+		this.context.printLine("list");
+
+		var pgm = this.context.getProgramLines();
+		for (const l of pgm )
+			{
+				this.context.listCodeLine( l[2] );
+				if( this.debugFlag ) {
+					console.log(l[2]);
+				}
+			}
+	}
 
   renumber(x,y) {
     this.context.renumberProgram(x,y);

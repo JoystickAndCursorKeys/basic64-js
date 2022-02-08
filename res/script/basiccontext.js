@@ -1169,7 +1169,7 @@ class BasicContext {
         if( text != "") {
           text += "\n";
         }
-        text +=  this.prepareLineForExportNoPETSCII( l[2].trim() );
+        text +=  this.prepareLineForExportNoPETSCII( l[2].trim(), true );
       }
     return text;
   }
@@ -1220,7 +1220,19 @@ class BasicContext {
     return rv;
   }
 
-  prepareLineForExportNoPETSCII( txt0 ) {
+
+  rebuildNoPETSCIILineString( raw )
+  {
+
+    var p = new Parser( this.commands, this.extendedcommands );
+    p.init();
+    var noPetsciiLine = this.prepareLineForExportNoPETSCII( raw, false );
+    var rec = p.parseLine( noPetsciiLine );
+    return rec;
+  }
+
+
+  prepareLineForExportNoPETSCII( txt0, toLower ) {
     var txt;
     txt = txt0.trim();
     var dst = "";
@@ -1247,20 +1259,20 @@ class BasicContext {
 //
         if( prevCharIsQuote && !nextCharIsQuote ) {
             dst = dst.substr( 0, dst.length-1 );
-            dst += "chr$("+c+");\"";
+            dst += "CHR$("+c+");\"";
         }
         else if( prevCharIsQuote && nextCharIsQuote ) {
             dst = dst.substr( 0, dst.length-1 );
-            dst += "chr$("+c+")";
+            dst += "CHR$("+c+")";
             i++;
         }
         else if( !prevCharIsQuote && nextCharIsQuote ) {
-            dst += "\";chr$("+c+")";
+            dst += "\";CHR$("+c+")";
             i++;
         }
 
         else {
-            dst += "\";chr$("+c+");\"";
+            dst += "\";CHR$("+c+");\"";
         }
       }
       else {
@@ -1270,7 +1282,9 @@ class BasicContext {
     }
 
     var dst2= this.replaceAll( dst, ";\"\";",";");
-    return dst2.toLowerCase();
+
+    if( toLower ) { return dst2.toLowerCase(); }
+    return dst2;
   }
 
   ResolveStringSymbolToCode( x ) {
@@ -1975,7 +1989,8 @@ class BasicContext {
   rebuildLineString( nr, raw,
       removePadding,
       renumbering,
-      addSmartPadding )
+      addSmartPadding,
+      shortenKeywords)
   {
 
     var p = new Parser( this.commands, this.extendedcommands );
@@ -2023,6 +2038,18 @@ class BasicContext {
            continue;
          }
        }
+
+       if( shortenKeywords ) {
+         if( tokens[i].type == "name" && tokens[i].data == "PRINT" ) {
+           tokens[i].data = "?";
+         }
+       }
+       else {
+         if( tokens[i].type == "name" && tokens[i].data == "?" ) {
+           tokens[i].data = "PRINT";
+         }
+      }
+
       if( tokens[i].type == "str" ) {
         newString += "\"" + tokens[i].data + "\"";
       }
@@ -2074,13 +2101,27 @@ class BasicContext {
     }
   }
 
-  compressProgram() {
+  PETSCIIreplace( keywordCompress ) {
     var p = this.program;
 
     for( var i=0; i<p.length; i++) {
         var line = p[ i ];
 
-       var lRec = this.rebuildLineString( line[0], line[2], true, undefined, false );
+        var lRec = this.rebuildNoPETSCIILineString( line[2] );
+
+        line[1] = lRec.commands;
+        line[2] = lRec.raw;
+
+    }
+  }
+
+  compressProgram( keywordCompress ) {
+    var p = this.program;
+
+    for( var i=0; i<p.length; i++) {
+        var line = p[ i ];
+
+       var lRec = this.rebuildLineString( line[0], line[2], true, undefined, false, keywordCompress );
 
         line[1] = lRec.commands;
         line[2] = lRec.raw;
