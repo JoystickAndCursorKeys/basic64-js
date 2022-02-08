@@ -76,6 +76,7 @@ class Program {
   /*
 		Loading
   */
+
   load(action, data) {
 
     if (action == 'GETURLS') {
@@ -109,11 +110,25 @@ class Program {
           this.basiccontext.printLine("");
           this.basiccontext.printLine("searching for *");
         }
+        else {
+          var dataURLs = [];
+          this.bgcolor = 0;
+          dataURLs[ 'examples' ] = "doc/examples.json";
+          data.urls = {
+              imgSrcArray: [],
+              audioSrcArray: [],
+              dataSrcArray: dataURLs
+            };
+        }
         return;
 
 
     } else if (action == 'LOADED') {
-      var pgm = data.resources.dataArray["externalPGM"].data;
+      var pgm = data.resources.dataArray["externalPGM"];
+      if( pgm ) { pgm = pgm.data; }
+
+      var examples = data.resources.dataArray["examples"];
+      if( examples ) { examples = examples.data; }
 
       if( pgm != null ) {
         console.log("External URL Program detected, size " + pgm.length );
@@ -144,6 +159,9 @@ class Program {
           this.basiccontext.printReady();
         }
       }
+      else if( examples != null ) {
+        console.log("Loaded examples " , examples );
+      }
     }
   }
 
@@ -152,8 +170,78 @@ class Program {
 
   }
 
+
+
   /*
-	Playing the demo
+		Loading Example
+  */
+
+  loadexample(action, data) {
+
+    if (action == 'GETURLS') {
+
+        this.cursorCount = 1;
+        var c = this.console;
+        var basiccontext = this.basiccontext;
+
+        var exampleURL = this.exampleURL;
+        var exampleIsExtended = this.exampleIsExtended;
+
+        basiccontext.reset( true );
+
+        var dataURLs = [];
+        this.bgcolor = 0;
+        dataURLs[ 'example' ] = exampleURL;
+        data.urls = {
+            imgSrcArray: [],
+            audioSrcArray: [],
+            dataSrcArray: dataURLs
+          };
+
+        return;
+
+
+    } else if (action == 'LOADED') {
+      var pgm = data.resources.dataArray["example"];
+      if( pgm ) { pgm = pgm.data; }
+
+      if( pgm != null ) {
+        console.log("Exammple URL Program detected, size " + pgm.length );
+        console.log(pgm);
+
+        this.basiccontext.printLine("loading example");
+
+        try {
+
+          console.log(pgm);
+          var regExp=/\r\n|\n\r|\n|\r/g;
+          var lines = pgm.replace(regExp,"\n").split("\n");
+          var bas = this.basiccontext.textLinesToBas( lines );
+
+          this.basiccontext.printReady();
+          this.basiccontext.printLine("run");
+          this.basiccontext.setProgram( bas );
+          this.basiccontext.clearScreen();
+          this.basiccontext.runPGM();
+          return;
+        }
+        catch ( e ) {
+          this.basiccontext.runStop();
+          this.basiccontext.printError("load");
+          this.basiccontext.printReady();
+        }
+      }
+    }
+  }
+
+  loadexampleLSRender() {
+    this.console.renderDisplay();
+
+  }
+
+
+  /*
+	Playing the emulator
   */
   play(action, data) {
 
@@ -168,7 +256,7 @@ class Program {
         var extended = urlParams.get('x');
 
         if( pgm != null ) {
-          console.log("URL Program detected");
+          console.log("URL-Embedded Program Detected");
           console.log(pgm);
 
           if( extended != null ) {
@@ -340,6 +428,7 @@ class Program {
 
           c.clearCursor();
           var line=c.getCurrentLine();
+          console.log( line );
 
           this.stringMode = false;
           stringMode = false;
@@ -494,6 +583,9 @@ class Program {
 
     basiccontext.cycle();
 
+    if( this.basiccontext.getPlayExampleFlag() ) {
+      return "loadExample";
+    }
     return false;
   }
 

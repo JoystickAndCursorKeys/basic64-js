@@ -5,6 +5,8 @@ class StringReader {
 			this.index = 0;
 			this.lineIndex = 1;
 			this.line = 1;
+			var a={}; a.b=strIn;
+			console.log("Stringreader",  a);
 	}
 
 	peek() {
@@ -76,9 +78,9 @@ class Tokenizer {
 		if( ctx.endFound ) {
 			return [false,0];
 		}
-		var rv = ctx.c.match("[a-zA-Z0-9$?]") != null;
+		var rv = ctx.c.match("[a-zA-Z0-9$%?]") != null;
 
-		if( ctx.c=="$" ) {
+		if( ctx.c=="$" || ctx.c== "%") {
 			ctx.endFound = true;
 		}
 

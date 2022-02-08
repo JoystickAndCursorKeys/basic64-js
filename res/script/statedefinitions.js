@@ -44,8 +44,9 @@ class StateDefinitions {
 
 		/* Only load, play and repeat since this is a demo, not a game */
 
+        'loadexample':    { _type: "LOAD",  next: 'load'},
         'load':    { _type: "LOAD",  next: 'play'},
-        'play':    { _type: "PLAY", next: 'play' },
+        'play':    { _type: "PLAY", loadExample: 'loadexample' },
 
 
       } ;
