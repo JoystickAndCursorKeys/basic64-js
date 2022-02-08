@@ -2075,17 +2075,17 @@ class BasicContext {
   }
 
   compressProgram() {
-    //var p = this.program;
+    var p = this.program;
 
-    //for( var i=0; i<p.length; i++) {
-    //    var line = p[ i ];
-    //
-    //   var lRec = this.rebuildLineString( line[0], line[2], true, undefined, false );
-    //
-    //    line[1] = lRec.commands;
-    //    line[2] = lRec.raw;
-    //
-    //}
+    for( var i=0; i<p.length; i++) {
+        var line = p[ i ];
+
+       var lRec = this.rebuildLineString( line[0], line[2], true, undefined, false );
+
+        line[1] = lRec.commands;
+        line[2] = lRec.raw;
+
+    }
   }
 
   normalizeProgram() {
