@@ -1124,7 +1124,7 @@ class BasicContext {
 
     this.printLine("");
     if( hard ) {
-      this.printLine("     **** c64 - basic emulator ****");
+      this.printLine("   **** c64 basic emulator v0.70 ****");
       this.printLine("");
       var ext = "off";
       if(this.extendedcommands.enabled) ext = "on ";
@@ -1132,7 +1132,10 @@ class BasicContext {
       var turbo = "off";
       if(this.turboMode) turbo = "on ";
 
-      this.printLine("  **** extended: " + ext + "-  turbo: "+turbo+" ****");
+      var panic = "off";
+      if(this.exitMode == "panic") panic = "on ";
+
+      this.printLine("  extended: " + ext + "- turbo: "+turbo+" panic: " + panic);
       this.printLine("");
     }
     if( !muteReady ) {

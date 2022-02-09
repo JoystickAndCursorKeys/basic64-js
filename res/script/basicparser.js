@@ -1,102 +1,10 @@
-/*
----so tests
-
-	10 print a(2,3):  q = 2 : q=4
-
-
----eo tests
-
-
-	instruction =
-		assignment | statementcall
-
-	pad = "\s" | "\t"
-
-	assignment = varname "=" expression
-
-	varname = [pad]* namestring [pad]*
-
-	namestring = [A-Za-z][A-Za-z0-9]*
-
-	expression = constant | varname | "(" expression ")" | expression op expression
-
-	op = "+" | "-" | "*" | "/" | ";"
-
-	constant = constantstring | constantint
-
-	constantstring = [pad]* '"' validstringcontent '"'
-
-	validcontantstring =  [all_but_not_'"']*
-
-	constantint = [pad]* [-]+[0-9]* [pad]*
-
-	validconstantint = [-]+[0-9]*
-
-	statementcall = statname [statpar]+ | [statpar] [sep statpar]*
-
-	sep = ","
-
-	statname = [pad]* namestring [pad]*
-
-	statpar = expression
-
-
-  parseRules.push(["pad", 		"isPadChar"		, "str"] );
-  parseRules.push(["str", 		"isStrChar"		, "str"] );
-  parseRules.push(["num", 		"isNumChar"		, "str"] );
-  parseRules.push(["name", 		"isNameChar"	, "str"] );
-  parseRules.push(["op", 			"isOpChar"   	, "chr"] );
-  parseRules.push(["comp", 		"isCompChar"  , "chr"] );
-  parseRules.push(["eq", 			"isEqChar"   	, "chr"] );
-  parseRules.push(["bracket", "isBracket"   , "chr"] );
-  parseRules.push(["sep", 		"isSepChar"   , "chr"] );
-  parseRules.push(["cmdsep", 	"isCommandSepChar"   , "chr"] );
-
-
-
-10  a = 10
-15  a = (10)
-20  a = 10 : b=10
-30  a = "hi"
-40  a = 10 + 10
-50  a = sin( 1 )
-60  a = sin()
-70  a = b + sin() + "" + 2
-80  a = b + ((sin() + "") + 2)
-90  a = color(1,2)
-100  print 1
-110  print 1: print 2
-120  print 1: a=10: print 1
-130  print b + ((sin() + "") + 2)
-
-
-  TODO
-    IF
-    THEN
-    AND
-    NOT
-    OR
-    GOTO
-    GOSUB
-    RETURN
-    FOR TO NEXT STEP
-
-
-      ()<-error (empty expression)
-      sin()
-      sin(()+5)
-      sin()
-
-*/
-
-
 class Parser {
 
   constructor( cmds, ecmds ) {
     this.commands = cmds;
     this.extendedcommands = ecmds;
     this.errorHandler = new ErrorHandler();
-    //this.debugFlag = true;
+    this.debugFlag = false;
   }
 
   init() {
@@ -766,11 +674,35 @@ class Parser {
 			return null;
 		}
 
-    for( var i=0; i<expression.parts.length; i++ ) {
+    var newParts;
+    newParts = this.groupParts( expression.parts, "^" );
+    newParts = this.groupParts( newParts, "/" );
+    newParts = this.groupParts( newParts, "*" );
 
-      var part = expression.parts[ i ];
-      if( i>0 && (part.op == "*" || part.op == "/" ) ) {
-        var prevPart = expression.parts[ i-1 ];
+    var oldExpression = expression;
+    expression = {
+          parts: newParts,
+          negate: oldExpression.negate,
+          binaryNegate: oldExpression.binaryNegate
+    };
+
+		return expression;
+	}
+
+
+  groupParts( parts0 , op ) {
+
+    var parts1=[], parts2=[];
+
+    for( var i=0; i<parts0.length; i++ ) {
+      parts1.push( parts0[ i ] );
+    }
+
+    for( var i=0; i<parts1.length; i++ ) {
+
+      var part = parts1[ i ];
+      if( i>0 && part.op == op ) {
+        var prevPart = parts1[ i-1 ];
 
         var subExpr = {
           negate: false,
@@ -784,28 +716,23 @@ class Parser {
         subExpr.parts[ 0 ].op = null;
         subExpr.parts[ 1 ] = part;
 
-        expression.parts[i-1] = null;
-        expression.parts[ i ] = subExpr;
+        parts1[i-1] = null;
+        parts1[ i ] = subExpr;
 
       }
     }
 
-    var expression2 = expression;
-    expression = {
-          parts: [],
-          negate: expression2.negate,
-          binaryNegate: expression2.binaryNegate
-    };
-    for( var i=0; i<expression2.parts.length; i++ ) {
 
-      var part = expression2.parts[ i ];
+    for( var i=0; i<parts1.length; i++ ) {
+
+      var part = parts1[ i ];
       if( part != null ) {
-        expression.parts.push( part );
+        parts2.push( part );
       }
     }
 
-		return expression;
-	}
+    return parts2;
+  }
 
   normalizeStatementName( x ) {
     if(x == "?") {

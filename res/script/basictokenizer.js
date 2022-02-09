@@ -6,7 +6,7 @@ class StringReader {
 			this.lineIndex = 1;
 			this.line = 1;
 			var a={}; a.b=strIn;
-			console.log("Stringreader",  a);
+			
 	}
 
 	peek() {
