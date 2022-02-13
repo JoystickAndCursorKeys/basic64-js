@@ -841,11 +841,29 @@ class Parser {
           this.throwError( context, "LET expects =");
         }
 */
+
+        if( token.type == "eq") {
+
+          this.parseAssignment( context, preTokens, commands, command, nameToken, token );
+        }
+        else if( token.type == "bracket" && token.data=="(" && !keyword ) {
+
+          this.parseArrayAssignment( context, preTokens, commands, command, nameToken, token );
+
+        }
+        else {
+          this.throwError( context, "let, unexpected token " + token.type );
+        }
+
+/*parseAssignment( context, preTokens, commands, command, nameToken, token0  ) {
+parseArrayAssignment( context, preTokens, commands, command, nameToken, token0  ) {
+
+
         if( token.type != "eq") {
           this.throwError( context, "LET expects =");
         }
 
-        cmdType = "assignment";
+        var cmdType = "assignment";
         command.type = cmdType;
         command.var = nameToken;
 
@@ -853,7 +871,7 @@ class Parser {
         endTokens.push( { type: "cmdsep", data: "@@@all" });
 
         command.expression = this.parseBoolExpression( context, endTokens );
-        commands.push( command );
+        commands.push( command );*/
       }
       else if( controlToken == "DIM") {
 
