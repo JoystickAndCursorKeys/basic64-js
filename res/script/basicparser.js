@@ -846,7 +846,7 @@ class Parser {
 
           this.parseAssignment( context, preTokens, commands, command, nameToken, token );
         }
-        else if( token.type == "bracket" && token.data=="(" && !keyword ) {
+        else if( token.type == "bracket" && token.data=="(" ) {
 
           this.parseArrayAssignment( context, preTokens, commands, command, nameToken, token );
 
