@@ -30,7 +30,7 @@ class BasicContext {
     var c = this.console;
     this.commands = new BasicCommands( this );
     this.extendedcommands = new ExtendedCommands( this );
-    this.errorHandler = new ErrorHandler();
+    this.erh = new ErrorHandler();
     this.vars = [];
     this.functions = [];
     this.data = [];
@@ -182,6 +182,10 @@ class BasicContext {
 
     }*/
 
+  }
+
+  throwError( clazz, detail ) {
+    this.erh.thowError(  clazz, detail, this, this.retreiveLine() );
   }
 
   getPlayExampleFlag() {
@@ -525,8 +529,16 @@ class BasicContext {
     return -1;
   }
 
-  printError( s ) {
+  printError( s, supressLine, explicitline ) {
 
+    if( explicitline ) {
+        this.console.writeString( ("?" + s + " error in " + explicitline ).toUpperCase(), true );
+        return;
+    }
+    if( supressLine ) {
+        this.console.writeString( ("?" + s + " error").toUpperCase(), true );
+        return;
+    }
     this.console.writeString( ("?" + s + " error" + this.onLineStr()).toUpperCase(), true );
 
   }
@@ -1463,7 +1475,7 @@ class BasicContext {
             this.printError("no such function " + p.functionName);
             console.log("Cannot find functionName " + nFunName );
 
-            throw "no such function " + p.functionName;
+            throw "@no such function " + p.functionName;
 
           }
           else {
@@ -1553,7 +1565,7 @@ class BasicContext {
       }
       else if( p.op == "/" ) {
         if( this.evalExpressionPart( p ) == 0) {
-          throw "@division by zero  ";
+          throw "@division by zero";
         }
         val /= this.evalExpressionPart( p );
       }
@@ -1610,7 +1622,7 @@ class BasicContext {
       }
 
       else {
-        throw "unknown op '"+p.op+"'";
+        throw "@unknown op '"+p.op+"'";
       }
     }
 
@@ -1838,11 +1850,19 @@ class BasicContext {
     }
     catch (e) {
       c.clearCursor();
-      this.printError("unexpected");
+
+      if( this.erh.isSerializedError( e ) ) {
+        var err = this.erh.fromSerializedError( e );
+        this.printError( err.clazz );
+      }
+      else {
+        this.printError("unexpected");
+      }
+
       this.printLine("ready.");
       this.runFlag = false;
       this.panicIfStopped();
-      console.log("Exception: ", e );
+      console.log("ERROR: ", e );
       console.log("PARAMETER DUMP:", this.vars );
       console.log("FUNCTION DUMP:", this.functions );
 
@@ -1856,7 +1876,7 @@ class BasicContext {
 
     var oldPointers = this.gosubReturn.pop();
     if( oldPointers === undefined ) {
-      throw "return without gosub  ";
+      throw "@return without gosub";
     }
 
     this.runPointer2 = oldPointers[ 1 ];
@@ -1911,7 +1931,7 @@ class BasicContext {
 
     if(!found ) {
       this.printError("UNDEF'D STATEMENT");
-      throw "GOTO line not found";
+      throw "@line not found";
     }
 
     if(!this.runFlag ) {
@@ -2242,11 +2262,11 @@ class BasicContext {
     if( ctxv.jumpTo.cmdPointer >= cmdArrayLen )  {
 
       if( this.runPointer == -1) {
-        throw "Cannot find command after for";
+        throw "@Cannot find command after for";
       }
       else {
         if( ( this.runPointer + 1) >= linePointersLen ) {
-          throw "Cannot find command after for, on next line";
+          throw "@cannot find command after for, on next line";
         }
         ctxv.jumpTo.line++;
         ctxv.jumpTo.cmdPointer = 0;
@@ -2258,7 +2278,7 @@ class BasicContext {
   doForNext( nextVarName ) {
     var ctx = this.forContext;
     if( ctx.default.length == 0 ) {
-      this.printError("next without for");
+      throw "@next without for";
     }
     var varName = ctx.default[ctx.default.length-1];
     if( nextVarName  != null ) {
@@ -2288,21 +2308,29 @@ class BasicContext {
   }
 
   onLineStr() {
+
+    var line = this.retreiveLine();
+
+    return " in " + line;
+
+  }
+
+
+  retreiveLine() {
     if( this.runFlag ) {
       if( this.runPointer > -1 ) {
-
         var line = this.program[this.runPointer];
-        return " in " + line[0];
+        return line[0];
       }
     }
     else {
       if( this["parseLineNumber"] === undefined ) {
-        return "";
+        return -1;
       }
       if( this.parseLineNumber == -1) { return ""; }
-      return " in " + this.parseLineNumber;
+      return this.parseLineNumber;
     }
-    return "";
+    return -1;
   }
 
 
@@ -3092,15 +3120,14 @@ class BasicContext {
     p.init();
     try {
       var l = p.parseLine( str );
-
     }
     catch( e ) {
 
       this.parseLineNumber = -1;
-      if( this.errorHandler.isError( e ) ) {
+      if( this.erh.isError( e ) ) {
         this.parseLineNumber = e.lineNr;
       }
-      this.printError( "syntax" );
+      this.printError( "syntax", true );
       this.printLine("ready.");
     }
     if( l == null ) {
@@ -3113,7 +3140,6 @@ class BasicContext {
     if( l.lineNumber != -1 ) {
       if( l.commands.length > 0) {
         this.insertPgmLine( l.lineNumber, l.commands, l.raw);
-        //this.program[ l.lineNumber ] = [l.commands,l.raw];
       }
       else {
         this.removePgmLine( l.lineNumber  );

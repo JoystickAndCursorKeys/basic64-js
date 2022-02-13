@@ -3,7 +3,7 @@ class Parser {
   constructor( cmds, ecmds ) {
     this.commands = cmds;
     this.extendedcommands = ecmds;
-    this.errorHandler = new ErrorHandler();
+    this.erh = new ErrorHandler();
     this.debugFlag = false;
   }
 
@@ -62,7 +62,8 @@ class Parser {
   }
 
   getKeyWordCodes() {
-    throw "(Extended) Keywords not yet supported";
+
+    this.throwError( null, "(Extended) Keywords not yet supported", "extended disabled" );
     return this.KWCODES;
   }
 
@@ -74,13 +75,26 @@ class Parser {
     }
   }
 
-  Exception( ctx, x ) { /*old*/
-    console.log( ctx );
-    console.log(" Exception " + x + " at line " + ctx.lineNumber);
-    throw x + " at line " + ctx.lineNumber;
+  throwError( ctx, detail, clazz ) {
+
+    var clazz2 = clazz;
+    if( clazz2 === undefined ) {
+      clazz2 = "syntax";
+    }
+
+    if( ctx ) {
+      console.log(" Exception " + clazz + " at line " + ctx.lineNumber+ " " + detail );
+    }
+
+    if( ctx ) {
+      if( ! ( ctx.lineNumber == undefined ) ) {
+        this.erh.throwError( clazz2, detail, ctx, ctx.lineNumber );
+      }
+    }
+
+    this.erh.throwError( clazz2, detail, undefined, -1 );
+
   }
-
-
 
 	removePadding( tokens ) {
 		var tokens2 = [];
@@ -160,8 +174,11 @@ class Parser {
 
     var splits = [];
 
-    splits.push( { p1: "REF", p2: "OR", p3: "MAT", whole: "REFORMAT" } );
+    //standard
+    splits.push( { p1: "REST", p2: "OR", p3: "E", whole: "RESTORE" } );
     splits.push( { p1: "S", p2: "TO", p3: "P", whole: "STOP" } );
+
+    //extended
     splits.push( { p1: "B", p2: "OR", p3: "DER", whole: "BORDER" } );
     splits.push( { p1: "G", p2: "COLOR", p3: "S", whole: "GCOLORS" } );
     splits.push( { p1: "CHAR", p2: "COL", p3: null, whole: "CHARCOL" } );
@@ -173,6 +190,7 @@ class Parser {
     splits.push( { p1: "S", p2: "POS", p3: null, whole: "SPOS" } );
     splits.push( { p1: "S", p2: "POKE", p3: null, whole: "SPOKE" } );
     splits.push( { p1: "WJ", p2: "IF", p3: "FY", whole: "WJIFFY" } );
+    splits.push( { p1: "REF", p2: "OR", p3: "MAT", whole: "REFORMAT" } );
 
     var tokens2 = tokens;
 
@@ -282,7 +300,7 @@ class Parser {
 					//all ok, next par
 				}
 				else {
-					this.Exception( context, "expected comma or ), got "+token.type + " " + token.data);
+					this.throwError( context, "expected comma or ), got "+token.type + " " + token.data);
 				}
 			}
 			even = !even;
@@ -308,7 +326,7 @@ class Parser {
 		var token = context.tokens.shift();
 
 		if( !(token.type == "bracket" && token.data == "(")) {
-			this.Exception( context, "parsing subexpression, expected bracket, not " + token.type + " - " + token.data);
+			this.throwError( context, "parsing subexpression, expected bracket, not " + token.type + " - " + token.data);
 		}
 
 		var endTokens = [];
@@ -376,12 +394,12 @@ class Parser {
 		token = tokens.shift();
 
 		if( !token ) {
-			this.Exception( context, "empty simple expression");
+			this.throwError( context, "empty simple expression");
 		}
 
     endLoop = this.isEndToken( token, endTokens );
     if( endLoop ) {
-      this.Exception( context, "empty simple expression");
+      this.throwError( context, "empty simple expression");
     }
 
 
@@ -406,7 +424,7 @@ class Parser {
         endLoop = context.tokens.length == 0;
       }
       if( !endLoop ) {
-        this.Exception( context, "empty simple expression end expected");
+        this.throwError( context, "empty simple expression end expected");
       }
     }
 
@@ -646,7 +664,7 @@ class Parser {
           continue;
         }
 				else {
-					this.Exception( context, "expected number, string, symbol or bracket, not " + token.data);
+					this.throwError( context, "expected number, string, symbol or bracket, not " + token.data);
 				}
         op = null;
 			}
@@ -656,7 +674,7 @@ class Parser {
 					op = token.data;
 				}
 				else {
-					this.Exception( context, "expected operator or "+
+					this.throwError( context, "expected operator or "+
           this.endTokensToString(endTokens)+
           ", not " + token.type + " " + token.data);
 				}
@@ -781,7 +799,7 @@ class Parser {
     }
 
     if( token.type != "eq") {
-      this.Exception( context, "Expected =");
+      this.throwError( context, "Expected =");
     }
 
     var endTokens = [];
@@ -810,7 +828,7 @@ class Parser {
 
         token = tokens.shift();
         if( token.type != "name") {
-          this.Exception( context, "LET expects var name");
+          this.throwError( context, "LET expects var name");
         }
         nameToken = token.data;
 
@@ -820,11 +838,11 @@ class Parser {
         }
 
 /*        if( token.type != "bracket") { #TODO array assignments, ex: LET a(8) = 2
-          this.Exception( context, "LET expects =");
+          this.throwError( context, "LET expects =");
         }
 */
         if( token.type != "eq") {
-          this.Exception( context, "LET expects =");
+          this.throwError( context, "LET expects =");
         }
 
         cmdType = "assignment";
@@ -858,7 +876,7 @@ class Parser {
           }
 
           if( token.type != "name" ) {
-            this.Exception( context, "DIM expects var name");
+            this.throwError( context, "DIM expects var name");
           }
 
           nameToken = token.data;
@@ -869,7 +887,7 @@ class Parser {
           }
 
           if( !(token.type=="bracket" && token.data=="(") ) {
-            this.Exception( context, "DIM expects (");
+            this.throwError( context, "DIM expects (");
           }
 
           var indices = this.parseFunParList( context );
@@ -880,7 +898,7 @@ class Parser {
           }
 
           if( !(token.type=="bracket" && token.data==")") ) {
-            this.Exception( context, "DIM expects )");
+            this.throwError( context, "DIM expects )");
           }
 
           command.params.push( indices );
@@ -895,34 +913,34 @@ class Parser {
 
         token = tokens.shift();
         if( !( token.type == "name" && token.data == "FN" ) ) {
-          this.Exception( context, "DEF expects FN");
+          this.throwError( context, "DEF expects FN");
         }
 
         token = tokens.shift();
         if( token.type != "name") {
-          this.Exception( context, "DEF FN expects function name");
+          this.throwError( context, "DEF FN expects function name");
         }
         var fName = token.data;
 
         token = tokens.shift();
         if(! ( token.type == "bracket" && token.data == "(" )) {
-          this.Exception( context, "DEF FN expects function name and ->( varname )");
+          this.throwError( context, "DEF FN expects function name and ->( varname )");
         }
 
         token = tokens.shift();
         if(! ( token.type == "name"  )) {
-          this.Exception( context, "DEF FN expects function name and ( ->varname )");
+          this.throwError( context, "DEF FN expects function name and ( ->varname )");
         }
         var varName = token.data;
 
         token = tokens.shift();
         if(! ( token.type == "bracket" && token.data == ")" )) {
-          this.Exception( context, "DEF FN expects function name and ( varname -> )");
+          this.throwError( context, "DEF FN expects function name and ( varname -> )");
         }
 
         token = tokens.shift();
         if(! ( token.type == "eq" && token.data == "=" )) {
-          this.Exception( context, "DEF FN expects function name and ( varname ) -> =");
+          this.throwError( context, "DEF FN expects function name and ( varname ) -> =");
         }
 
 
@@ -945,13 +963,13 @@ class Parser {
 
         token = tokens.shift();
         if( token.type != "num") {
-          this.Exception( context, "GOTO/GOSUB expects number");
+          this.throwError( context, "GOTO/GOSUB expects number");
         }
         num = parseInt(token.data);
         token = tokens.shift();
         if( token !== undefined ) {
           if( token.type != "cmdsep") {
-            this.Exception( context, "expected cmdsep, instead of "+token.type+"/"+token.data);
+            this.throwError( context, "expected cmdsep, instead of "+token.type+"/"+token.data);
           }
         }
 
@@ -971,16 +989,16 @@ class Parser {
 
         token = tokens.shift();
         if( token.type != "name") {
-          this.Exception( context, "ON expects GOTO/GOSUB");
+          this.throwError( context, "ON expects GOTO/GOSUB");
         }
         if( !( token.data == "GOTO" || token.data == "GOSUB" )) {
-          this.Exception( context, "ON expects GOTO/GOSUB");
+          this.throwError( context, "ON expects GOTO/GOSUB");
         }
         var onType = token.data;
 
         token = tokens.shift();
         if( token.type != "num") {
-          this.Exception( context, "GOTO/GOSUB expects number");
+          this.throwError( context, "GOTO/GOSUB expects number");
         }
         nums.push(  parseInt(token.data) );
 
@@ -991,12 +1009,12 @@ class Parser {
           if( token.type == "cmdsep") { break; }
           if( token.type == "cmdsep") { break; }
           if( !( token.type == "sep" && token.data == "," )) {
-            this.Exception( context, "ON GOTO/GOSUB expects numberlist");
+            this.throwError( context, "ON GOTO/GOSUB expects numberlist");
           }
 
           token = tokens.shift();
           if( token.type != "num") {
-            this.Exception( context, "GOTO/GOSUB expects number");
+            this.throwError( context, "GOTO/GOSUB expects number");
           }
           nums.push(  parseInt(token.data) );
         }
@@ -1008,27 +1026,6 @@ class Parser {
         commands.push( command );
 
       }
-/*          else if( controlToken == "GOSUB") {
-        var num = -1;
-
-        token = tokens.shift();
-        if( token.type != "num") {
-          this.Exception( context, "GOSUB expects number");
-        }
-        num = parseInt(token.data);
-        token = tokens.shift();
-        if( token !== undefined ) {
-          if( token.type != "cmdsep") {
-            this.Exception( context, "expected cmdsep, instead of "+token.type+"/"+token.data);
-          }
-        }
-
-        command.params=[];
-        command.params[0] = num;
-        commands.push( command );
-
-      }
-*/
       else if( controlToken == "RETURN") {
         var num = -1;
 
@@ -1057,7 +1054,7 @@ class Parser {
 
         token = tokens.shift();
         if( token.type != "name" ) {
-          this.Exception( context,
+          this.throwError( context,
                 "For expects variable, no var found, found " + token.type+"/"+token.data);
         }
 
@@ -1065,7 +1062,7 @@ class Parser {
 
         token = tokens.shift();
         if( !( token.type == "eq" && token.data == "=" )) {
-          this.Exception( context,
+          this.throwError( context,
                 "For expects '=', not found, found " + token.type+"/"+token.data);
         }
 
@@ -1076,7 +1073,7 @@ class Parser {
 
         token = tokens.shift();
         if( !( token.type == "name" && token.data == "TO" ) ) {
-          this.Exception( context, "For expects 'to', not found, found " + token.type+"/"+token.data);
+          this.throwError( context, "For expects 'to', not found, found " + token.type+"/"+token.data);
         }
 
         endTokens = [];
@@ -1233,7 +1230,7 @@ class Parser {
               continue;
             }
             else {
-              this.Exception( context, "data unknown token found " + token.type+"/"+token.data);
+              this.throwError( context, "data unknown token found " + token.type+"/"+token.data);
             }
         }
 
@@ -1253,7 +1250,7 @@ class Parser {
 
       }
       else {
-        this.Exception( context, command.controlKW + " not implemented");
+        this.throwError( context, command.controlKW + " not implemented");
       }
     }
   }
@@ -1300,7 +1297,7 @@ class Parser {
             continue;
           }
           else {
-            this.Exception( context, "unexpected chars in statement call: '" + token.data +"'");
+            this.throwError( context, "unexpected chars in statement call: '" + token.data +"'");
           }
         }
         else {
@@ -1344,7 +1341,7 @@ class Parser {
 			}
 
 			if( token.type != "name" ) {
-				this.Exception( context, "Unexpected token, expected symbolname, got " + token.type + "/" + token.name) ;
+				this.throwError( context, "Unexpected token, expected symbolname, got " + token.type + "/" + token.name) ;
 			}
 
 			var nameToken = token.data;
@@ -1384,7 +1381,7 @@ class Parser {
 			}
       else {
           if( !keyword ) {
-            this.Exception( context, "statement without keyword");
+            this.throwError( context, "statement without keyword");
           }
           this.parseStatementCall( context, preTokens, commands, command, nameToken, token );
 
@@ -1472,15 +1469,15 @@ class Parser {
     }
     catch ( e ) {
 
-      if( this.errorHandler.isError( e ) ) {
+      if( this.erh.isError( e ) ) {
         if( e.lineNr == -1 ) {
           if( lineNr != -1 ) {
             e.lineNr = lineNr;
           }
         }
-        return e;
+        throw e;
       }
-      this.errorHandler.throwError( errContext, detail, lineNr );
+      this.throwError( null, errContext + ": " + detail, lineNr );
     }
   }
 
@@ -1496,7 +1493,7 @@ class Parser {
     }
     catch ( e ) {
       console.log( e );
-      this.errorHandler.throwError("TOKEN","TOKEN",-1);
+      this.throwError(null,"getTokens error","internal");
     }
   }
 }
