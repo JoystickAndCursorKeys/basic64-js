@@ -67,7 +67,7 @@ class Menu {
 		this.debugFlag = false;
     this.console = screen;
     this.context = context;
-
+    this.erh = new ErrorHandler();
 
     this.uploader = new Uploader( );
 
@@ -675,11 +675,19 @@ class Menu {
     this.stop();
   }
 
-  endMenuWithMessage( m ) {
+  endMenuWithMessage( m, detailError ) {
     this.context.endMenu();
     this.stop();
     this.context.printLine( "" );
-    this.message(m);
+		if( ! (detailError === undefined) ) {
+			this.message(m);
+			this.context.printLine( "" );
+			this.context.printLine( "?" + detailError.typeError );
+			this.context.printLine( "!" + detailError.detailError );
+		}
+    else {
+			this.message(m);
+		}
 
   }
 
@@ -963,9 +971,13 @@ class Menu {
           }
 
     }
-    catch (e) {
-      this.endMenuWithError("syntax");
-    }
+		catch (e) {
+
+			this.endMenuWithMessage("parse error on import", detailError);
+			var detailError = this.handleImportError( e );
+			console.log( e );
+			return;
+		}
   }
 
   do_pastePGMFromClipCallback( text ) {
@@ -991,15 +1003,13 @@ class Menu {
 					}
       }
     }
-    catch (e) {
-			if( typeof(e) == "object" ) {
-				if(! (e["lineNr"] === undefined )) {
-					this.endMenuWithError("parse", "on line " + e["lineNr"]);
-					return;
-				}
-			}
-      this.endMenuWithError("syntax");
-    }
+		catch (e) {
+
+			this.endMenuWithMessage("parse error on import", detailError);
+			var detailError = this.handleImportError( e );
+			console.log( e );
+			return;
+		}
   }
 
 	do_listDisks() {
@@ -1589,6 +1599,16 @@ class Menu {
 
   }
 
+	handleImportError( e ) {
+		if( this.erh.isError( e ) )  {
+					this.context.printLine("");
+					this.context.printError( e.clazz, false, e.lineNr );
+					this.context.printLine( ">" + e.detail );
+					this.context.printLine( "ready." );
+		}
+
+	}
+
   do_importBasCallBack( text, fName ) {
 
     var lines = text.split(/\r?\n/);
@@ -1596,7 +1616,9 @@ class Menu {
     	var bas = this.context.textLinesToBas( lines );
 		}
 		catch (e) {
-			this.endMenuWithMessage("syntax on import");
+
+			this.endMenuWithMessage("parse error on import", detailError);
+			var detailError = this.handleImportError( e );
 			console.log( e );
 			return;
 		}
@@ -1605,7 +1627,7 @@ class Menu {
     	this.context.setProgram( bas );
 		}
 		catch (e) {
-			this.endMenuWithMessage("setpgm on import");
+			this.endMenuWithMessage("setpgm error on import");
 			console.log( e );
 			console.log( text );
 			return;

@@ -13,6 +13,8 @@ class ExtendedCommands {
     this.g_col0 = -1;
     this.g_col1 = -1;
     this.g_col2 = -1;
+
+    this.erh = new ErrorHandler();
   }
 
   _intGetColorRecord() {
@@ -300,7 +302,7 @@ class ExtendedCommands {
   _stat_gcls( pars ) {
 
     if( pars.length > 0 ) {
-      throw("@too many parameters");
+      this.erh.throwError( "too many parameters" );
     }
 
     this.context.clearGFXScreen(
@@ -331,7 +333,7 @@ class ExtendedCommands {
     }
 
     if( pars.length > 2 ) {
-      throw("@too many parameters");
+      this.erh.throwError( "too many parameters" );
       return;
     }
 
@@ -344,7 +346,7 @@ class ExtendedCommands {
     var start = 100, step = 100;
 
     if( pars.length != 0 ) {
-      throw("@unexpected parameter");
+      this.erh.throwError( "unexpected parameter" );
       return;
     }
 
@@ -386,11 +388,11 @@ class ExtendedCommands {
     _stat_mode( pars ) {
 
       if( pars.length != 1 ) {
-        throw("@mode missing");
+            this.erh.throwError( "mode missing" );
         return;
       }
       if( pars[0].value < 0 | pars[0].value > 3) {
-        throw("@only mode 0-3 supported");
+        this.erh.throwError( "mode unsupported", "0-3" );
         return;
       }
 
@@ -420,7 +422,7 @@ class ExtendedCommands {
       console.log(pars);
 
       if( pars.length > 1 ) {
-        throw("@too many parameters");
+        this.erh.throwError( "too many parameters" );
         return;
       }
     }
@@ -428,7 +430,7 @@ class ExtendedCommands {
     _stat_pen( pars ) {
 
       if( pars.length < 1 ) {
-        throw("@col missing");
+        this.erh.throwError( "col missing" );
         return;
       }
       console.log(pars);
@@ -436,7 +438,7 @@ class ExtendedCommands {
       this.console.setColor( pars[0].value );
 
       if( pars.length > 1 ) {
-        throw("@too many parameters");
+        this.erh.throwError( "too many parameters" );
         return;
       }
     }
@@ -444,7 +446,7 @@ class ExtendedCommands {
 
     _stat_gpen( pars ) {
       if( pars.length < 1 ) {
-        throw("@pen missing");
+        this.erh.throwError( "pen missing");
         return;
       }
 
@@ -455,18 +457,18 @@ class ExtendedCommands {
     _stat_gcoldef( pars ) {
 
       if( pars.length < 1 ) {
-        throw("@color index missing");
+        this.erh.throwError( "color index missing");
         return;
       }
 
       if( pars.length < 2 ) {
-        throw("@color missing");
+        this.erh.throwError( "color missing");
         return;
       }
 
       var index = pars[0].value;
       if(index<0 || index>2 ) {
-        throw("@index out of range");
+        this.erh.throwError( "index out of range");
       }
 
       if( index==0 ) {
@@ -480,7 +482,7 @@ class ExtendedCommands {
       }
 
       if( pars.length > 2 ) {
-        throw("@too many params");
+        this.erh.throwError( "too many params");
         return;
       }
     }
@@ -488,7 +490,7 @@ class ExtendedCommands {
     _stat_gcolors( pars ) {
 
       if( pars.length < 1 ) {
-        throw("@color0 missing");
+        this.erh.throwError( "color0 missing");
         return;
       }
       this.g_col0 = pars[0].value;
@@ -504,7 +506,7 @@ class ExtendedCommands {
       this.g_col2 = pars[2].value;
 
       if( pars.length > 3 ) {
-        throw("@too many colors");
+        this.erh.throwError( "too many colors");
         return;
       }
     }
@@ -523,7 +525,7 @@ class ExtendedCommands {
       var mode = "noparam";
 
       if( pars.length==0 ) {
-        throw "@seek what"
+        this.erh.throwError( "missing parameters" );
       }
 
       this.context.printLine( "" );
@@ -616,14 +618,14 @@ class ExtendedCommands {
     _stat_color( pars ) {
 
       if( pars.length == 0 ) {
-        throw("@index missing");
+        this.erh.throwError( "index missing");
         return;
       }
       console.log(pars);
       if( pars.length >= 1 ) {
           if( !(pars[0].value >=0
               && pars[0].value <=14) ) {
-              throw("@index must be in range 0-14");
+              this.erh.throwError( "range","must be in between 0-14");
           }
       }
 
@@ -631,14 +633,14 @@ class ExtendedCommands {
           this.context.vpoke(53280 + pars[0].value, pars[1].value );
       }
       else {
-        throw("@color missing");
+        this.erh.throwError( "color missing");
       }
     }
 
     _stat_bgcolor( pars ) {
 
       if( pars.length == 0 ) {
-        throw("@color missing");
+        this.erh.throwError( "color missing");
         return;
       }
 
@@ -648,7 +650,7 @@ class ExtendedCommands {
       }
 
       if( pars.length >= 2 ) {
-        throw("@too many params");
+        this.erh.throwError( "too many params");
         return;
       }
 
@@ -657,7 +659,7 @@ class ExtendedCommands {
     _stat_border( pars ) {
 
       if( pars.length == 0 ) {
-        throw("@color missing");
+        this.erh.throwError( "color missing");
         return;
       }
 
@@ -667,7 +669,7 @@ class ExtendedCommands {
       }
 
       if( pars.length >= 2 ) {
-        throw("@too many params");
+        this.erh.throwError( "too many params");
         return;
       }
 
@@ -676,17 +678,17 @@ class ExtendedCommands {
     _stat_penpos( pars ) {
 
       if( pars.length == 0 ) {
-        throw("@x missing");
+        this.erh.throwError( "x missing");
         return;
       }
 
       if( pars.length == 1 ) {
-        throw("@y missing");
+        this.erh.throwError( "y missing");
         return;
       }
 
       if( pars.length > 2 ) {
-        throw("@too many parameters");
+        this.erh.throwError( "too many parameters");
         return;
       }
 
@@ -698,17 +700,17 @@ class ExtendedCommands {
     _stat_sprite( pars ) {
 
       if( pars.length == 0 ) {
-        throw("@sprite nr missing");
+        this.erh.throwError( "sprite nr missing");
         return;
       }
 
       if( pars.length == 1 ) {
-        throw("@on/off flag");
+        this.erh.throwError( "on/off flag");
         return;
       }
 
       if( pars.length > 2 ) {
-        throw("@too many parameters");
+        this.erh.throwError( "too many parameters");
         return;
       }
 
@@ -719,17 +721,17 @@ class ExtendedCommands {
     _stat_spmcol( pars ) {
 
       if( pars.length == 0 ) {
-        throw("@sprite nr missing");
+        this.erh.throwError( "sprite nr missing");
         return;
       }
 
       if( pars.length == 1 ) {
-        throw("@mode flag");
+        this.erh.throwError( "mode flag");
         return;
       }
 
       if( pars.length > 2 ) {
-        throw("@too many parameters");
+        this.erh.throwError( "too many parameters");
         return;
       }
 
@@ -741,22 +743,22 @@ class ExtendedCommands {
     _stat_sx2( pars ) {
 
       if( pars.length == 0 ) {
-        throw("@sprite nr missing");
+        this.erh.throwError( "sprite nr missing");
         return;
       }
 
       if( pars.length == 1 ) {
-        throw("@x flag");
+        this.erh.throwError( "x flag");
         return;
       }
 
       if( pars.length == 2 ) {
-        throw("@y flag");
+        this.erh.throwError( "y flag");
         return;
       }
 
       if( pars.length > 3 ) {
-        throw("@too many parameters");
+        this.erh.throwError( "too many parameters");
         return;
       }
 
@@ -768,17 +770,17 @@ class ExtendedCommands {
     _stat_sframecp( pars ) {
 
       if( pars.length == 0 ) {
-        throw("@srcframe");
+        this.erh.throwError( "srcframe");
         return;
       }
 
       if( pars.length == 1 ) {
-        throw("@dstframe");
+        this.erh.throwError( "dstframe");
         return;
       }
 
       if( pars.length > 2 ) {
-        throw("@too many parameters");
+        this.erh.throwError( "too many parameters");
         return;
       }
 
@@ -788,12 +790,12 @@ class ExtendedCommands {
     _stat_sframeflipx( pars ) {
 
       if( pars.length == 0 ) {
-        throw("@frame missing");
+        this.erh.throwError( "frame missing");
         return;
       }
 
       if( pars.length > 1 ) {
-        throw("@too many parameters");
+        this.erh.throwError( "too many parameters");
         return;
       }
 
@@ -816,12 +818,12 @@ class ExtendedCommands {
     _stat_sframeflipy( pars ) {
 
       if( pars.length == 0 ) {
-        throw("@frame missing");
+        this.erh.throwError( "frame missing");
         return;
       }
 
       if( pars.length > 1 ) {
-        throw("@too many parameters");
+        this.erh.throwError( "too many parameters");
         return;
       }
 
@@ -853,23 +855,23 @@ class ExtendedCommands {
     _stat_sframefx( pars ) {
 
       if( pars.length == 0 ) {
-        throw("@frame missing");
+        this.erh.throwError( "frame missing");
         return;
       }
 
       if( pars.length == 1 ) {
-        throw("@fx missing");
+        this.erh.throwError( "fx missing");
         return;
       }
 
       if( pars.length > 2 ) {
-        throw("@too many parameters");
+        this.erh.throwError( "too many parameters");
         return;
       }
 
       var fx = pars[1].value;
       if( ! ( fx == 0 || fx == 1)) {
-        throw("@unknown fx");
+        this.erh.throwError( "unknown fx");
         return;
       }
 
@@ -896,17 +898,17 @@ class ExtendedCommands {
     _stat_sframe( pars ) {
 
       if( pars.length == 0 ) {
-        throw("@sprite nr missing");
+        this.erh.throwError( "sprite nr missing");
         return;
       }
 
       if( pars.length == 1 ) {
-        throw("@frame");
+        this.erh.throwError( "frame");
         return;
       }
 
       if( pars.length > 2 ) {
-        throw("@too many parameters");
+        this.erh.throwError( "too many parameters");
         return;
       }
 
@@ -916,17 +918,17 @@ class ExtendedCommands {
     _stat_scol( pars ) {
 
       if( pars.length == 0 ) {
-        throw("@sprite nr missing");
+        this.erh.throwError( "sprite nr missing");
         return;
       }
 
       if( pars.length == 1 ) {
-        throw("@color");
+        this.erh.throwError( "color");
         return;
       }
 
       if( pars.length > 2 ) {
-        throw("@too many parameters");
+        this.erh.throwError( "too many parameters");
         return;
       }
 
@@ -938,22 +940,22 @@ class ExtendedCommands {
     _stat_spoke( pars ) {
 
       if( pars.length == 0 ) {
-        throw("@frame nr missing");
+        this.erh.throwError( "frame nr missing");
         return;
       }
 
       if( pars.length == 1 ) {
-        throw("@address");
+        this.erh.throwError( "address");
         return;
       }
 
       if( pars.length == 2 ) {
-        throw("@value");
+        this.erh.throwError( "value");
         return;
       }
 
       if( pars.length > 3 ) {
-        throw("@too many parameters");
+        this.erh.throwError( "too many parameters");
         return;
       }
 
@@ -968,22 +970,22 @@ class ExtendedCommands {
     _stat_spos( pars ) {
 
       if( pars.length == 0 ) {
-        throw("@sprite nr missing");
+        this.erh.throwError( "sprite nr missing");
         return;
       }
 
       if( pars.length == 1 ) {
-        throw("@x");
+        this.erh.throwError( "x");
         return;
       }
 
       if( pars.length == 2 ) {
-        throw("@y");
+        this.erh.throwError( "y");
         return;
       }
 
       if( pars.length > 3 ) {
-        throw("@too many parameters");
+        this.erh.throwError( "too many parameters");
         return;
       }
 
@@ -1003,42 +1005,42 @@ class ExtendedCommands {
     _stat_path( pars ) {
 
       if( pars.length == 0 ) {
-        throw("@x1 missing");
+        this.erh.throwError( "x1 missing");
         return;
       }
 
       if( pars.length == 1 ) {
-        throw("@y1 missing");
+        this.erh.throwError( "y1 missing");
         return;
       }
 
       if( pars.length == 2 ) {
-        throw("@x2 missing");
+        this.erh.throwError( "x2 missing");
         return;
       }
 
       if( pars.length == 3 ) {
-        throw("@y2 missing");
+        this.erh.throwError( "y2 missing");
         return;
       }
 
       if( pars.length == 4 ) {
-        throw("@progress missing");
+        this.erh.throwError( "progress missing");
         return;
       }
 
       if( pars.length == 5 ) {
-        throw("@xout missing");
+        this.erh.throwError( "xout missing");
         return;
       }
 
       if( pars.length == 6 ) {
-        throw("@yout missing");
+        this.erh.throwError( "yout missing");
         return;
       }
 
       if( pars.length >7 ) {
-        throw("@too many params");
+        this.erh.throwError( "too many params");
         return;
       }
 
@@ -1046,11 +1048,11 @@ class ExtendedCommands {
       var p6 = pars[ 6 ];
 
       if( p5.type != "var" ) {
-        throw "@not a variable";
+        this.erh.throwError( "not a variable" );
       }
 
       if( p6.type != "var" ) {
-        throw "@not a variable";
+        this.erh.throwError( "not a variable" );
       }
 
       var progress =  pars[4].value;
@@ -1071,27 +1073,27 @@ class ExtendedCommands {
     _stat_line( pars ) {
 
       if( pars.length == 0 ) {
-        throw("@x1 missing");
+        this.erh.throwError( "x1 missing");
         return;
       }
 
       if( pars.length == 1 ) {
-        throw("@y1 missing");
+        this.erh.throwError( "y1 missing");
         return;
       }
 
       if( pars.length == 2 ) {
-        throw("@x2 missing");
+        this.erh.throwError( "x2 missing");
         return;
       }
 
       if( pars.length == 3 ) {
-        throw("@y2 missing");
+        this.erh.throwError( "y2 missing");
         return;
       }
 
       if( pars.length >5 ) {
-        throw("@too many params");
+        this.erh.throwError( "too many params");
         return;
       }
 
@@ -1104,7 +1106,7 @@ class ExtendedCommands {
         colIndex = this.g_colIndex;
       }
       if( colIndex < 0 ) {
-        throw "@pen is -1"
+        this.erh.throwError( "pen is -1" );
       }
 
 
@@ -1122,27 +1124,27 @@ class ExtendedCommands {
     _stat_box( pars ) {
 
       if( pars.length == 0 ) {
-        throw("@x1 missing");
+        this.erh.throwError( "x1 missing");
         return;
       }
 
       if( pars.length == 1 ) {
-        throw("@y1 missing");
+        this.erh.throwError( "y1 missing");
         return;
       }
 
       if( pars.length == 2 ) {
-        throw("@x2 missing");
+        this.erh.throwError( "x2 missing");
         return;
       }
 
       if( pars.length == 3 ) {
-        throw("@y2 missing");
+        this.erh.throwError( "y2 missing");
         return;
       }
 
       if( pars.length >5 ) {
-        throw("@too many params");
+        this.erh.throwError( "too many params");
         return;
       }
 
@@ -1155,7 +1157,7 @@ class ExtendedCommands {
         colIndex = this.g_colIndex;
       }
       if( colIndex < 0 ) {
-        throw "@pen is -1"
+        this.erh.throwError( "pen is -1");
       }
 
       this.context.drawBox(
@@ -1172,22 +1174,22 @@ class ExtendedCommands {
     _stat_hline( pars ) {
 
       if( pars.length == 0 ) {
-        throw("@x1 missing");
+        this.erh.throwError( "x1 missing");
         return;
       }
 
       if( pars.length == 1 ) {
-        throw("@y1 missing");
+        this.erh.throwError( "y1 missing");
         return;
       }
 
       if( pars.length == 2 ) {
-        throw("@x2 missing");
+        this.erh.throwError( "x2 missing");
         return;
       }
 
       if( pars.length >4 ) {
-        throw("@too many params");
+        this.erh.throwError( "too many params");
         return;
       }
 
@@ -1200,7 +1202,7 @@ class ExtendedCommands {
         colIndex = this.g_colIndex;
       }
       if( colIndex < 0 ) {
-        throw "@pen is -1"
+        this.erh.throwError( "pen is -1");
       }
 
       this.context.drawBox(
@@ -1217,17 +1219,17 @@ class ExtendedCommands {
 
 
       if( pars.length == 0 ) {
-        throw("@x missing");
+        this.erh.throwError( "x missing");
         return;
       }
 
       if( pars.length == 1 ) {
-        throw("@y missing");
+        this.erh.throwError( "y missing");
         return;
       }
 
       if( pars.length > 3 ) {
-        throw("@too many parameters");
+        this.erh.throwError( "too many parameters");
         return;
       }
 
@@ -1240,7 +1242,7 @@ class ExtendedCommands {
         colIndex = this.g_colIndex;
       }
       if( colIndex < 0 ) {
-        throw "@pen is -1"
+        this.erh.throwError( "pen is -1");
       }
 
       this.context.setPixel(
@@ -1255,17 +1257,17 @@ class ExtendedCommands {
     _stat_charcol( pars ) {
 
       if( pars.length == 0 ) {
-        throw("@x missing");
+        this.erh.throwError( "x missing");
         return;
       }
 
       if( pars.length == 1 ) {
-        throw("@y missing");
+        this.erh.throwError( "y missing");
         return;
       }
 
       if( pars.length == 2 ) {
-        throw("@col missing");
+        this.erh.throwError( "col missing");
         return;
       }
 
@@ -1280,7 +1282,7 @@ class ExtendedCommands {
       }
 
       if( pars.length > 3 ) {
-        throw("@too many parameters");
+        this.erh.throwError( "too many parameters");
         return;
       }
     }
@@ -1289,17 +1291,17 @@ class ExtendedCommands {
     _stat_char( pars ) {
 
       if( pars.length == 0 ) {
-        throw("@x missing");
+        this.erh.throwError( "x missing");
         return;
       }
 
       if( pars.length == 1 ) {
-        throw("@y missing");
+        this.erh.throwError( "y missing");
         return;
       }
 
       if( pars.length == 2 ) {
-        throw("@charcode missing");
+        this.erh.throwError( "charcode missing");
         return;
       }
 
@@ -1314,104 +1316,22 @@ class ExtendedCommands {
       }
 
       if( pars.length > 3 ) {
-        throw("@too many parameters");
+        this.erh.throwError( "too many parameters");
         return;
       }
     }
 
   /************************ functions ************************/
-/*
-  _fun_rbound( pars ) {
-
-    if( pars.length == 0 ) {
-      throw("@min missing");
-      return;
-    }
-
-    if( pars.length == 1 ) {
-      throw("@max missing");
-      return;
-    }
-
-    if( pars.length == 2 ) {
-      throw("@val missing");
-      return;
-    }
-
-    if( pars.length == 3 ) {
-      var v = pars[2].value;
-      if( v< pars[0].value ) {
-        return pars[0].value;
-      }
-      else if( v> pars[1].value ) {
-        return pars[1].value;
-      }
-      return v;
-    }
-
-    if( pars.length > 3 ) {
-      throw("@too many parameters");
-    }
-
-  }
-
-  _fun_rwrap( pars ) {
-
-    if( pars.length == 0 ) {
-      throw("@min missing");
-      return;
-    }
-
-    if( pars.length == 1 ) {
-      throw("@max missing");
-      return;
-    }
-
-    if( pars.length == 2 ) {
-      throw("@val missing");
-      return;
-    }
-
-    if( pars.length == 3 ) {
-      var v = pars[2].value;
-
-      if( v< pars[0].value ) {
-          v=pars[1].value - (pars[0].value-v);
-          if( v< pars[0].value ) {
-            return pars[0].value;
-          }
-          else {
-            return v;
-          }
-      }
-      else if( v> pars[1].value ) {
-          v=pars[0].value + (v-pars[1].value);
-          if( v> pars[1].value ) {
-            return pars[1].value;
-          }
-          else {
-            return v;
-          }
-      }
-      return v;
-    }
-
-    if( pars.length > 3 ) {
-      throw("@too many parameters");
-    }
-
-  }
-*/
 
   _fun_pixcol( pars ) {
 
     if( pars.length == 0 ) {
-      throw("@x missing");
+      this.erh.throwError( "x missing");
       return;
     }
 
     if( pars.length == 1 ) {
-      throw("@y missing");
+      this.erh.throwError( "y missing");
       return;
     }
 
@@ -1424,7 +1344,7 @@ class ExtendedCommands {
     }
 
     if( pars.length > 2 ) {
-      throw("@too many parameters");
+      this.erh.throwError( "too many parameters");
     }
 
   }
@@ -1432,12 +1352,12 @@ class ExtendedCommands {
   _fun_pixel( pars ) {
 
     if( pars.length == 0 ) {
-      throw("@x missing");
+      this.erh.throwError( "x missing");
       return;
     }
 
     if( pars.length == 1 ) {
-      throw("@y missing");
+      this.erh.throwError( "y missing");
       return;
     }
 
@@ -1450,7 +1370,7 @@ class ExtendedCommands {
     }
 
     if( pars.length > 2 ) {
-      throw("@too many parameters");
+      this.erh.throwError( "too many parameters");
     }
 
   }
@@ -1459,17 +1379,17 @@ class ExtendedCommands {
   _fun_char( pars ) {
 
     if( pars.length == 0 ) {
-      throw("@x missing");
+      this.erh.throwError( "x missing");
       return;
     }
 
     if( pars.length == 1 ) {
-      throw("@y missing");
+      this.erh.throwError( "y missing");
       return;
     }
 
     if( pars.length > 2 ) {
-      throw("@too many parameters");
+      this.erh.throwError( "too many parameters");
     }
 
     return this.context.getTextChar(
@@ -1481,17 +1401,17 @@ class ExtendedCommands {
   _fun_charcol( pars ) {
 
     if( pars.length == 0 ) {
-      throw("@x missing");
+      this.erh.throwError( "x missing");
       return;
     }
 
     if( pars.length == 1 ) {
-      throw("@y missing");
+      this.erh.throwError( "y missing");
       return;
     }
 
     if( pars.length > 2 ) {
-      throw("@too many parameters");
+      this.erh.throwError( "too many parameters");
     }
 
     return this.context.getTextColor(

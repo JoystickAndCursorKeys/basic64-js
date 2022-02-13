@@ -6,6 +6,7 @@ class BasicCommands {
     this.cmds = {};
     this.func = {};
     this.statementList = null;
+    this.erh = new ErrorHandler();
 
     this.randnrs = [];
     for(var i=0; i<10000;i++) {
@@ -136,11 +137,11 @@ class BasicCommands {
   _stat_read( pars ) {
     var p0 = pars[ 0 ];
     if( p0.type != "var" ) {
-      throw "READ: Param 0 is not a var";
+      this.erh.throwError( "not a var", "parameter 0" );
     }
 
     var data = this.context.readData();
-    if( data === undefined ) { throw "@out of data"; }
+    if( data === undefined ) { this.erh.throwError( "not a var" ); }
     else {
       if( data.type =="num" ) {
         this.context.setVar(
@@ -157,7 +158,7 @@ class BasicCommands {
     var p0 = pars[ 0 ];
 
     if( p0.type != "var" ) {
-      throw "GET: Param 0 is not a var";
+      this.erh.throwError( "not a var", "parameter 0" );
     }
 
     var k = this.context.pullKeyBuffer();
@@ -190,7 +191,7 @@ class BasicCommands {
         console.log( "PARS["+i+"]", pars[i] );
         if( pars[i].parts[0].type != "var" ) {
 
-          throw "INPUT: Param " + i +" is not a var";
+          this.erh.throwError( "not a var", "parameter " + i);
         }
         vars.push( pars[i].parts[0].data );
       }
@@ -259,15 +260,15 @@ class BasicCommands {
   }
 
   _stat_sys( pars ) {
-    throw "@not supported";
+    this.erh.throwError( "not supported" );
   }
 
   _stat_wait( pars ) {
-    throw "@not supported";
+    this.erh.throwError( "not supported" );
   }
 
   _stat_verify( pars ) {
-    throw "@not supported";
+    this.erh.throwError( "not supported" );
   }
 
   _stat_run( pars ) {
@@ -412,7 +413,7 @@ class BasicCommands {
   _fun_rnd( pars ) {
 
     if( pars.length <1) {
-      throw "?syntax";
+      this.erh.throwError( "syntax", "missing parameter 0" );
     }
 
     if( pars[0].value < 0) {
