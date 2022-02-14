@@ -555,7 +555,9 @@ class Parser {
 				else if( token.type == "str" ) {
 					part = { type: "str", data: token.data, op: op };
 					parts.push( part );
-          if( negate ) { throw "@type mismatch"; }
+          if( negate ) {
+            this.throwError( context, "found negation on a string", "type mismatch");
+          }
           first = false;
 				}
 				else if( token.type=="bracket" && token.data=="(") {
@@ -980,8 +982,13 @@ parseArrayAssignment( context, preTokens, commands, command, nameToken, token0  
         var num = -1;
 
         token = tokens.shift();
+
+        if( token === undefined ) {
+          this.throwError( context, "GOTO/GOSUB expects number", "undef'd statement");
+        }
+
         if( token.type != "num") {
-          this.throwError( context, "GOTO/GOSUB expects number");
+          this.throwError( context, "GOTO/GOSUB expects number", "undef'd statement");
         }
         num = parseInt(token.data);
         token = tokens.shift();
@@ -1015,8 +1022,13 @@ parseArrayAssignment( context, preTokens, commands, command, nameToken, token0  
         var onType = token.data;
 
         token = tokens.shift();
+
         if( token.type != "num") {
-          this.throwError( context, "GOTO/GOSUB expects number");
+          this.throwError( context, "ON GOTO/GOSUB expects number", "undef'd statement");
+        }
+
+        if( token.type != "num") {
+          this.throwError( context, "ON GOTO/GOSUB expects number",  "undef'd statement");
         }
         nums.push(  parseInt(token.data) );
 
@@ -1495,7 +1507,7 @@ parseArrayAssignment( context, preTokens, commands, command, nameToken, token0  
         }
         throw e;
       }
-      this.throwError( null, errContext + ": " + detail, lineNr );
+      this.throwError( null, errContext + ": " + detail );
     }
   }
 

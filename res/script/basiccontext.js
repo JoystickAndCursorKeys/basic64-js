@@ -1927,8 +1927,7 @@ class BasicContext {
     }
 
     if(!found ) {
-      this.printError("UNDEF'D STATEMENT");
-      throw "@line not found";
+      throw "@undef'd statement";
     }
 
     if(!this.runFlag ) {
@@ -2307,7 +2306,7 @@ class BasicContext {
   onLineStr() {
 
     var line = this.retreiveLine();
-    if( line == -1 ) { return ""; }
+    if( line == -1 || line == "") { return ""; }
 
     return " in " + line;
 
@@ -2598,7 +2597,7 @@ class BasicContext {
             var err = this.erh.fromSerializedError( e );
             this.printError( err.clazz );
           }
-          if( this.erh.isError( e ) ) {
+          else if( this.erh.isError( e ) ) {
             var err = e;
             this.printError( err.clazz );
           }
@@ -3127,8 +3126,11 @@ class BasicContext {
       this.parseLineNumber = -1;
       if( this.erh.isError( e ) ) {
         this.parseLineNumber = e.lineNr;
+        this.printError( e.clazz, true );
       }
-      this.printError( "syntax", true );
+      else {
+        this.printError( "syntax", true );
+      }
       this.printLine("ready.");
     }
     if( l == null ) {
@@ -3156,10 +3158,22 @@ class BasicContext {
       catch( e ) {
 
         this.parseLineNumber = -1;
-        if( this.erh.isError( e ) ) {
-          this.parseLineNumber = e.lineNr;
+
+        if( this.erh.isSerializedError( e ) ) {
+          var err = this.erh.fromSerializedError( e );
+          this.parseLineNumber = err.lineNr;
+          this.printError( err.clazz );
         }
-        this.printError( e.clazz, true );
+        else if( this.erh.isError( e ) ) {
+          var err = e;
+          this.printError( err.clazz );
+          this.parseLineNumber = err.lineNr;
+        }
+        else {
+          this.printError("unexpected " + e );
+        }
+
+
         this.runFlag = false;
       }
 
