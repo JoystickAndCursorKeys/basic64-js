@@ -184,9 +184,6 @@ class BasicContext {
 
   }
 
-  throwError( clazz, detail ) {
-    this.erh.thowError(  clazz, detail, this, this.retreiveLine() );
-  }
 
   getPlayExampleFlag() {
     if ( this.goPlayExampleFlag )  {
@@ -2310,6 +2307,7 @@ class BasicContext {
   onLineStr() {
 
     var line = this.retreiveLine();
+    if( line == -1 ) { return ""; }
 
     return " in " + line;
 
@@ -2595,16 +2593,19 @@ class BasicContext {
         }
         catch ( e ) {
           console.log(e);
-          var done=false;
-          if( (typeof e) == "string" ) {
-            if( e.startsWith("@") ) {
-              this.printError(e.substr(1));
-              done=true;
-            }
+
+          if( this.erh.isSerializedError( e ) ) {
+            var err = this.erh.fromSerializedError( e );
+            this.printError( err.clazz );
           }
-          if(!done ) {
-            this.printError("unexpected");
+          if( this.erh.isError( e ) ) {
+            var err = e;
+            this.printError( err.clazz );
           }
+          else {
+            this.printError("unexpected " + e );
+          }
+
           return [END_W_ERROR,i+1,cnt];
         }
       }
@@ -3148,7 +3149,20 @@ class BasicContext {
     else {
       this.runPointer = -1;
       this.runPointer2 = 0;
-      this.runCommands( l.commands );
+
+      try {
+        this.runCommands( l.commands );
+      }
+      catch( e ) {
+
+        this.parseLineNumber = -1;
+        if( this.erh.isError( e ) ) {
+          this.parseLineNumber = e.lineNr;
+        }
+        this.printError( e.clazz, true );
+        this.runFlag = false;
+      }
+
       if( ! this.runFlag ) {
         this.printLine("ready.");
       }

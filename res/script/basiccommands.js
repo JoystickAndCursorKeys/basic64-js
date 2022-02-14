@@ -141,7 +141,7 @@ class BasicCommands {
     }
 
     var data = this.context.readData();
-    if( data === undefined ) { this.erh.throwError( "not a var" ); }
+    if( data === undefined ) { this.erh.throwError( "out of data" ); }
     else {
       if( data.type =="num" ) {
         this.context.setVar(
