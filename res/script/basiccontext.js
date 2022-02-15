@@ -1144,7 +1144,7 @@ class BasicContext {
       var panic = "off";
       if(this.exitMode == "panic") panic = "on ";
 
-      this.printLine("  extended: " + ext + "- turbo: "+turbo+" panic: " + panic);
+      this.printLine("  ext.: " + ext + " - turbo: "+turbo+" - panic: " + panic);
       this.printLine("");
     }
     if( !muteReady ) {
