@@ -184,9 +184,6 @@ class BasicContext {
 
   }
 
-  throwError( clazz, detail ) {
-    this.erh.thowError(  clazz, detail, this, this.retreiveLine() );
-  }
 
   getPlayExampleFlag() {
     if ( this.goPlayExampleFlag )  {
@@ -1147,7 +1144,7 @@ class BasicContext {
       var panic = "off";
       if(this.exitMode == "panic") panic = "on ";
 
-      this.printLine("  extended: " + ext + "- turbo: "+turbo+" panic: " + panic);
+      this.printLine("  ext.: " + ext + " - turbo: "+turbo+" - panic: " + panic);
       this.printLine("");
     }
     if( !muteReady ) {
@@ -1930,8 +1927,7 @@ class BasicContext {
     }
 
     if(!found ) {
-      this.printError("UNDEF'D STATEMENT");
-      throw "@line not found";
+      throw "@undef'd statement";
     }
 
     if(!this.runFlag ) {
@@ -2310,6 +2306,7 @@ class BasicContext {
   onLineStr() {
 
     var line = this.retreiveLine();
+    if( line == -1 || line == "") { return ""; }
 
     return " in " + line;
 
@@ -2595,16 +2592,19 @@ class BasicContext {
         }
         catch ( e ) {
           console.log(e);
-          var done=false;
-          if( (typeof e) == "string" ) {
-            if( e.startsWith("@") ) {
-              this.printError(e.substr(1));
-              done=true;
-            }
+
+          if( this.erh.isSerializedError( e ) ) {
+            var err = this.erh.fromSerializedError( e );
+            this.printError( err.clazz );
           }
-          if(!done ) {
-            this.printError("unexpected");
+          else if( this.erh.isError( e ) ) {
+            var err = e;
+            this.printError( err.clazz );
           }
+          else {
+            this.printError("unexpected " + e );
+          }
+
           return [END_W_ERROR,i+1,cnt];
         }
       }
@@ -3126,8 +3126,11 @@ class BasicContext {
       this.parseLineNumber = -1;
       if( this.erh.isError( e ) ) {
         this.parseLineNumber = e.lineNr;
+        this.printError( e.clazz, true );
       }
-      this.printError( "syntax", true );
+      else {
+        this.printError( "syntax", true );
+      }
       this.printLine("ready.");
     }
     if( l == null ) {
@@ -3148,7 +3151,32 @@ class BasicContext {
     else {
       this.runPointer = -1;
       this.runPointer2 = 0;
-      this.runCommands( l.commands );
+
+      try {
+        this.runCommands( l.commands );
+      }
+      catch( e ) {
+
+        this.parseLineNumber = -1;
+
+        if( this.erh.isSerializedError( e ) ) {
+          var err = this.erh.fromSerializedError( e );
+          this.parseLineNumber = err.lineNr;
+          this.printError( err.clazz );
+        }
+        else if( this.erh.isError( e ) ) {
+          var err = e;
+          this.printError( err.clazz );
+          this.parseLineNumber = err.lineNr;
+        }
+        else {
+          this.printError("unexpected " + e );
+        }
+
+
+        this.runFlag = false;
+      }
+
       if( ! this.runFlag ) {
         this.printLine("ready.");
       }
