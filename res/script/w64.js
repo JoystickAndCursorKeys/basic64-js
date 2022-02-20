@@ -4,6 +4,7 @@ class Program {
   constructor( console ) {
     this.console = console;
     this.basiccontext = new BasicContext( this.console );
+    this.basiccontext.setEditModeCallBacks("edit");
 
     this.stringMode = false;
 
@@ -421,19 +422,19 @@ class Program {
     if( evt.type == 'keydown' ) {
 
       var c = this.console;
+      var ctx = bcontext;
       var stringMode;
       stringMode = this.stringMode;
 
       if( evt.key == "Enter") {
 
           c.clearCursor();
-          var line=c.getCurrentLine();
-          console.log( line );
+          var line=ctx.getCurrentLine();
 
           this.stringMode = false;
           stringMode = false;
 
-          c.writeString("", true);
+          ctx.passEnter();
 
           bcontext.handleLineInput( line, isInputCommand );
 
@@ -443,85 +444,93 @@ class Program {
       }
       else if( evt.key == "Backspace"  && !evt.ctrlKey) {
           c.clearCursor();
-          c.deleteChar();
+          ctx.passDeleteChar();
       }
       else if( evt.key == "Backspace" && evt.ctrlKey) {
-          this.basiccontext.reset( false );
+          ctx.reset( false );
       }
       else if( evt.key == "p" && evt.ctrlKey ) {
 
-        c.writeChar( '\x7e'  ); //https://sta.c64.org/cbm64pet.html
+        ctx.passChars( '\x7e', false  ); //https://sta.c64.org/cbm64pet.html
+
+        evt.preventDefault();
+      }
+      else if( evt.key == "d" && evt.ctrlKey ) {
+
+        ctx.showDebug(); //https://sta.c64.org/cbm64pet.html
+
         evt.preventDefault();
       }
       else if( evt.key == "x" && evt.ctrlKey ) {
 
-        c.writeChar( '\x5e'  ); //https://sta.c64.org/cbm64pet.html
+        ctx.passChars( '\x5e', false   ); //https://sta.c64.org/cbm64pet.html
+
         evt.preventDefault();
       }
       else if( evt.key == "^"  ) {
-        c.writeChar( '\x5e'  ); //https://sta.c64.org/cbm64pet.html
+        ctx.passChars( '\x5e', false   ); //https://sta.c64.org/cbm64pet.html
+
         evt.preventDefault();
       }
       else if( evt.key == "ArrowLeft") {
 
           c.clearCursor();
           c.cursorLeft();
+          ctx.updateYPos();
           evt.preventDefault();
       }
       else if( evt.key == "ArrowRight") {
           c.clearCursor();
           c.cursorRight();
+          ctx.updateYPos();
           evt.preventDefault();
       }
       else if( evt.key == "ArrowUp"  && !evt.ctrlKey) {
           c.clearCursor();
           c.cursorUp();
+          ctx.updateYPos();
           evt.preventDefault();
-      }
-      else if( evt.key == "ArrowUp"  && evt.ctrlKey) {
-        c.writeChar( '\x5e'  ); //https://sta.c64.org/cbm64pet.html
-        evt.preventDefault();
       }
       else if( evt.key == "ArrowDown") {
           c.clearCursor();
           c.cursorDown();
+          ctx.updateYPos();
           evt.preventDefault();
       }
+      else if( evt.key == "ArrowUp"  && evt.ctrlKey) {
+        ctx.passChars( '\x5e', false   ); //https://sta.c64.org/cbm64pet.html
+        evt.preventDefault();
+      }
       else if( evt.key == "F1") {
-        c.writeString('LIST');
+        ctx.passString('LIST');
       }
       else if( evt.key == "F2") {
-        c.writeString('RUN');
+        ctx.passString('RUN');
       }
       else if( evt.key == "F5") {
-        c.writeString('LOAD "$":LIST');
+        ctx.passString('LOAD "$":LIST');
         evt.preventDefault();
       }
       else if( evt.key == "F6") {
-        c.writeString('LOAD "*"');
+        ctx.passString('LOAD "*"');
         evt.preventDefault();
       }
-      else if( evt.key == "I") {
+      else if( evt.key == "I" ) { //why do we need this?
         c.clearCursor();
-        c.writeChar( evt.key );
+        ctx.passChars( evt.key, false  );
       }
       else if( evt.key == "\"") {
         c.clearCursor();
-        c.writeChar( evt.key );
+        ctx.passChars( evt.key, false  );
         evt.preventDefault();
         this.stringMode = !this.stringMode;
       }
       else {
 
         /*
-
         var k2c = this.keyToCode;
-
         k2c["ALT_CODE49"] = '\xd0'; //1
-
-
         */
-
 
         var checkKey = "";
         if( evt.k_shift ) {
@@ -545,7 +554,7 @@ class Program {
           if( ! (mapEntry===undefined)) {
             console.log("check_key: " + checkKey + "\/" );
 
-            c.writePetsciiChar( mapEntry );
+            ctx.passPetsciiChar( mapEntry );
             evt.preventDefault();
             return;
           }
@@ -556,26 +565,21 @@ class Program {
 
             console.log("check_key: " + checkKey + " - out string " + mapEntry.charCodeAt(0));
             c.clearCursor();
-            this.basiccontext.sendChars( mapEntry, false );
+            ctx.passChars( mapEntry, false );
             evt.preventDefault();
             return;
           }
         }
 
-
         if( evt.key.length == 1) {
             c.clearCursor();
-            //console.log("key=",evt);
-            this.basiccontext.sendChars( evt.key.toUpperCase(), false );
+            ctx.passChars( evt.key.toUpperCase(), false );
             evt.preventDefault();
         }
 
       }
-
-
     }
   }
-
 
   playRun() {
 

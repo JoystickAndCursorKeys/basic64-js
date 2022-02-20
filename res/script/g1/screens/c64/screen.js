@@ -51,13 +51,14 @@ class C64Screen {
 			this.bufcanvas.width = this.iwidth;
 			this.bufcanvas.height = this.iheight;
 
-
 			this.border0 = {
 				w: 32+16,
 				h: 32,
 			}
 
-
+			this.lineOverflowCallback = null;
+			this.clearScreenCallback = null;
+			this.scrollCallback = null;
 
 /*			this.WIDTH = 320*2.5;
 			this.HEIGHT = 200*2.5;
@@ -122,6 +123,47 @@ class C64Screen {
 			this.rescale( 2.5, 2.5 );
 
    }
+
+	 setCallbacks( cb ) {
+		 	this.lineOverflowCallback = cb.lineOverFlow;
+			this.scrollCallback = cb.scroll;
+			this.clearScreenCallback = cb.clearScreen;
+	 }
+
+	 clearCallbacks( ) {
+		 	this.lineOverflowCallback = null;
+			this.scrollCallback = null;
+			this.clearScreenCallback = null;
+	 }
+
+
+	 cursorShiftNext() {
+		 this.cursorx++;
+		 if(this.cursorx > 39) {
+			 this.cursorx = 39;
+
+			 if( this.cursory != 24) {
+				 if( this.lineOverflowCallback ) {
+				 		var clazz = this.lineOverflowCallback.clazz;
+				 		var method = this.lineOverflowCallback.method;
+				 		clazz[method]();
+				 }
+
+				 this.cursory++;
+				 this.cursorx=0;
+			 }
+			 else {
+				 this.scrollUpNoCallback();
+
+				 if( this.lineOverflowCallback ) {
+					 var clazz = this.lineOverflowCallback.clazz;
+					 var method = this.lineOverflowCallback.method;
+					 clazz[method]();
+				 }
+				 this.cursorx=0;
+		 	 }
+		 }
+	 }
 
 	 rescale(xs,ys) {
 		 this.xScale = xs;
@@ -777,6 +819,13 @@ class C64Screen {
 	 		}
 	 		this.txScBuf[ y ] = row;
 	 	}
+
+		if( this.clearScreenCallback ) {
+
+		 var clazz = this.clearScreenCallback.clazz;
+		 var method = this.clearScreenCallback.method;
+		 clazz[method]();
+		}
 	 }
 
 	 isBitMapMode() {
@@ -791,10 +840,10 @@ class C64Screen {
 		 return this.memory;
 	 }
 
-	 scrollUp() {
+
+	 scrollUpNoCallback() {
 
 		 var buf = this.txScBuf;
-
 		 this.cursory=24;
 
 		 for( var y=0; y<24; y++) {
@@ -811,9 +860,21 @@ class C64Screen {
 		 	  buf[y][x][2] = true;
 		  }
 		 }
-
 	 }
 
+
+	 scrollUp() {
+
+		 this.scrollUpNoCallback();
+
+		 if( this.scrollCallback ) {
+
+		 	var clazz = this.scrollCallback.clazz;
+		 	var method = this.scrollCallback.method;
+		 	clazz[method]();
+		 }
+
+	 }
 
 	 nextLine(  c ) {
 		 this.cursory++;
@@ -916,8 +977,16 @@ class C64Screen {
 		 this.cursory = y;
 	 }
 
+	 getCursorY() {
+		 return this.cursory;
+	 }
+
 	 setCursorX( x ) {
 		 this.cursorx = x;
+	 }
+
+	 getCursorX() {
+		 return this.cursorx;
 	 }
 
 	 cursorUp() {
@@ -945,6 +1014,8 @@ class C64Screen {
 		 this.cursory=0;
 	 }
 
+
+
 	 writePetsciiChar( c ) {
 		 var index = c.charCodeAt(0);
 		 if( index < 0 || index >255) { index = 0;}
@@ -955,12 +1026,8 @@ class C64Screen {
  			buf[this.cursory][this.cursorx][1] = this.col;
  			buf[this.cursory][this.cursorx][0] = index;
   		}
- 		this.cursorx++;
- 		if(this.cursorx > 39) {
- 			this.cursorx = 0;
- 			this.nextLine();
 
- 		}
+		this.cursorShiftNext();
 
 	 }
 
@@ -973,11 +1040,9 @@ class C64Screen {
  			buf[this.cursory][this.cursorx][1] = this.col;
  			buf[this.cursory][this.cursorx][0] = index;
   		}
- 		this.cursorx++;
- 		if(this.cursorx > 39) {
- 			this.cursorx = 0;
- 			this.nextLine();
- 		}
+
+		this.cursorShiftNext();
+
 	 }
 
 	 writeChar(  c ) {
@@ -990,29 +1055,10 @@ class C64Screen {
 			buf[this.cursory][this.cursorx][1] = this.col;
 			buf[this.cursory][this.cursorx][0] = index;
  		}
-		this.cursorx++;
-		if(this.cursorx > 39) {
-			this.cursorx = 0;
-			this.nextLine();
-		}
+		this.cursorShiftNext();
+
    }
 
-	 writeChar2(  c ) {
-
-    var index = this._mapASCII2Screen( c );
-
-		var buf = this.txScBuf;
- 		if( index > -1 ) {
-			buf[this.cursory][this.cursorx][2] = true;
-			buf[this.cursory][this.cursorx][1] = this.col;
-			buf[this.cursory][this.cursorx][0] = index;
- 		}
-		this.cursorx++;
-		if(this.cursorx > 39) {
-			this.cursorx = 0;
-			this.nextLine();
-		}
-   }
 
 	 deleteChar() {
     var index = 32;
@@ -1036,21 +1082,25 @@ class C64Screen {
    }
 
 
-	 getCurrentLine() {
+	 getLine( y ) {
 		 var line;
 		 var buf = this.txScBuf;
 
 		 line = "";
 
-		 for( var x=0; x<39; x++) {
-			 var c=this.backmap[ buf[this.cursory][x][0] ];
+		 for( var x=0; x<40; x++) {
+			 var c=this.backmap[ buf[y][x][0] ];
 			 if( !c ) { c=" "};
 			 line = line + c;
 		 }
 		 return line;
 	 }
 
+	 getCurrentLine() {
 
+		 return this.getLine( this.cursory );
+
+	 }
 
 	 writeString( str, newLine ) {
 		 for (var i = 0; i < str.length; i++) {

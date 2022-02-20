@@ -10,6 +10,7 @@ class BasicContext {
     this.program = [];
     this.cursorCount = 0;
     this.runFlag = false;
+    this.executeLineFlag = false;
     this.goPlayExampleFlag = false;
     this.breakCycleFlag;
     this.inputFlag = false;
@@ -36,9 +37,27 @@ class BasicContext {
     this.data = [];
     this.kbBuffer = [];
 
+    this.yPos = -1;
+    this.lineMarkers = [ 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0 ];
+    this.SHORTLINE = 0;
+    this.LONGLINESTART = 1;
+    this.LONGLINEEND = 2;
+
     this.forContext = { default:[] }
 
     this.vDisks = new VDisk( );
+
+    this.consoleCallBacksAll = {
+        lineOverFlow: { clazz: this, method: "cbLineOverFlow" },
+        scroll: { clazz: this, method: "cbScroll" },
+        clearScreen: { clazz: this, method: "cbClearScreen" }
+    }
+
+    this.consoleCallBacksClScr = {
+        lineOverFlow: undefined,
+        scroll: { clazz: this, method: "cbScroll" },
+        clearScreen: { clazz: this, method: "cbClearScreen" }
+    }
 
     var json = localStorage.getItem('BJ64_Settings');
     if(json!=null) {
@@ -349,13 +368,40 @@ class BasicContext {
     return this.menuFocus;
   }
 
+  updateEditMode() {
+
+    if( this.menuFocus ) {
+      this.setEditModeCallBacks( "none" );
+      return;
+    }
+
+    if( !this.runFlag && !this.listFlag && ! this.executeLineFlag ) {
+      this.setEditModeCallBacks( "edit" );
+      return;
+    }
+    else if( this.listFlag ) {
+      this.setEditModeCallBacks( "edit" );
+      return;
+    }
+    else if( this.runFlag && this.inputFlag ) {
+      this.setEditModeCallBacks( "edit" );
+      return;
+    }
+    else if( this.runFlag || this.executeLineFlag ) {
+      this.setEditModeCallBacks( "print" );
+      return;
+    }
+  }
+
   toggleMenu() {
     if(!this.menuFocus) {
       this.listStop();
+      this.updateEditMode();
       this.menu.start();
     }
     else  {
       this.menu.stop();
+      this.updateEditMode();
     }
     this.menuFocus = !this.menuFocus;
   }
@@ -555,9 +601,6 @@ class BasicContext {
     this.sendChars(s.toUpperCase(), false);
     this.reverseOn = false;
   }
-
-
-
 
   spriteColor( s, c ) {
     var base = 53287 + s;
@@ -1114,6 +1157,10 @@ class BasicContext {
     return [hours,minutes,seconds];
   }
 
+  resetLineMarkers() {
+    this.lineMarkers = [ 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0, 0,0,0,0,0 ];
+  }
+
   reset( hard, muteReady ) {
     this.console.clearScreen();
     this.vpoke(53280,14);
@@ -1133,7 +1180,7 @@ class BasicContext {
 
     this.printLine("");
     if( hard ) {
-      this.printLine("   **** c64 basic emulator v0.70 ****");
+      this.printLine("   **** c64 basic emulator v0.80 ****");
       this.printLine("");
       var ext = "off";
       if(this.extendedcommands.enabled) ext = "on ";
@@ -1150,10 +1197,223 @@ class BasicContext {
     if( !muteReady ) {
       this.printLine("ready.");
     }
+
+    this.resetLineMarkers();
+    this.updateYPos();
+  }
+
+  updateYPos() {
+    this.yPos = this.console.getCursorY();
+  }
+
+  showDebug() {
+    if( !this.showDebugFlag ) {
+      this.debugChars = [];
+      this.debugCharsCol = [];
+      this.debugChars2 = [];
+      this.debugCharsCol2 = [];
+
+      var c= this.console;
+      c.clearCursor();
+
+      if( c.getCursorX() == 0 ) {
+        c.setCursorX( 1 );
+      }
+      if( c.getCursorY() == 0 ) {
+        c.setCursorY( 1 );
+      }
+
+      for( var y=0; y<25; y++ ) {
+        this.debugCharsCol[ y ] = this.console.getCharCol( 0,y );
+        this.debugChars[ y ] = this.console.getChar( 0,y );
+        this.console.setCharCol( 0, y, this.lineMarkers[y] );
+        this.console.setChar( 0, y, this.lineMarkers[y] + 48 );
+      }
+
+      for( var x=0; x<40; x++ ) {
+        this.debugCharsCol2[ x ] = this.console.getCharCol( x,0 );
+        this.debugChars2[ x ] = this.console.getChar( x,0 );
+        this.console.setCharCol( x, 0, 1 );
+        this.console.setChar( x, 0, 102 );
+      }
+
+      //execution flag
+      this.console.setChar(    0, 0, 5 );
+      this.console.setChar(    1, 0, this.executeLineFlag + 48 );
+
+      //runflag
+      this.console.setChar(    4, 0, 18 );
+      this.console.setChar(    5, 0, this.runFlag + 48 );
+
+      //inputFlag
+      this.console.setChar(    8, 0, 9 );
+      this.console.setChar(    9, 0, this.inputFlag + 48 );
+
+      //listFlag
+      this.console.setChar(    12, 0, 12 );
+      this.console.setChar(    13, 0, this.listFlag + 48 );
+
+      this.showDebugFlag = true;
+    }
+    else {
+      this.hideDebug();
+
+    }
+  }
+
+
+  hideDebug() {
+
+      if( !this.showDebugFlag ) { return ; }
+
+      for( var x=0; x<40; x++ ) {
+        this.console.setCharCol( x,0, this.debugCharsCol2[ x ] );
+        this.console.setChar( x,0, this.debugChars2[ x ]);
+      }
+
+      for( var y=0; y<25; y++ ) {
+        this.console.setCharCol( 0, y, this.debugCharsCol[ y ] );
+        this.console.setChar( 0, y, this.debugChars[ y ]);
+      }
+
+      this.showDebugFlag = false;
+  }
+
+  getCurrentLine() {
+    this.updateYPos();
+
+    if ( this.lineMarkers[ this.yPos ] == 0 ) {
+      var line0 = this.console.getCurrentLine();
+      return line0;
+    }
+    else if ( this.lineMarkers[ this.yPos ] == 2 ) {
+      var line0 = this.console.getLine( this.yPos -1 )
+      var line1 = this.console.getLine( this.yPos );
+      console.log( "l0>"+line0 );
+      console.log( "l1>"+line1 );
+      return line0 + line1;
+    }
+    else if ( this.lineMarkers[ this.yPos ] == 1 ) {
+      var line0 = this.console.getLine( this.yPos )
+      var line1 = this.console.getLine( this.yPos + 1 );
+      console.log( "l0>"+line0 );
+      console.log( "l1>"+line1 );
+      return line0 + line1;
+    }
+  }
+
+  passEnter() {
+    //this.console.setCallbacks( this.consoleCallBacks );
+    this.hideDebug();
+    this.updateYPos();
+    if ( this.lineMarkers[ this.yPos ] == 0 || this.lineMarkers[ this.yPos ] == 2 ) {
+      this.printLine("");
+    }
+    else if ( this.lineMarkers[ this.yPos ] == 1 ) {
+      this.printLine("");
+      this.printLine("");
+    }
+
+
+    this.updateYPos();
+    //this.console.clearCallbacks();
+  }
+  passDeleteChar() {
+    this.hideDebug();
+    this.console.deleteChar(); this.updateYPos(); }
+
+  cbLineOverFlow() {
+
+    this.updateYPos();
+
+    if( this.yPos<24 ) {
+      if ( this.lineMarkers[ this.yPos ] == 0 ) {
+        for( var y=23; y>this.yPos; y-- ) {
+          this.lineMarkers[ y+1 ] = this.lineMarkers[ y ];
+          this.lineCopy( y, y+1 );
+        }
+        this.lineMarkers[ this.yPos ] = 1;
+        this.lineMarkers[ this.yPos+1 ] = 2;
+      }
+    }
+    else {
+
+      for( var y=0; y<24; y++) {
+        this.lineMarkers[y] = this.lineMarkers[y + 1];
+      }
+      this.lineMarkers[ 23 ] = 1;
+      this.lineMarkers[ 24 ] = 2;
+    }
+  }
+
+  lineCopy( src, dst ) {
+    var c = this.console;
+    var ls = [], lsc = [];
+    for( var x=0; x<40; x++) {
+      var ch = c.getChar( x, src );
+      var co = c.getCharCol( x, src );
+
+      c.setChar( x, dst , ch );
+      c.setCharCol( x, dst , co );
+    }
+  }
+
+  cbClearScreen() {
+
+    for( var y=0; y<=24; y++) {
+      this.lineMarkers[y] = 0;
+    }
+
+  }
+
+  cbScroll() {
+
+    for( var y=0; y<24; y++) {
+      this.lineMarkers[y] = this.lineMarkers[y + 1];
+    }
+
+    this.lineMarkers[ 24 ] = 0;
+    this.lineMarkers[ 0  ] = 0;
+  }
+
+  passPetsciiChar( pC ) {
+
+    this.hideDebug();
+    var xy = this.console.writePetsciiChar( pC );
+
+  }
+
+  passChars( chs, nl ) {
+
+    this.hideDebug();
+    var xy = this.sendChars( chs, nl );
+
+  }
+
+  passString( x ) {
+
+    this.hideDebug();
+    var xy = this.console.writeString( x );
+
+   }
+
+  setEditModeCallBacks( type ) {
+    if( type == "edit" )  {
+      this.console.setCallbacks( this.consoleCallBacksAll );
+
+    }
+    else if( type == "print" )  {
+      this.console.setCallbacks( this.consoleCallBacksClScr );
+
+    }
+    else  {
+      this.console.clearCallbacks();
+    }
   }
 
   clearScreen( ) {
     this.console.clearScreen();
+
   }
 
   compressPGMText( pgmTxt ) {
@@ -1648,8 +1908,6 @@ class BasicContext {
         this.printLine("");
         this.printLine("");
       }
-
-
     }
   }
 
@@ -1701,6 +1959,7 @@ class BasicContext {
         }
 
         this.runFlag = false;
+
         this.panicIfStopped();
         c.clearCursor();
         this.printLine("");
@@ -1746,6 +2005,7 @@ class BasicContext {
            }
            else {
              this.listFlag = false;
+             this.printLine("ready.");
            }
 
         }
@@ -2173,6 +2433,8 @@ class BasicContext {
   }
 
   runPGM() {
+
+    this.executeLineFlag = false;
 
     if( this.startAsGoto ) {
         this.startAsGoto = false;
@@ -2978,12 +3240,12 @@ class BasicContext {
     for( var i=0; i<myProgram.length; i++) {
       var pl=myProgram[i];
       if( pl[0] == linenr ) {
-        myProgram[i] = [linenr, commands, raw ];
+        myProgram[i] = [linenr, commands, raw.trim() ];
         return;
       }
     }
 
-    myProgram.push( [linenr, commands, raw ]);
+    myProgram.push( [linenr, commands, raw.trim() ]);
 
     var sortF = function compare( a, b ) {
       return a[0] - b[0];
@@ -3060,6 +3322,8 @@ class BasicContext {
 
   handleLineInput( str, isInputCommand ) {
 
+
+
     if( this.debugFlag ) {
       console.log("handleLineInput: start debug / isInputCommand=" + isInputCommand + " -------------");
     }
@@ -3113,6 +3377,8 @@ class BasicContext {
         return;
     }
 
+    this.executeLineFlag = true;
+
     if( this.debugFlag ) {
       console.log( str );
     }
@@ -3137,6 +3403,8 @@ class BasicContext {
       if( this.debugFlag ) {
         console.log("handleLineInput: end debug -------------");
       }
+
+      this.executeLineFlag = false;
       return;
     }
 
@@ -3173,15 +3441,16 @@ class BasicContext {
           this.printError("unexpected " + e );
         }
 
-
         this.runFlag = false;
       }
 
-      if( ! this.runFlag ) {
+      if( ! this.runFlag && ! this.listFlag) {
         this.printLine("ready.");
       }
 
     }
+
+    this.executeLineFlag = false;
 
     if( this.debugFlag ) {
       console.log("program:",this.program);
