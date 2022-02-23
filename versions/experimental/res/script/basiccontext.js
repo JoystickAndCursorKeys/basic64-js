@@ -1180,7 +1180,7 @@ class BasicContext {
 
     this.printLine("");
     if( hard ) {
-      this.printLine("   **** c64 basic emulator v0.80 ****");
+      this.printLine("   **** c64 basic emulator v0.8X ****");
       this.printLine("");
       var ext = "off";
       if(this.extendedcommands.enabled) ext = "on ";
