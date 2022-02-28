@@ -47,7 +47,7 @@ kbRow.push( padDummyKey() );
 
     var kbRow = [];
   kbRow.push( padDummyKey() );
-    kbRow.push( longKey( "c", 1.5 ) );
+    kbRow.push( longKey( "ctrl", 1.5 ) );
     kbRow.push( singleKey( "q" ) );
     kbRow.push( singleKey( "w" ) );
     kbRow.push( singleKey( "e" ) );
@@ -127,6 +127,7 @@ kbRow.push( padDummyKey() );
              var clazz = "kbkeys" + (k.width+"").replace(".","p");
              console.log( clazz );
              td.classList.add( clazz );
+             td.classList.add( "kbkeysbase" );
              td.colSpan = k.width * 2;
            }
 
