@@ -165,6 +165,24 @@ class C64Screen {
 		 }
 	 }
 
+
+	 cursorShiftNextNoCallback() {
+		 this.cursorx++;
+		 if(this.cursorx > 39) {
+			 this.cursorx = 39;
+
+			 if( this.cursory != 24) {
+
+				 this.cursory++;
+				 this.cursorx=0;
+			 }
+			 else {
+				 this.scrollUpNoCallback();
+				 this.cursorx=0;
+		 	 }
+		 }
+	 }
+
 	 rescale(xs,ys) {
 		 this.xScale = xs;
 		 this.yScale = ys;

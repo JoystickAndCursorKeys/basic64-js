@@ -501,7 +501,15 @@ class BasicCommands {
 
   _fun_tab( pars ) {
     var context = this.context;
-    context.setCursXPos( this._max( pars[0].value, 39) );
+
+    if( pars.length <1) {
+      this.erh.throwError( "syntax", "missing parameter 0" );
+    }
+    var p = pars[0].value;
+    if( p<0 || p > 255 ) {
+      this.erh.throwError( "illegal quantity", "value must be in-between 0 and 255" );
+    }
+    context.setCursLongXPos( pars[0].value );
     return "";
   }
 

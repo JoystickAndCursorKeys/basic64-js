@@ -1123,6 +1123,16 @@ class BasicContext {
     }
   }
 
+  setCursLongXPos( p ) {
+    var c = this.console;
+    var x = this.console.getCursorX( p );
+    var start = x;
+
+    for( var i=start; i<p; i++) {
+      c.cursorShiftNextNoCallback();
+    }
+  }
+
   setCursXPos( p ) {
     this.console.setCursorX( p );
   }
@@ -1180,7 +1190,7 @@ class BasicContext {
 
     this.printLine("");
     if( hard ) {
-      this.printLine("   **** c64 basic emulator v0.8X ****");
+      this.printLine("  **** c64 basic emulator v0.80p1 ****");
       this.printLine("");
       var ext = "off";
       if(this.extendedcommands.enabled) ext = "on ";
@@ -1744,13 +1754,7 @@ class BasicContext {
 
       }
       catch ( e ) {
-        if( e.startsWith("@") ) {
-          this.printError(e.substr(1));
-        }
-        else {
-          this.printError("unexpected");
-        }
-
+        throw e;
       }
     }
     else if( p.type=="defFnCall" ) {
@@ -1781,13 +1785,7 @@ class BasicContext {
 
       }
       catch ( e ) {
-        if( e.startsWith("@") ) {
-          this.printError(e.substr(1));
-        }
-        else {
-          this.printError("unexpected");
-        }
-
+        throw e;
       }
     }
 
