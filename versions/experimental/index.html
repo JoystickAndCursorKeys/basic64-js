@@ -67,6 +67,39 @@
 			cursor: pointer;
 		}
 
+		.kbkeys1 {
+    border: 0px red solid;
+    border-radius: 5px;
+		background-color: #000000;
+		color: #ffffff;
+		width: 40px; height: 35px;
+		text-align: center;
+		}
+
+		.kbkeys2 {
+    border: 0px red solid;
+    border-radius: 5px;
+		background-color: #000000;
+		color: #ffffff;
+		width: 80px; height: 35px;
+		text-align: center;
+		}
+
+		.kbkeys1p5 {
+		border: 0px red solid;
+		border-radius: 5px;
+		background-color: #000000;
+		color: #ffffff
+		width: 60px; height: 35px;
+		text-align: center;
+		}
+
+		.kbbg {
+    border: 1px black solid;
+    border-radius: 5px;
+		background-color: #888888;
+		color: #ffffff
+		}
 
 	</style>
 
@@ -85,6 +118,7 @@
 	<script src="res/script/basiccontext.js"></script>
 	<script src="res/script/w64.js"></script>
 	<script src="res/script/statedefinitions.js"></script>
+	<script src="res/script/kb.js"></script>
 
 
 <script>
@@ -97,9 +131,15 @@
 	var MIN_SCR_H = 600;
 	var screenCanvas;
 
+
+
 	window.onload = function() {
 
 		polyfix();
+
+		var kbTable = document.getElementById("kbtable");
+		kbInit( kbTable );
+
 		screenCanvas = document.getElementById("screenCanvas");
 		var console = new C64Screen( 'screenCanvas', 'res/script/g1/screens/c64', start );
 
@@ -109,7 +149,6 @@
 	var document_page_color = "#000000";
 
 	function start( console ) {
-
 		screenCanvas.focus();
 
 		var container = document.getElementById("middlediv");
@@ -127,8 +166,6 @@
 		game1 = new Boot( 'screenCanvas', SCR_W, SCR_H,  stateDefinitions );
 
 		default_Document_Page_Color();
-
-
 	}
 
 	function default_Document_Page_Color() {
@@ -231,9 +268,19 @@ function convertLinkClipboard() {
 <body bgcolor=#000030>
 
 <div class="outer" id="outerdiv">
+
   <div id="middlediv" class="middle">
+
     <div id="innerdiv" class="inner">
+
 		<canvas class='screenCanvas' id="screenCanvas" width="100%" height="100%" tabindex='1'></canvas>
+<br>
+		<div id=kbdiv  >
+			<center>
+				<table id=kbtable>
+				</table>
+			</center>
+		</div>
 
 		<a width=100% hidden href=# name="imageSaver" id="imageSaver">Save</a>
 		<input hidden name="imageLoader" id="imageLoader" type="file" onclick="this.value=null;"></input>
@@ -269,9 +316,11 @@ function convertLinkClipboard() {
 					<br>
 				</center>
 		</div>
+
     </div>
 
   </div>
+
 </div>
 
 
