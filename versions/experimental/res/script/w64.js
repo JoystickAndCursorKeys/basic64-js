@@ -312,6 +312,49 @@ class Program {
     this.resetKeyModifiers();
   }
 
+
+  handleVKPressEvent( vevt ) {
+
+    console.log("vevt=",vevt)
+    if( vevt.eventValue === undefined ) {
+      return;
+    }
+
+    if( vevt.eventValue.length === 1 ) {
+      this.playHandle(
+        {
+          key: vevt.eventValue,
+          type: 'keydown',
+          ctrlKey: false,
+          preventDefault: function () {}
+        }
+      );
+    }
+    else {
+      var key = "unknown";
+
+      if( vevt.eventValue == "return" ) {
+        key = "Enter";
+      }
+      else if( vevt.eventValue == "stop" ) {
+        key = "Escape";
+      }
+
+      this.playHandle(
+        {
+          key: key,
+          type: 'keydown',
+          ctrlKey: false,
+          preventDefault: function () {}
+        }
+      );
+    }
+
+  }
+
+
+
+
   playHandle( evt ) {
 
     var bcontext = this.basiccontext;
