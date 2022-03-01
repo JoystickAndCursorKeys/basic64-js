@@ -15,9 +15,45 @@ class  VirtualKB {
 
     var T = this;
     var kbArray = this.kbArray;
+
+
     var kbRow = [];
     kbRow.push( T.padDummyKey() );
-    kbRow.push( T.singleKey( "<-" ) );
+    kbRow.push( T.longKey( "MENU", 2.0, "menu" ) );
+    kbRow.push( T.padDummyKey() );
+    kbRow.push( T.singleKey( "F1" ) );
+    kbRow.push( T.singleKey( "F3" ) );
+    kbRow.push( T.singleKey( "F5" ) );
+    kbRow.push( T.singleKey( "F7" ) );
+    kbRow.push( T.padDummyKey() );
+    kbRow.push( T.longKey( "restore", 2.0 ) );
+    kbRow.push( T.padDummyKey() );
+    kbRow.push( T.singleKey( "&uarr;" ) );
+    kbArray.push( kbRow );
+
+
+    var kbRow = [];
+    kbRow.push( T.padDummyKey() );
+    kbRow.push( T.singleKey( "stop", true, "stop" ) );
+    kbRow.push( T.padDummyKey() );
+    kbRow.push( T.padDummyKey() );
+    kbRow.push( T.padDummyKey() );
+    kbRow.push( T.padDummyKey() );
+    kbRow.push( T.padDummyKey() );
+    kbRow.push( T.padDummyKey() );
+    kbRow.push( T.padDummyKey() );
+    kbRow.push( T.padDummyKey() );
+    kbRow.push( T.padDummyKey() );
+    kbRow.push( T.singleKey( "&larr;" ) );
+    kbRow.push( T.singleKey( "&darr;" ) );
+    kbRow.push( T.singleKey( "&rarr;" ) );
+
+    kbArray.push( kbRow );
+
+
+    var kbRow = [];
+    kbRow.push( T.padDummyKey() );
+
     kbRow.push( T.singleKey( "1" ) );
     kbRow.push( T.singleKey( "2" ) );
     kbRow.push( T.singleKey( "3" ) );
@@ -31,14 +67,13 @@ class  VirtualKB {
     kbRow.push( T.singleKey( "+" ) );
     kbRow.push( T.singleKey( "-" ) );
     kbRow.push( T.singleKey( "#" ) );
-    kbRow.push( T.singleKey( "clr" ) );
-    kbRow.push( T.singleKey( "ins" ) );
+
     kbRow.push( T.padDummyKey() );
     kbArray.push( kbRow );
 
     var kbRow = [];
     kbRow.push( T.padDummyKey() );
-    kbRow.push( T.longKey( "ctrl", 1.5 ) );
+
     kbRow.push( T.singleKey( "q" ) );
     kbRow.push( T.singleKey( "w" ) );
     kbRow.push( T.singleKey( "e" ) );
@@ -52,13 +87,14 @@ class  VirtualKB {
     kbRow.push( T.singleKey( "@" ) );
     kbRow.push( T.singleKey( "*" ) );
     kbRow.push( T.singleKey( "u" ) );
-    kbRow.push( T.longKey( "restore", 1.5 ) );
+
     kbRow.push( T.padDummyKey() );
     kbArray.push( kbRow );
 
     var kbRow = [];
     kbRow.push( T.padDummyKey() );
-    kbRow.push( T.singleKey( "stop", true, "stop" ) );
+    kbRow.push( T.singleKey( "<-" ) );
+
     kbRow.push( T.singleKey( "sl" ) );
     kbRow.push( T.singleKey( "a" ) );
     kbRow.push( T.singleKey( "s" ) );
@@ -71,15 +107,13 @@ class  VirtualKB {
     kbRow.push( T.singleKey( "l" ) );
     kbRow.push( T.singleKey( ":" ) );
     kbRow.push( T.singleKey( ";" ) );
-    kbRow.push( T.singleKey( "=" ) );
-    kbRow.push( T.longKey( "return", 2.0, "return" ) );
+
+
     kbRow.push( T.padDummyKey() );
     kbArray.push( kbRow );
 
     var kbRow = [];
     kbRow.push( T.padDummyKey() );
-    kbRow.push( T.singleKey( "c=" ) );
-    kbRow.push( T.longKey( "sh",1.5 ) );
     kbRow.push( T.singleKey( "z" ) );
     kbRow.push( T.singleKey( "x" ) );
     kbRow.push( T.singleKey( "c" ) );
@@ -90,11 +124,24 @@ class  VirtualKB {
     kbRow.push( T.singleKey( "<" ) );
     kbRow.push( T.singleKey( ">" ) );
     kbRow.push( T.singleKey( "?" ) );
-    kbRow.push( T.longKey( "sh",1.5 ) );
-    kbRow.push( T.singleKey( "up" ) );
-    kbRow.push( T.singleKey( "rg" ) );
+    kbRow.push( T.singleKey( "=" ) );
+    kbRow.push( T.longKey( "return", 2.0, "return" ) );
     kbRow.push( T.padDummyKey() );
     kbArray.push( kbRow );
+
+    var kbRow = [];
+    kbRow.push( T.padDummyKey() );
+    kbRow.push( T.singleKey( "c=" ) );
+    kbRow.push( T.longKey( "sh",1.5 ) );
+    kbRow.push( T.longKey( "ctrl", 1.5 ) );
+    kbRow.push( T.padDummyKey() );
+    kbRow.push( T.singleKey( "clr" ) );
+    kbRow.push( T.singleKey( "ins" ) );
+
+
+    kbArray.push( kbRow );
+
+
 
     const body = document.body,
      tbl = kbTable;
@@ -111,10 +158,11 @@ class  VirtualKB {
            if( k.pad ) {
              var clazz = "kbkeys" + (k.width+"").replace(".","p");
              console.log( clazz );
-              td.colSpan = 1;
+              td.colSpan = 1 * 2;
            }
            else {
-             td.appendChild(document.createTextNode(k.visual));
+             td.innerHTML = k.visual;
+             //td.appendChild(document.createTextNode(k.visual;));
              var clazz;
 
              if( k.smallText === undefined ) {
@@ -166,6 +214,14 @@ class  VirtualKB {
       width: 1,
       eventValue: eventValue,
       smallText: smallText
+    }
+  }
+
+
+ padDummyHalfKey() {
+    return {
+      pad: true,
+      width: .5
     }
   }
 
