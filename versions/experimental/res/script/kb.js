@@ -1,108 +1,99 @@
-function singleKey( visual, eventValue ) {
-  return {
-    visual: visual,
-    width: 1,
-    eventValue: eventValue
-  }
+
+function VirtualKB_event( x ) {
+
+  console.log("VirtualKB_event",x);
+
 }
 
-function padDummyKey() {
-  return {
-    pad: true,
-    width: 1
-  }
-}
+class  VirtualKB {
 
-function longKey( visual, width, eventValue ) {
-  return {
-    visual: visual,
-    width: width,
-    eventValue: eventValue
-  }
-}
+  constructor( kbTable, eventHandlerClass  ) {
 
-function kbInit( kbTable ) {
+    this.eventHandlerClass = eventHandlerClass;
+    this.kbArray = [];
+    this.htmlTable = kbTable;
 
-  var kbArray = [];
-  var kbRow = [];
-kbRow.push( padDummyKey() );
-    kbRow.push( singleKey( "<-" ) );
-    kbRow.push( singleKey( "1" ) );
-    kbRow.push( singleKey( "2" ) );
-    kbRow.push( singleKey( "3" ) );
-    kbRow.push( singleKey( "4" ) );
-    kbRow.push( singleKey( "5" ) );
-    kbRow.push( singleKey( "6" ) );
-    kbRow.push( singleKey( "7" ) );
-    kbRow.push( singleKey( "8" ) );
-    kbRow.push( singleKey( "9" ) );
-    kbRow.push( singleKey( "0" ) );
-    kbRow.push( singleKey( "+" ) );
-    kbRow.push( singleKey( "-" ) );
-    kbRow.push( singleKey( "#" ) );
-    kbRow.push( singleKey( "clr" ) );
-    kbRow.push( singleKey( "ins" ) );
-    kbRow.push( padDummyKey() );
+    var T = this;
+    var kbArray = this.kbArray;
+    var kbRow = [];
+    kbRow.push( T.padDummyKey() );
+    kbRow.push( T.singleKey( "<-" ) );
+    kbRow.push( T.singleKey( "1" ) );
+    kbRow.push( T.singleKey( "2" ) );
+    kbRow.push( T.singleKey( "3" ) );
+    kbRow.push( T.singleKey( "4" ) );
+    kbRow.push( T.singleKey( "5" ) );
+    kbRow.push( T.singleKey( "6" ) );
+    kbRow.push( T.singleKey( "7" ) );
+    kbRow.push( T.singleKey( "8" ) );
+    kbRow.push( T.singleKey( "9" ) );
+    kbRow.push( T.singleKey( "0" ) );
+    kbRow.push( T.singleKey( "+" ) );
+    kbRow.push( T.singleKey( "-" ) );
+    kbRow.push( T.singleKey( "#" ) );
+    kbRow.push( T.singleKey( "clr" ) );
+    kbRow.push( T.singleKey( "ins" ) );
+    kbRow.push( T.padDummyKey() );
     kbArray.push( kbRow );
 
     var kbRow = [];
-  kbRow.push( padDummyKey() );
-    kbRow.push( longKey( "ctrl", 1.5 ) );
-    kbRow.push( singleKey( "q" ) );
-    kbRow.push( singleKey( "w" ) );
-    kbRow.push( singleKey( "e" ) );
-    kbRow.push( singleKey( "r" ) );
-    kbRow.push( singleKey( "t" ) );
-    kbRow.push( singleKey( "y" ) );
-    kbRow.push( singleKey( "u" ) );
-    kbRow.push( singleKey( "i" ) );
-    kbRow.push( singleKey( "o" ) );
-    kbRow.push( singleKey( "p" ) );
-    kbRow.push( singleKey( "@" ) );
-    kbRow.push( singleKey( "*" ) );
-    kbRow.push( singleKey( "u" ) );
-    kbRow.push( longKey( "restore", 1.5 ) );
-    kbRow.push( padDummyKey() );
+    kbRow.push( T.padDummyKey() );
+    kbRow.push( T.longKey( "ctrl", 1.5 ) );
+    kbRow.push( T.singleKey( "q" ) );
+    kbRow.push( T.singleKey( "w" ) );
+    kbRow.push( T.singleKey( "e" ) );
+    kbRow.push( T.singleKey( "r" ) );
+    kbRow.push( T.singleKey( "t" ) );
+    kbRow.push( T.singleKey( "y" ) );
+    kbRow.push( T.singleKey( "u" ) );
+    kbRow.push( T.singleKey( "i" ) );
+    kbRow.push( T.singleKey( "o" ) );
+    kbRow.push( T.singleKey( "p" ) );
+    kbRow.push( T.singleKey( "@" ) );
+    kbRow.push( T.singleKey( "*" ) );
+    kbRow.push( T.singleKey( "u" ) );
+    kbRow.push( T.longKey( "restore", 1.5 ) );
+    kbRow.push( T.padDummyKey() );
     kbArray.push( kbRow );
 
     var kbRow = [];
-kbRow.push( padDummyKey() );
-    kbRow.push( singleKey( "stop" ) );
-    kbRow.push( singleKey( "sl" ) );
-    kbRow.push( singleKey( "a" ) );
-    kbRow.push( singleKey( "s" ) );
-    kbRow.push( singleKey( "d" ) );
-    kbRow.push( singleKey( "f" ) );
-    kbRow.push( singleKey( "g" ) );
-    kbRow.push( singleKey( "h" ) );
-    kbRow.push( singleKey( "j" ) );
-    kbRow.push( singleKey( "k" ) );
-    kbRow.push( singleKey( "l" ) );
-    kbRow.push( singleKey( ":" ) );
-    kbRow.push( singleKey( ";" ) );
-    kbRow.push( singleKey( "=" ) );
-    kbRow.push( longKey( "return", 2.0 ) );
-    kbRow.push( padDummyKey() );
+    kbRow.push( T.padDummyKey() );
+    kbRow.push( T.singleKey( "stop", true, "stop" ) );
+    kbRow.push( T.singleKey( "sl" ) );
+    kbRow.push( T.singleKey( "a" ) );
+    kbRow.push( T.singleKey( "s" ) );
+    kbRow.push( T.singleKey( "d" ) );
+    kbRow.push( T.singleKey( "f" ) );
+    kbRow.push( T.singleKey( "g" ) );
+    kbRow.push( T.singleKey( "h" ) );
+    kbRow.push( T.singleKey( "j" ) );
+    kbRow.push( T.singleKey( "k" ) );
+    kbRow.push( T.singleKey( "l" ) );
+    kbRow.push( T.singleKey( ":" ) );
+    kbRow.push( T.singleKey( ";" ) );
+    kbRow.push( T.singleKey( "=" ) );
+    kbRow.push( T.longKey( "return", 2.0, "return" ) );
+    kbRow.push( T.padDummyKey() );
     kbArray.push( kbRow );
 
     var kbRow = [];
-kbRow.push( padDummyKey() );
-    kbRow.push( singleKey( "c=" ) );
-    kbRow.push( longKey( "sh",1.5 ) );
-    kbRow.push( singleKey( "z" ) );
-    kbRow.push( singleKey( "x" ) );
-    kbRow.push( singleKey( "c" ) );
-    kbRow.push( singleKey( "v" ) );
-    kbRow.push( singleKey( "b" ) );
-    kbRow.push( singleKey( "n" ) );
-    kbRow.push( singleKey( "m" ) );
-    kbRow.push( singleKey( "<" ) );
-    kbRow.push( singleKey( ">" ) );
-    kbRow.push( singleKey( "?" ) );
-    kbRow.push( longKey( "sh",1.5 ) );
-    kbRow.push( singleKey( "up" ) );
-    kbRow.push( singleKey( "rg" ) );
-    kbRow.push( padDummyKey() );
+    kbRow.push( T.padDummyKey() );
+    kbRow.push( T.singleKey( "c=" ) );
+    kbRow.push( T.longKey( "sh",1.5 ) );
+    kbRow.push( T.singleKey( "z" ) );
+    kbRow.push( T.singleKey( "x" ) );
+    kbRow.push( T.singleKey( "c" ) );
+    kbRow.push( T.singleKey( "v" ) );
+    kbRow.push( T.singleKey( "b" ) );
+    kbRow.push( T.singleKey( "n" ) );
+    kbRow.push( T.singleKey( "m" ) );
+    kbRow.push( T.singleKey( "<" ) );
+    kbRow.push( T.singleKey( ">" ) );
+    kbRow.push( T.singleKey( "?" ) );
+    kbRow.push( T.longKey( "sh",1.5 ) );
+    kbRow.push( T.singleKey( "up" ) );
+    kbRow.push( T.singleKey( "rg" ) );
+    kbRow.push( T.padDummyKey() );
     kbArray.push( kbRow );
 
     const body = document.body,
@@ -124,16 +115,73 @@ kbRow.push( padDummyKey() );
            }
            else {
              td.appendChild(document.createTextNode(k.visual));
-             var clazz = "kbkeys" + (k.width+"").replace(".","p");
-             console.log( clazz );
+             var clazz;
+
+             if( k.smallText === undefined ) {
+               clazz = "kbkeys" + (k.width+"").replace(".","p");
+             }
+             else {
+               clazz = "kbkeys1p5";
+             }
+
+             console.log( k.visual, clazz );
              td.classList.add( clazz );
              td.classList.add( "kbkeysbase" );
              td.colSpan = k.width * 2;
+             td.id = i + "_" + j;
+             td.addEventListener('touchend', this, false);
            }
 
            //td.style.border = '1px solid black';
          }
 
      }
+
+  }
+
+ handleEvent( x ) {
+   console.log("handleEvent", x, x.type )
+
+   if( x.type == "touchend" ) {
+     var target = x.target.id.split("_");
+     var key = this.kbArray[ target[0]][target[1]];
+
+     this.eventHandlerClass["handleVKPressEvent"]( key );
+
+   }
+ }
+
+ singleKey( visual, smallText, eventValue ) {
+
+    if( eventValue === undefined ) {
+      return {
+        visual: visual,
+        width: 1,
+        eventValue: visual,
+        smallText: smallText
+      }
+    }
+    return {
+      visual: visual,
+      width: 1,
+      eventValue: eventValue,
+      smallText: smallText
+    }
+  }
+
+ padDummyKey() {
+    return {
+      pad: true,
+      width: 1
+    }
+  }
+
+ longKey( visual, width, eventValue ) {
+    return {
+      visual: visual,
+      width: width,
+      eventValue: eventValue
+    }
+  }
 
 }

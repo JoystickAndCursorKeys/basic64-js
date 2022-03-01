@@ -147,8 +147,7 @@
 
 		polyfix();
 
-		var kbTable = document.getElementById("kbtable");
-		kbInit( kbTable );
+
 
 		screenCanvas = document.getElementById("screenCanvas");
 		var console = new C64Screen( 'screenCanvas', 'res/script/g1/screens/c64', start );
@@ -170,6 +169,9 @@
 		SCR_H = size[1];
 
 		program = new Program( console );
+
+		var kbTable = document.getElementById("kbtable");
+		var kb = new VirtualKB( kbTable, program );
 
 		var stateDefinitions = new StateDefinitions( program );
 
