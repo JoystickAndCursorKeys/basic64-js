@@ -19,34 +19,34 @@ class  VirtualKB {
 
     var kbRow = [];
     kbRow.push( T.padDummyKey() );
-    kbRow.push( T.longKey( "MENU", 2.0, "menu" ) );
+    kbRow.push( T.singleKey( "STOP", true, "stop" ) );
+    kbRow.push( T.singleKey( "MENU", true, "menu" ) );
     kbRow.push( T.padDummyKey() );
     kbRow.push( T.singleKey( "F1" ) );
     kbRow.push( T.singleKey( "F3" ) );
     kbRow.push( T.singleKey( "F5" ) );
     kbRow.push( T.singleKey( "F7" ) );
+
     kbRow.push( T.padDummyKey() );
-    kbRow.push( T.longKey( "restore", 2.0 ) );
+    kbRow.push( T.singleKey( "&uarr;", false, "cursup" ) );
     kbRow.push( T.padDummyKey() );
-    kbRow.push( T.singleKey( "&uarr;" ) );
+    kbRow.push( T.longKey( "RESTORE", 2.0, "restore" ) );
+
     kbArray.push( kbRow );
 
 
     var kbRow = [];
     kbRow.push( T.padDummyKey() );
-    kbRow.push( T.singleKey( "stop", true, "stop" ) );
+    kbRow.push( T.singleKey( "&larr;", false, "leftarrow" ) );
+    kbRow.push( T.singleKey( "+" ) );
+    kbRow.push( T.singleKey( "-" ) );
+    kbRow.push( T.singleKey( "*" ) );
+    kbRow.push( T.singleKey( "/" ) );
+    kbRow.push( T.singleKey( "#" ) );
     kbRow.push( T.padDummyKey() );
-    kbRow.push( T.padDummyKey() );
-    kbRow.push( T.padDummyKey() );
-    kbRow.push( T.padDummyKey() );
-    kbRow.push( T.padDummyKey() );
-    kbRow.push( T.padDummyKey() );
-    kbRow.push( T.padDummyKey() );
-    kbRow.push( T.padDummyKey() );
-    kbRow.push( T.padDummyKey() );
-    kbRow.push( T.singleKey( "&larr;" ) );
-    kbRow.push( T.singleKey( "&darr;" ) );
-    kbRow.push( T.singleKey( "&rarr;" ) );
+    kbRow.push( T.singleKey( "&larr;", false, "cursleft" ) );
+    kbRow.push( T.singleKey( "&darr;", false, "cursdown" ) );
+    kbRow.push( T.singleKey( "&rarr;", false, "cursright" ) );
 
     kbArray.push( kbRow );
 
@@ -64,9 +64,8 @@ class  VirtualKB {
     kbRow.push( T.singleKey( "8" ) );
     kbRow.push( T.singleKey( "9" ) );
     kbRow.push( T.singleKey( "0" ) );
-    kbRow.push( T.singleKey( "+" ) );
-    kbRow.push( T.singleKey( "-" ) );
-    kbRow.push( T.singleKey( "#" ) );
+    kbRow.push( T.singleKey( "clr" ) );
+    kbRow.push( T.singleKey( "ins" ) );
 
     kbRow.push( T.padDummyKey() );
     kbArray.push( kbRow );
@@ -85,17 +84,16 @@ class  VirtualKB {
     kbRow.push( T.singleKey( "o" ) );
     kbRow.push( T.singleKey( "p" ) );
     kbRow.push( T.singleKey( "@" ) );
-    kbRow.push( T.singleKey( "*" ) );
-    kbRow.push( T.singleKey( "u" ) );
+
+    kbRow.push( T.singleKey( "&uarr;", false, "uparrow" ) );
 
     kbRow.push( T.padDummyKey() );
     kbArray.push( kbRow );
 
     var kbRow = [];
     kbRow.push( T.padDummyKey() );
-    kbRow.push( T.singleKey( "<-" ) );
 
-    kbRow.push( T.singleKey( "sl" ) );
+    kbRow.push( T.singleKey( "LOCK", true  ) );
     kbRow.push( T.singleKey( "a" ) );
     kbRow.push( T.singleKey( "s" ) );
     kbRow.push( T.singleKey( "d" ) );
@@ -121,22 +119,22 @@ class  VirtualKB {
     kbRow.push( T.singleKey( "b" ) );
     kbRow.push( T.singleKey( "n" ) );
     kbRow.push( T.singleKey( "m" ) );
-    kbRow.push( T.singleKey( "<" ) );
-    kbRow.push( T.singleKey( ">" ) );
-    kbRow.push( T.singleKey( "?" ) );
+    kbRow.push( T.singleKey( "." ) );
+    kbRow.push( T.singleKey( "," ) );
     kbRow.push( T.singleKey( "=" ) );
-    kbRow.push( T.longKey( "return", 2.0, "return" ) );
+    kbRow.push( T.longKey( "RETURN", 2.0, "return" ) );
     kbRow.push( T.padDummyKey() );
     kbArray.push( kbRow );
 
     var kbRow = [];
     kbRow.push( T.padDummyKey() );
     kbRow.push( T.singleKey( "c=" ) );
-    kbRow.push( T.longKey( "sh",1.5 ) );
-    kbRow.push( T.longKey( "ctrl", 1.5 ) );
+    kbRow.push( T.longKey( "SHFT",1.5 ) );
+
+    kbRow.push( T.longKey( "SPACE", 8 ) );
+    kbRow.push( T.longKey( "CTRL", 1.5 ) );
     kbRow.push( T.padDummyKey() );
-    kbRow.push( T.singleKey( "clr" ) );
-    kbRow.push( T.singleKey( "ins" ) );
+
 
 
     kbArray.push( kbRow );

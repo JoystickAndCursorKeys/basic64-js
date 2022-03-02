@@ -332,19 +332,62 @@ class Program {
     }
     else {
       var key = "unknown";
+      var ctrl = false;
 
-      if( vevt.eventValue == "return" ) {
+      if( vevt.eventValue == "menu" ) {
+        key = "F9";
+      }
+      else if( vevt.eventValue == "return" ) {
         key = "Enter";
       }
       else if( vevt.eventValue == "stop" ) {
         key = "Escape";
       }
-
+      else if( vevt.eventValue == "restore" ) {
+        key = "Pause";
+        ctrl = true;
+      }
+      else if( vevt.eventValue == "cursup" ) {
+        key = "ArrowUp";
+      }
+      else if( vevt.eventValue == "cursdown" ) {
+        key = "ArrowDown";
+      }
+      else if( vevt.eventValue == "cursleft" ) {
+        key = "ArrowLeft";
+      }
+      else if( vevt.eventValue == "cursright" ) {
+        key = "ArrowRight";
+      }
+      else if( vevt.eventValue == "F1" ) {
+        key = "F1";
+      }
+      else if( vevt.eventValue == "F2" ) {
+        key = "F2";
+      }
+      else if( vevt.eventValue == "F3" ) {
+        key = "F3";
+      }
+      else if( vevt.eventValue == "F4" ) {
+        key = "F4";
+      }
+      else if( vevt.eventValue == "F5" ) {
+        key = "F5";
+      }
+      else if( vevt.eventValue == "F6" ) {
+        key = "F6";
+      }
+      else if( vevt.eventValue == "F7" ) {
+        key = "F7";
+      }
+      else if( vevt.eventValue == "F8" ) {
+        key = "F8";
+      }
       this.playHandle(
         {
           key: key,
           type: 'keydown',
-          ctrlKey: false,
+          ctrlKey: ctrl,
           preventDefault: function () {}
         }
       );
