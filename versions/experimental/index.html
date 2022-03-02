@@ -97,6 +97,13 @@
 		font-size: 25px;
 		}
 
+		.kbkeys8 {
+		background-color: #000000;
+		color: #ffffff;
+		width: 120px;
+		font-size: 25px;
+		}
+
 		.kbkeys1p5 {
 		background-color: #000000;
 		color: #ffffff
@@ -147,8 +154,6 @@
 
 		polyfix();
 
-
-
 		screenCanvas = document.getElementById("screenCanvas");
 		var console = new C64Screen( 'screenCanvas', 'res/script/g1/screens/c64', start );
 
@@ -170,8 +175,17 @@
 
 		program = new Program( console );
 
+		const queryString = window.location.search;
+		const urlParams = new URLSearchParams(queryString);
+		var kbOn = urlParams.get('kb');
+
+		var kbTableDiv = document.getElementById("kbdiv");
 		var kbTable = document.getElementById("kbtable");
-		var kb = new VirtualKB( kbTable, program );
+
+		if( kbOn != null ) {
+			var kb = new VirtualKB( kbTable, program );
+			kbTableDiv.style="display:block";
+		}
 
 		var stateDefinitions = new StateDefinitions( program );
 
@@ -287,9 +301,9 @@ function convertLinkClipboard() {
 
 		<canvas class='screenCanvas' id="screenCanvas" width="100%" height="100%" tabindex='1'></canvas>
 <br>
-		<div id=kbdiv  >
+		<div id=kbdiv hidden >
 			<center>
-				<table id=kbtable>
+				<table id=kbtable width=100%>
 				</table>
 			</center>
 		</div>
