@@ -12,6 +12,7 @@ class  VirtualKB {
     this.eventHandlerClass = eventHandlerClass;
     this.kbArray = [];
     this.htmlTable = kbTable;
+    this.shift = false;
 
     var T = this;
     var kbArray = this.kbArray;
@@ -64,8 +65,8 @@ class  VirtualKB {
     kbRow.push( T.singleKey( "8" ) );
     kbRow.push( T.singleKey( "9" ) );
     kbRow.push( T.singleKey( "0" ) );
-    kbRow.push( T.singleKey( "clr" ) );
-    kbRow.push( T.singleKey( "ins" ) );
+    kbRow.push( T.singleKey( "home", true ) );
+    kbRow.push( T.singleKey( "del", true, "delete" ) );
 
     kbRow.push( T.padDummyKey() );
     kbArray.push( kbRow );
@@ -129,9 +130,9 @@ class  VirtualKB {
     var kbRow = [];
     kbRow.push( T.padDummyKey() );
     kbRow.push( T.singleKey( "c=" ) );
-    kbRow.push( T.longKey( "SHFT",1.5 ) );
+    kbRow.push( T.longKey( "SHFT",1.5, "shift" ) );
 
-    kbRow.push( T.longKey( "SPACE", 8 ) );
+    kbRow.push( T.longKey( "SPACE", 8, " " ) );
     kbRow.push( T.longKey( "CTRL", 1.5 ) );
     kbRow.push( T.padDummyKey() );
 
@@ -152,6 +153,7 @@ class  VirtualKB {
 
            var k = r[ j ];
            const td = tr.insertCell();
+           k.td = td;
 
            if( k.pad ) {
              var clazz = "kbkeys" + (k.width+"").replace(".","p");
@@ -192,7 +194,35 @@ class  VirtualKB {
      var target = x.target.id.split("_");
      var key = this.kbArray[ target[0]][target[1]];
 
-     this.eventHandlerClass["handleVKPressEvent"]( key );
+     if( key.eventValue == "shift") {
+       this.shift = ! this.shift;
+       this.shiftKey = key;
+       if( this.shift ) {
+         key.td.style="background-color: #0000aa"
+       }
+       else {
+         key.td.style="background-color: #000000"
+       }
+
+     }
+     else {
+       if( this.shift ) {
+         this.shift = false;
+         this.shiftKey.td.style="background-color: #000000"
+       }
+
+     }
+
+     var newkey = {
+       shift: this.shift,
+       visual: key.visual,
+       width: key.width,
+       eventValue: key.eventValue,
+       smallText: key.smallText,
+       pad: key.pad
+     }
+
+     this.eventHandlerClass["handleVKPressEvent"]( newkey );
 
    }
  }
