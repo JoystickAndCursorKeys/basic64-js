@@ -359,6 +359,9 @@ class Program {
       else if( vevt.eventValue == "cursright" ) {
         key = "ArrowRight";
       }
+      else if( vevt.eventValue == "delete" ) {
+        key = "Backspace";
+      }
       else if( vevt.eventValue == "F1" ) {
         key = "F1";
       }
