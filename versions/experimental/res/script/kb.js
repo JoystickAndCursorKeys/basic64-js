@@ -211,6 +211,11 @@ class  VirtualKB {
          this.shiftKey.td.style="background-color: #000000"
        }
 
+       key.td.style="background-color: #0000aa";
+       setTimeout(function(){
+          // The code you want to run goes here.
+          key.td.style="background-color: #000000";
+        }, 150);
      }
 
      var newkey = {
