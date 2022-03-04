@@ -9,6 +9,8 @@ class  VirtualKB {
 
   constructor( kbTable, eventHandlerClass  ) {
 
+    var U = undefined;
+
     this.eventHandlerClass = eventHandlerClass;
     this.kbArray = [];
     this.htmlTable = kbTable;
@@ -23,10 +25,10 @@ class  VirtualKB {
     kbRow.push( T.singleKey( "STOP", true, "stop" ) );
     kbRow.push( T.singleKey( "MENU", true, "menu" ) );
     kbRow.push( T.padDummyKey() );
-    kbRow.push( T.singleKey( "F1" ) );
-    kbRow.push( T.singleKey( "F3" ) );
-    kbRow.push( T.singleKey( "F5" ) );
-    kbRow.push( T.singleKey( "F7" ) );
+    kbRow.push( T.singleKey2( "F1", U, "", U, "", U, "F2", U ) );
+    kbRow.push( T.singleKey2( "F3", U, "", U, "", U, "F4", U ) );
+    kbRow.push( T.singleKey2( "F5", U, "", U, "", U, "F6", U ) );
+    kbRow.push( T.singleKey2( "F7", U, "", U, "", U, "F8", U ) );
 
     kbRow.push( T.padDummyKey() );
     kbRow.push( T.singleKey( "&uarr;", false, "cursup" ) );
@@ -42,38 +44,39 @@ class  VirtualKB {
     kbRow.push( T.singleKey( "+" ) );
     kbRow.push( T.singleKey( "-" ) );
     kbRow.push( T.singleKey( "*" ) );
-    kbRow.push( T.singleKey( "/" ) );
-    kbRow.push( T.singleKey( "#" ) );
+    kbRow.push( T.singleKey2( "/", U, "1", U, "1", U, "?", U ) );
+    kbRow.push( T.singleKey( "&#163;", false, "pound" ) );
     kbRow.push( T.padDummyKey() );
     kbRow.push( T.singleKey( "&larr;", false, "cursleft" ) );
     kbRow.push( T.singleKey( "&darr;", false, "cursdown" ) );
     kbRow.push( T.singleKey( "&rarr;", false, "cursright" ) );
-
+    kbRow.push( T.padDummyKey() );
+    kbRow.push( T.singleKey2( "HOME", U, "1", U, "1", U, "CLR", U, true ) );
     kbArray.push( kbRow );
 
 
     var kbRow = [];
     kbRow.push( T.padDummyKey() );
 
-    kbRow.push( T.singleKey( "1" ) );
-    kbRow.push( T.singleKey( "2" ) );
-    kbRow.push( T.singleKey( "3" ) );
-    kbRow.push( T.singleKey( "4" ) );
-    kbRow.push( T.singleKey( "5" ) );
-    kbRow.push( T.singleKey( "6" ) );
-    kbRow.push( T.singleKey( "7" ) );
-    kbRow.push( T.singleKey( "8" ) );
-    kbRow.push( T.singleKey( "9" ) );
-    kbRow.push( T.singleKey( "0" ) );
-    kbRow.push( T.singleKey( "home", true ) );
-    kbRow.push( T.singleKey( "del", true, "delete" ) );
+    kbRow.push( T.singleKey2( "1", U, "1", U, "1", U, "!", U ) );
+    kbRow.push( T.singleKey2( "2", U, "2", U, "2", U, "\"", U ) );
+    kbRow.push( T.singleKey2( "3", U, "1", U, "1", U, "#", U ) );
+    kbRow.push( T.singleKey2( "4", U, "2", U, "2", U, "$", U ) );
+    kbRow.push( T.singleKey2( "5", U, "1", U, "1", U, "%", U ) );
+    kbRow.push( T.singleKey2( "6", U, "2", U, "2", U, "&", U ) );
+    kbRow.push( T.singleKey2( "7", U, "1", U, "1", U, "'", U ) );
+    kbRow.push( T.singleKey2( "8", U, "2", U, "2", U, "(", U ) );
+    kbRow.push( T.singleKey2( "9", U, "1", U, "1", U, ")", U ) );
+    kbRow.push( T.singleKey2( "0", U, "2", U, "2", U, "", U ) );
 
+    kbRow.push( T.doubleKey2( "DEL", U, "1", U, "1", U, "INSERT", U ) );
     kbRow.push( T.padDummyKey() );
     kbArray.push( kbRow );
 
     var kbRow = [];
     kbRow.push( T.padDummyKey() );
 
+    kbRow.push( T.singleKey( "&uarr;", false, "uparrow" ) );
     kbRow.push( T.singleKey( "q" ) );
     kbRow.push( T.singleKey( "w" ) );
     kbRow.push( T.singleKey( "e" ) );
@@ -86,15 +89,13 @@ class  VirtualKB {
     kbRow.push( T.singleKey( "p" ) );
     kbRow.push( T.singleKey( "@" ) );
 
-    kbRow.push( T.singleKey( "&uarr;", false, "uparrow" ) );
-
     kbRow.push( T.padDummyKey() );
     kbArray.push( kbRow );
 
     var kbRow = [];
     kbRow.push( T.padDummyKey() );
 
-    kbRow.push( T.singleKey( "LOCK", true  ) );
+    kbRow.push( T.singleKey( "=" ) );
     kbRow.push( T.singleKey( "a" ) );
     kbRow.push( T.singleKey( "s" ) );
     kbRow.push( T.singleKey( "d" ) );
@@ -104,8 +105,8 @@ class  VirtualKB {
     kbRow.push( T.singleKey( "j" ) );
     kbRow.push( T.singleKey( "k" ) );
     kbRow.push( T.singleKey( "l" ) );
-    kbRow.push( T.singleKey( ":" ) );
-    kbRow.push( T.singleKey( ";" ) );
+    kbRow.push( T.singleKey2( ":", U, "1", U, "1", U, "[", U )  );
+    kbRow.push( T.singleKey2( ";", U, "1", U, "1", U, "]", U )  );
 
 
     kbRow.push( T.padDummyKey() );
@@ -113,6 +114,8 @@ class  VirtualKB {
 
     var kbRow = [];
     kbRow.push( T.padDummyKey() );
+    kbRow.push( T.singleKey( "LOCK", true  ) );
+
     kbRow.push( T.singleKey( "z" ) );
     kbRow.push( T.singleKey( "x" ) );
     kbRow.push( T.singleKey( "c" ) );
@@ -120,17 +123,17 @@ class  VirtualKB {
     kbRow.push( T.singleKey( "b" ) );
     kbRow.push( T.singleKey( "n" ) );
     kbRow.push( T.singleKey( "m" ) );
-    kbRow.push( T.singleKey( "." ) );
-    kbRow.push( T.singleKey( "," ) );
-    kbRow.push( T.singleKey( "=" ) );
+    kbRow.push( T.singleKey2( ".", U, "1", U, "1", U, "<", U )  );
+    kbRow.push( T.singleKey2( ",", U, "1", U, "1", U, ">", U )  );
+
     kbRow.push( T.longKey( "RETURN", 2.0, "return" ) );
     kbRow.push( T.padDummyKey() );
     kbArray.push( kbRow );
 
     var kbRow = [];
     kbRow.push( T.padDummyKey() );
-    kbRow.push( T.singleKey( "c=" ) );
     kbRow.push( T.longKey( "SHFT",1.5, "shift" ) );
+    kbRow.push( T.singleKey( "c=" ) );
 
     kbRow.push( T.longKey( "SPACE", 8, " " ) );
     kbRow.push( T.longKey( "CTRL", 1.5 ) );
@@ -161,8 +164,28 @@ class  VirtualKB {
               td.colSpan = 1 * 2;
            }
            else {
-             td.innerHTML = k.visual;
-             //td.appendChild(document.createTextNode(k.visual;));
+             if( k.visualSHIFT ) {
+               var shiftDiv = document.createElement("div");
+               shiftDiv.classList.add( "kbkeysShift" );
+
+               var plainDiv = document.createElement("div");
+               td.appendChild( shiftDiv );
+               td.appendChild( plainDiv );
+
+
+               shiftDiv.innerHTML = k.visualSHIFT;
+               plainDiv.innerHTML = k.visual;
+
+               shiftDiv.id = i + "_" + j + "_SDIV";
+               plainDiv.id = i + "_" + j + "_PDIV"; 
+
+               td.addEventListener('touchend', this, false);
+             }
+             else {
+               td.innerHTML = k.visual;
+               td.addEventListener('touchend', this, false);
+             }
+
              var clazz;
 
              if( k.smallText === undefined ) {
@@ -177,7 +200,8 @@ class  VirtualKB {
              td.classList.add( "kbkeysbase" );
              td.colSpan = k.width * 2;
              td.id = i + "_" + j;
-             td.addEventListener('touchend', this, false);
+
+
            }
 
            //td.style.border = '1px solid black';
@@ -193,6 +217,8 @@ class  VirtualKB {
    if( x.type == "touchend" ) {
      var target = x.target.id.split("_");
      var key = this.kbArray[ target[0]][target[1]];
+     var shift = this.shift;
+     var eventValue;
 
      if( key.eventValue == "shift") {
        this.shift = ! this.shift;
@@ -203,12 +229,15 @@ class  VirtualKB {
        else {
          key.td.style="background-color: #000000"
        }
-
+       return;
      }
      else {
+       eventValue = key.eventValue;
+
        if( this.shift ) {
          this.shift = false;
-         this.shiftKey.td.style="background-color: #000000"
+         eventValue = key.eventValueSHIFT;
+         this.shiftKey.td.style="background-color: #000000";
        }
 
        key.td.style="background-color: #0000aa";
@@ -219,10 +248,10 @@ class  VirtualKB {
      }
 
      var newkey = {
-       shift: this.shift,
+       shift: shift,
        visual: key.visual,
        width: key.width,
-       eventValue: key.eventValue,
+       eventValue: eventValue,
        smallText: key.smallText,
        pad: key.pad
      }
@@ -249,6 +278,75 @@ class  VirtualKB {
       smallText: smallText
     }
   }
+
+
+  doubleKey2(
+      visualPlain, _eventValuePlain,
+      visualCTRL, _eventValueCTRL,
+      visualCBM, _eventValueCBM,
+      visualSHIFT, _eventValueSHIFT ) {
+
+     var eventValuePlain = _eventValuePlain,
+     eventValueCTRL = _eventValueCTRL,
+     eventValueCBM = _eventValueCBM,
+     eventValueSHIFT = _eventValueCBM;
+
+     if( eventValuePlain === undefined ) { eventValuePlain = visualPlain; }
+     if( eventValueCTRL === undefined ) { eventValueCTRL = visualCBM; }
+     if( eventValueSHIFT === undefined ) { eventValueSHIFT = visualSHIFT; }
+     if( eventValueCBM === undefined ) { eventValueCBM = visualCBM; }
+
+     return {
+       visual: visualPlain,
+       visualCTRL: visualCTRL,
+       visualCBM: visualCBM,
+       visualSHIFT: visualSHIFT,
+
+       eventValue: eventValuePlain,
+       eventValueCTRL: eventValueCTRL,
+       eventValueCBM: eventValueCBM,
+       eventValueSHIFT: eventValueSHIFT,
+
+       width: 2,
+
+       smallText: false
+     }
+   }
+
+
+  singleKey2(
+      visualPlain, _eventValuePlain,
+      visualCTRL, _eventValueCTRL,
+      visualCBM, _eventValueCBM,
+      visualSHIFT, _eventValueSHIFT,
+      smallText ) {
+
+     var eventValuePlain = _eventValuePlain,
+     eventValueCTRL = _eventValueCTRL,
+     eventValueCBM = _eventValueCBM,
+     eventValueSHIFT = _eventValueCBM;
+
+     if( eventValuePlain === undefined ) { eventValuePlain = visualPlain; }
+     if( eventValueCTRL === undefined ) { eventValueCTRL = visualCBM; }
+     if( eventValueSHIFT === undefined ) { eventValueSHIFT = visualSHIFT; }
+     if( eventValueCBM === undefined ) { eventValueCBM = visualCBM; }
+
+     return {
+       visual: visualPlain,
+       visualCTRL: visualCTRL,
+       visualCBM: visualCBM,
+       visualSHIFT: visualSHIFT,
+
+       eventValue: eventValuePlain,
+       eventValueCTRL: eventValueCTRL,
+       eventValueCBM: eventValueCBM,
+       eventValueSHIFT: eventValueSHIFT,
+
+       width: 1,
+
+       smallText: smallText
+     }
+   }
 
 
  padDummyHalfKey() {
