@@ -7,7 +7,7 @@ class Program {
     this.basiccontext.setEditModeCallBacks("edit");
 
     this.stringMode = false;
-    this.middleDiv = middlediv;
+    this.middleDiv = middlediv; ////vertical-align: top;
 
     this.keyToCode = [];
     var k2c = this.keyToCode;
