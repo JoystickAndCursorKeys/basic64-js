@@ -129,6 +129,12 @@
 		color: #ffffff
 		}
 
+		.footer {
+    	position: fixed;
+    	bottom: 0;
+    	width: 100%;
+		}
+
 	</style>
 
 	<script src="res/script/polyfix.js"></script>
@@ -312,12 +318,7 @@ function convertLinkClipboard() {
 
 		<canvas class='screenCanvas' id="screenCanvas" width="100%" height="100%" tabindex='1'></canvas>
 <br>
-		<div id=kbdiv hidden >
-			<center>
-				<table id=kbtable width=100%>
-				</table>
-			</center>
-		</div>
+
 
 		<a width=100% hidden href=# name="imageSaver" id="imageSaver">Save</a>
 		<input hidden name="imageLoader" id="imageLoader" type="file" onclick="this.value=null;"></input>
@@ -354,6 +355,13 @@ function convertLinkClipboard() {
 				</center>
 		</div>
 
+		<div id=kbdiv hidden class="footer">
+			<center>
+				<table id=kbtable width=100%>
+				</table>
+			</center>
+		</div>
+		
     </div>
 
   </div>
