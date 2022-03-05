@@ -116,8 +116,20 @@ class BasicContext {
       scale = scale.zoom;
 
       this.initScale = scale;
-      //this.setScale( scale );
+      this.setScale( scale );
     }
+
+
+    this.showSideBorders = true;
+    var show = localStorage.getItem( "BJ64_SideBorder" );
+    if( show != null ) {
+      show = JSON.parse( show );
+      show = show.sideborder;
+
+      this.showSideBorders = show;
+      this.setShowSideBorders( show );
+    }
+
 
     this.immersiveFlag = false;
     var immersiveMode = localStorage.getItem( "BJ64_ImmersiveMode" );
@@ -201,6 +213,24 @@ class BasicContext {
 
     }*/
 
+  }
+
+  toggleSideBorders() {
+    this.showSideBorders = !this.showSideBorders;
+    this.console.setSideBorders( this.showSideBorders );
+
+  }
+
+  getSideBordersFlag() {
+
+    return this.showSideBorders;
+
+  }
+
+
+  setShowSideBorders( flag ) {
+    this.showSideBorders = flag;
+    this.console.setSideBorders( this.showSideBorders );
   }
 
 
