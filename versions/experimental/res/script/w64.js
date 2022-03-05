@@ -1,12 +1,13 @@
 
 class Program {
 
-  constructor( console ) {
+  constructor( console, middlediv ) {
     this.console = console;
     this.basiccontext = new BasicContext( this.console );
     this.basiccontext.setEditModeCallBacks("edit");
 
     this.stringMode = false;
+    this.middleDiv = middlediv; ////vertical-align: top;
 
     this.keyToCode = [];
     var k2c = this.keyToCode;

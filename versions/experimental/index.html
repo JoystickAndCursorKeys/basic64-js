@@ -30,7 +30,6 @@
 
 		.middle {
 		  display: table-cell;
-		  vertical-align: middle;
 		}
 
 		.inner {
@@ -190,7 +189,7 @@
 		SCR_W = size[0];
 		SCR_H = size[1];
 
-		program = new Program( console );
+		program = new Program( console, document.getElementById("middlediv") );
 
 		const queryString = window.location.search;
 		const urlParams = new URLSearchParams(queryString);
@@ -355,19 +354,18 @@ function convertLinkClipboard() {
 				</center>
 		</div>
 
-		<div id=kbdiv hidden class="footer">
-			<center>
-				<table id=kbtable width=100%>
-				</table>
-			</center>
-		</div>
-		
+
     </div>
 
   </div>
 
 </div>
-
+<div id=kbdiv hidden class="footer">
+	<center>
+		<table id=kbtable width=100%>
+		</table>
+	</center>
+</div>
 
 </body>
 </html>
