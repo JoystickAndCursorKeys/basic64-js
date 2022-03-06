@@ -334,12 +334,20 @@ class Program {
     else {
       var key = "unknown";
       var ctrl = false;
+      var shift = false;
 
       if( vevt.eventValue == "menu" ) {
         key = "F9";
       }
       else if( vevt.eventValue == "return" ) {
         key = "Enter";
+      }
+      else if( vevt.eventValue == "home" ) {
+        key = "Home";
+      }
+      else if( vevt.eventValue == "clear" ) {
+        key = "Home";
+        shift = true;
       }
       else if( vevt.eventValue == "stop" ) {
         key = "Escape";
@@ -387,6 +395,17 @@ class Program {
       else if( vevt.eventValue == "F8" ) {
         key = "F8";
       }
+      if( shift ) {
+        this.playHandle(
+          {
+            key: "Shift",
+            type: 'keydown',
+            ctrlKey: false,
+            preventDefault: function () {}
+          }
+        );
+
+      }
       this.playHandle(
         {
           key: key,
@@ -395,12 +414,10 @@ class Program {
           preventDefault: function () {}
         }
       );
+      this.resetKeyModifiers();
     }
 
   }
-
-
-
 
   playHandle( evt ) {
 

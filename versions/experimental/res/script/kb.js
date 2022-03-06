@@ -44,14 +44,14 @@ class  VirtualKB {
     kbRow.push( T.singleKey( "+" ) );
     kbRow.push( T.singleKey( "-" ) );
     kbRow.push( T.singleKey( "*" ) );
-    kbRow.push( T.singleKey2( "/", U, "1", U, "1", U, "?", U ) );
+    kbRow.push( T.singleKey2( "/", U, U, U, U, U, "?", U ) );
     kbRow.push( T.singleKey( "&#163;", false, "pound" ) );
     kbRow.push( T.padDummyKey() );
     kbRow.push( T.singleKey( "&larr;", false, "cursleft" ) );
     kbRow.push( T.singleKey( "&darr;", false, "cursdown" ) );
     kbRow.push( T.singleKey( "&rarr;", false, "cursright" ) );
     kbRow.push( T.padDummyKey() );
-    kbRow.push( T.singleKey2( "HOME", U, "1", U, "1", U, "CLR", U, true ) );
+    kbRow.push( T.singleKey2( "HOME", "home", U, U, U, U, "CLR", "clear", true ) );
     kbArray.push( kbRow );
 
 
@@ -69,7 +69,7 @@ class  VirtualKB {
     kbRow.push( T.singleKey2( "9", U, "1", U, "1", U, ")", U ) );
     kbRow.push( T.singleKey2( "0", U, "2", U, "2", U, "", U ) );
 
-    kbRow.push( T.doubleKey2( "DEL", U, "1", U, "1", U, "INSERT", U ) );
+    kbRow.push( T.doubleKey2( "DEL", "delete", U, U, U, U, "INSERT", U ) );
     kbRow.push( T.padDummyKey() );
     kbArray.push( kbRow );
 
@@ -177,7 +177,7 @@ class  VirtualKB {
                plainDiv.innerHTML = k.visual;
 
                shiftDiv.id = i + "_" + j + "_SDIV";
-               plainDiv.id = i + "_" + j + "_PDIV"; 
+               plainDiv.id = i + "_" + j + "_PDIV";
 
                td.addEventListener('touchend', this, false);
              }
@@ -324,7 +324,7 @@ class  VirtualKB {
      var eventValuePlain = _eventValuePlain,
      eventValueCTRL = _eventValueCTRL,
      eventValueCBM = _eventValueCBM,
-     eventValueSHIFT = _eventValueCBM;
+     eventValueSHIFT = _eventValueSHIFT;
 
      if( eventValuePlain === undefined ) { eventValuePlain = visualPlain; }
      if( eventValueCTRL === undefined ) { eventValueCTRL = visualCBM; }
