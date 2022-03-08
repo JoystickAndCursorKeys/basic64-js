@@ -168,7 +168,7 @@ class  VirtualKB {
 
            if( k.pad ) {
              var clazz = "kbkeys" + (k.width+"").replace(".","p");
-             console.log( clazz );
+             //console.log( clazz );
               td.colSpan = 1 * 2;
            }
            else {
@@ -207,8 +207,7 @@ class  VirtualKB {
              else {
                clazz = "kbkeys1p5";
              }
-
-             console.log( k.visual, clazz );
+             
              td.classList.add( clazz );
              td.classList.add( "kbkeysbase" );
              td.colSpan = k.width * 2;
@@ -225,7 +224,7 @@ class  VirtualKB {
   }
 
  handleEvent( x ) {
-   console.log("handleEvent", x, x.type )
+   //console.log("handleEvent", x, x.type )
 
    if( x.type == "touchend" ) {
      var target = x.target.id.split("_");
@@ -301,7 +300,7 @@ class  VirtualKB {
          eventValue = key.eventValueCBM;
          if( eventValue == "%%%" ) {
            eventValue = key.eventValue;
-         }         
+         }
          this.commodore = false;
          this.commodoreKey.td.style="background-color: #000000";
 

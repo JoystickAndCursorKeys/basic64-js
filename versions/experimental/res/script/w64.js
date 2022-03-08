@@ -316,7 +316,7 @@ class Program {
 
   handleVKPressEvent( vevt ) {
 
-    console.log("vevt=",vevt)
+    //console.log("vevt=",vevt)
     if( vevt.eventValue === undefined ) {
       return;
     }
