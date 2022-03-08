@@ -1,13 +1,21 @@
 
 class Program {
 
-  constructor( console, middlediv ) {
-    this.console = console;
+  constructor( _console, middlediv ) {
+    this.console = _console;
     this.basiccontext = new BasicContext( this.console );
     this.basiccontext.setEditModeCallBacks("edit");
 
     this.stringMode = false;
     this.middleDiv = middlediv; ////vertical-align: top;
+
+    const queryString = window.location.search;
+    const urlParams = new URLSearchParams(queryString);
+    var vkb = urlParams.get('kb');
+    console.log("vkb=", vkb);
+    if(  (vkb === null ) ) {
+      middlediv.style = "vertical-align: middle;";
+    }
 
     this.keyToCode = [];
     var k2c = this.keyToCode;
