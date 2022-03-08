@@ -322,6 +322,26 @@ class Program {
     }
 
     if( vevt.eventValue.length === 1 ) {
+      if( vevt.control ) {
+        this.playHandle(
+          {
+            key: "Control",
+            type: 'keydown',
+            ctrlKey: false,
+            preventDefault: function () {}
+          }
+        );
+      }
+      if( vevt.commodore ) {
+        this.playHandle(
+          {
+            key: "Alt",
+            type: 'keydown',
+            ctrlKey: false,
+            preventDefault: function () {}
+          }
+        );
+      }
       this.playHandle(
         {
           key: vevt.eventValue,
@@ -330,10 +350,12 @@ class Program {
           preventDefault: function () {}
         }
       );
+
+      this.resetKeyModifiers();
     }
     else {
       var key = "unknown";
-      var ctrl = false;
+      var ctrl = vevt.control;
       var shift = false;
 
       if( vevt.eventValue == "menu" ) {
@@ -395,7 +417,7 @@ class Program {
       else if( vevt.eventValue == "F8" ) {
         key = "F8";
       }
-      if( shift ) {
+      if( shift ) { /* for multichar label keys like home/clr */
         this.playHandle(
           {
             key: "Shift",
@@ -410,7 +432,7 @@ class Program {
         {
           key: key,
           type: 'keydown',
-          ctrlKey: ctrl,
+          ctrlKey: false,
           preventDefault: function () {}
         }
       );

@@ -10,12 +10,17 @@ class  VirtualKB {
   constructor( kbTable, eventHandlerClass  ) {
 
     var U = undefined;
+    var ORIG = "%%%";
+
 
     this.eventHandlerClass = eventHandlerClass;
     this.kbArray = [];
     this.htmlTable = kbTable;
     this.shift = false;
     this.shiftLock = false;
+    this.commodore = false;
+    this.control = false;
+
 
     var T = this;
     var kbArray = this.kbArray;
@@ -58,16 +63,16 @@ class  VirtualKB {
     var kbRow = [];
     kbRow.push( T.padDummyKey() );
 
-    kbRow.push( T.singleKey2( "1", U, "1", U, "1", U, "!", U ) );
-    kbRow.push( T.singleKey2( "2", U, "2", U, "2", U, "\"", U ) );
-    kbRow.push( T.singleKey2( "3", U, "1", U, "1", U, "#", U ) );
-    kbRow.push( T.singleKey2( "4", U, "2", U, "2", U, "$", U ) );
-    kbRow.push( T.singleKey2( "5", U, "1", U, "1", U, "%", U ) );
-    kbRow.push( T.singleKey2( "6", U, "2", U, "2", U, "&", U ) );
-    kbRow.push( T.singleKey2( "7", U, "1", U, "1", U, "'", U ) );
-    kbRow.push( T.singleKey2( "8", U, "2", U, "2", U, "(", U ) );
-    kbRow.push( T.singleKey2( "9", U, "1", U, "1", U, ")", U ) );
-    kbRow.push( T.singleKey2( "0", U, "2", U, "2", U, "", U ) );
+    kbRow.push( T.singleKey2( "1", U,  "?", ORIG,  "?", ORIG, "!", U ) );
+    kbRow.push( T.singleKey2( "2", U,  "?", ORIG,  "?", ORIG,   "\"", U ) );
+    kbRow.push( T.singleKey2( "3", U,  "?", ORIG,  "?", ORIG,   "#", U ) );
+    kbRow.push( T.singleKey2( "4", U,  "?", ORIG,  "?", ORIG,   "$", U ) );
+    kbRow.push( T.singleKey2( "5", U,  "?", ORIG,  "?", ORIG,   "%", U ) );
+    kbRow.push( T.singleKey2( "6", U,  "?", ORIG,  "?", ORIG,   "&", U ) );
+    kbRow.push( T.singleKey2( "7", U,  "?", ORIG,  "?", ORIG,   "'", U ) );
+    kbRow.push( T.singleKey2( "8", U,  "?", ORIG,  "?", ORIG,   "(", U ) );
+    kbRow.push( T.singleKey2( "9", U,  "?", ORIG,  "?", ORIG,   ")", U ) );
+    kbRow.push( T.singleKey2( "0", U,  "?", ORIG,  "?", ORIG,   "", U ) );
 
     kbRow.push( T.doubleKey2( "DEL", "delete", U, U, U, U, U, U ) );
     kbRow.push( T.padDummyKey() );
@@ -133,10 +138,13 @@ class  VirtualKB {
     var kbRow = [];
     kbRow.push( T.padDummyKey() );
     kbRow.push( T.longKey( "SHFT",1.5, "shift" ) );
-    kbRow.push( T.singleKey( "<img style=\"vertical-align:bottom\" src=res/img/kb/commodore-white.png width=35%>" ) );
+
+    var cbmLogo = "<img style=\"vertical-align:bottom\" src=res/img/kb/commodore-white.png width=35%>";
+    kbRow.push( T.singleKey( cbmLogo, 1, "commodore" ) );
 
     kbRow.push( T.longKey( "SPACE", 8, " " ) );
-    kbRow.push( T.longKey( "CTRL", 1.5 ) );
+    kbRow.push( T.longKey( "CTRL", 1.5, "control" ) );
+
     kbRow.push( T.padDummyKey() );
 
 
@@ -183,6 +191,11 @@ class  VirtualKB {
              }
              else {
                td.innerHTML = k.visual;
+               if( td.childNodes.length > 0) {
+                 if( td.childNodes[0].localName == "img" ) {
+                    td.childNodes[0].id = i + "_" + j + "_IMG";
+                 }
+               }
                td.addEventListener('touchend', this, false);
              }
 
@@ -219,9 +232,35 @@ class  VirtualKB {
      var key = this.kbArray[ target[0]][target[1]];
      var shift = this.shift;
      var shiftLock = this.shiftLock;
+     var control = this.control;
+     var commodore = this.commodore;
      var eventValue;
 
-     if( key.eventValue == "shift") {
+     if( key.eventValue == "control") {
+       this.control = ! this.control;
+       this.controlKey = key;
+
+       if( this.control ) {
+         key.td.style="background-color: #0000aa"
+       }
+       else {
+         key.td.style="background-color: #000000"
+       }
+       return;
+     }
+     else if( key.eventValue == "commodore") {
+       this.commodore = ! this.commodore;
+       this.commodoreKey = key;
+
+       if( this.commodore ) {
+         key.td.style="background-color: #0000aa"
+       }
+       else {
+         key.td.style="background-color: #000000"
+       }
+       return;
+     }
+     else if( key.eventValue == "shift") {
        this.shift = ! this.shift;
        this.shiftKey = key;
 
@@ -257,6 +296,26 @@ class  VirtualKB {
          }
 
        }
+       else if( this.commodore ) {
+
+         eventValue = key.eventValueCBM;
+         if( eventValue == "%%%" ) {
+           eventValue = key.eventValue;
+         }         
+         this.commodore = false;
+         this.commodoreKey.td.style="background-color: #000000";
+
+       }
+       else if( this.control ) {
+
+         eventValue = key.eventValueCTRL;
+         if( eventValue == "%%%" ) {
+           eventValue = key.eventValue;
+         }
+         this.control = false;
+         this.controlKey.td.style="background-color: #000000";
+
+       }
 
        key.td.style="background-color: #0000aa";
        setTimeout(function(){
@@ -267,6 +326,8 @@ class  VirtualKB {
 
      var newkey = {
        shift: shift,
+       control: control,
+       commodore: commodore,
        visual: key.visual,
        width: key.width,
        eventValue: eventValue,
