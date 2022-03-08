@@ -69,7 +69,7 @@ class  VirtualKB {
     kbRow.push( T.singleKey2( "9", U, "1", U, "1", U, ")", U ) );
     kbRow.push( T.singleKey2( "0", U, "2", U, "2", U, "", U ) );
 
-    kbRow.push( T.doubleKey2( "DEL", "delete", U, U, U, U, "INSERT", U ) );
+    kbRow.push( T.doubleKey2( "DEL", "delete", U, U, U, U, U, U ) );
     kbRow.push( T.padDummyKey() );
     kbArray.push( kbRow );
 
@@ -133,7 +133,7 @@ class  VirtualKB {
     var kbRow = [];
     kbRow.push( T.padDummyKey() );
     kbRow.push( T.longKey( "SHFT",1.5, "shift" ) );
-    kbRow.push( T.singleKey( "c=" ) );
+    kbRow.push( T.singleKey( "<img style=\"vertical-align:bottom\" src=res/img/kb/commodore-white.png width=35%>" ) );
 
     kbRow.push( T.longKey( "SPACE", 8, " " ) );
     kbRow.push( T.longKey( "CTRL", 1.5 ) );
