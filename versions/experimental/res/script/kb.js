@@ -15,10 +15,10 @@ class  VirtualKB {
     this.kbArray = [];
     this.htmlTable = kbTable;
     this.shift = false;
+    this.shiftLock = false;
 
     var T = this;
     var kbArray = this.kbArray;
-
 
     var kbRow = [];
     kbRow.push( T.padDummyKey() );
@@ -114,7 +114,7 @@ class  VirtualKB {
 
     var kbRow = [];
     kbRow.push( T.padDummyKey() );
-    kbRow.push( T.singleKey( "LOCK", true  ) );
+    kbRow.push( T.singleKey( "LOCK", true, "lock"  ) );
 
     kbRow.push( T.singleKey( "z" ) );
     kbRow.push( T.singleKey( "x" ) );
@@ -218,12 +218,26 @@ class  VirtualKB {
      var target = x.target.id.split("_");
      var key = this.kbArray[ target[0]][target[1]];
      var shift = this.shift;
+     var shiftLock = this.shiftLock;
      var eventValue;
 
      if( key.eventValue == "shift") {
        this.shift = ! this.shift;
        this.shiftKey = key;
+
+       if( this.shiftLock ) { this.shift = false; }
        if( this.shift ) {
+         key.td.style="background-color: #0000aa"
+       }
+       else {
+         key.td.style="background-color: #000000"
+       }
+       return;
+     }
+     else if( key.eventValue == "lock") {
+       this.shiftLock = ! this.shiftLock;
+       //this.shiftLockKey = key;
+       if( this.shiftLock ) {
          key.td.style="background-color: #0000aa"
        }
        else {
@@ -234,10 +248,14 @@ class  VirtualKB {
      else {
        eventValue = key.eventValue;
 
-       if( this.shift ) {
-         this.shift = false;
+       if( this.shift || this.shiftLock ) {
+
          eventValue = key.eventValueSHIFT;
-         this.shiftKey.td.style="background-color: #000000";
+         if( this.shift ) {
+           this.shift = false;
+           this.shiftKey.td.style="background-color: #000000";
+         }
+
        }
 
        key.td.style="background-color: #0000aa";
