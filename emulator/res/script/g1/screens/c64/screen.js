@@ -95,6 +95,8 @@ class C64Screen {
 			this.mcol2Last = 2;
 			this.screenRefresh = false;
 
+			this.skipSideBorder = false;
+
 			this.spritemcol1 = 5;
 			this.spritemcol1Last = 5;
 			this.spritemcol2 = 7;
@@ -192,12 +194,25 @@ class C64Screen {
 			 h: this.border0.h * ys
 		 }
 
+/*
 		 this.WIDTH = 320*xs;
 		 this.HEIGHT = 200*ys;
 
 		 this.FULLWIDTH = this.WIDTH + (this.border.w  * 2);
 		 this.FULLHEIGHT = this.HEIGHT + (this.border.h * 2);
+*/
 
+			this.WIDTH = 320*xs;
+			this.HEIGHT = 200*ys;
+
+			if( this.skipSideBorder ) {
+				this.FULLWIDTH = this.WIDTH; // + (this.border.w  * 2);
+				this.FULLHEIGHT = this.HEIGHT + (this.border.h * 2);
+			}
+			else {
+				this.FULLWIDTH = this.WIDTH + (this.border.w  * 2);
+				this.FULLHEIGHT = this.HEIGHT + (this.border.h * 2);
+			}
 		 this.rcanvas.width=this.FULLWIDTH ;
 		 this.rcanvas.height=this.FULLHEIGHT;
 
@@ -1931,6 +1946,12 @@ class C64Screen {
 
    }
 
+	 setSideBorders( flag ) {
+		 this.skipSideBorder = !flag;
+
+		 this.rescale(this.xScale, this.yScale);
+	 }
+
 
 	 renderChar(x, y, c, col0, bgcol) {
 		 var col = col0 % 16;
@@ -2012,7 +2033,15 @@ class C64Screen {
 		//void ctx.drawImage(image, sx, sy, sWidth, sHeight, dx, dy, dWidth, dHeight);
 		//dCtx.drawImage( sCvs, b.w, b.h, dw, dh);
 
-		dCtx.drawImage( sCvs, 24, 21, w, h, b.w, b.h, dw, dh );
+		//old dCtx.drawImage( sCvs, 24, 21, w, h, b.w, b.h, dw, dh );
+
+
+		if( this.skipSideBorder ) {
+			dCtx.drawImage( sCvs, 24, 21, w, h, 0,   b.h, dw, dh );
+		}
+		else {
+			dCtx.drawImage( sCvs, 24, 21, w, h, b.w, b.h, dw, dh );
+		}
 	 }
 
 	 _renderBackGround() {

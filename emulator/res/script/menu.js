@@ -150,7 +150,7 @@ class Menu {
     opts.push({opt: "changeClock", display: "clock mode" });
     opts.push({opt: "changeTurbo", display: "turbo mode" });
     opts.push({opt: "changeExtended", display: "Extended commands" });
-		opts.push({opt: "changeZoom", display: "Display" });
+		opts.push({opt: "changeDisplay", display: "Display" });
 		opts.push({opt: "changeTheme", display: "Change Menu Theme" });
     opts.push({opt: "documentation", display: "documentation" });
     this.options["docssettings"] = opts;
@@ -1154,7 +1154,7 @@ class Menu {
 
 	}
 
-	do_changeZoom() {
+	do_changeDisplay() {
 
 		if( !this.context.confirmCookies() ) {
 			return;
@@ -1170,11 +1170,11 @@ class Menu {
 			{ name: "4.0x", id: "4.0"},
 			{ name: "4.5x", id: "4.5"},
 			{ name: "5.0x", id: "5.0"},
-			{ name: "5.5x", id: "5.5"}
-
+			{ name: "5.5x", id: "5.5"},
+			{ name: "Side Borders", id: "sideborders"}
 		] };
 
-		list.callback = "select_Zoom";
+		list.callback = "select_Display";
 		list.atExit = "stay";
 
 		if( this.debugFlag ) {
@@ -1185,14 +1185,22 @@ class Menu {
 
 	}
 
-	select_Zoom( id ) {
+	select_Display( id ) {
 		if( this.debugFlag ) {
 			console.log( id );
 		}
 
-		localStorage.setItem( "BJ64_Zoom", JSON.stringify( { zoom: id } ) );
+		if( id == "sideborders" ) {
+			this.context.toggleSideBorders();
+			var flag = this.context.getSideBordersFlag();
+			localStorage.setItem( "BJ64_SideBorder", JSON.stringify( { sideborder: flag } ) );
+		}
+		else {
+			localStorage.setItem( "BJ64_Zoom", JSON.stringify( { zoom: id } ) );
 
-		this.context.setScale( id );
+			this.context.setScale( id );
+		}
+
 	}
 
 	do_changeExtended() {
@@ -1373,6 +1381,7 @@ class Menu {
 				}
 			}
 	}
+
 
   do_listDirectory() {
 
