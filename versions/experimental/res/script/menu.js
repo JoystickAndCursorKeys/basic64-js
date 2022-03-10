@@ -403,28 +403,38 @@ class Menu {
     var options = this.options[ t.menuvmState ];
 
 		var x;
+		var drawMenu = !this.selectList;
+		var maxPrintCount = 8;
 
-		//draw logo
-		var c=64, xof = 4, yof=1;
-    var x,y,addr,caddr;
-    for( y = 0; y<4; y++) {
-      for( x = 0; x<34; x++) {
-        addr = 1024 + xof + x + ((y+yof)*40);
-        caddr = 55296 + xof + x + ((y+yof)*40);
-        this.context.poke( addr, c );
-        var col = cols1[y] ;
-        this.context.poke( caddr, col );
-        c++;
-      }
-    }
+		if( !this.hideLogo || drawMenu ) {
 
-    for( var i=0;i<theme.splotches.length;i++) {
-      var sp = theme.splotches[i];
-        x=sp[0];y=sp[1];caddr = 55296 + x + ((y)*40);this.context.poke( caddr, sp[2] );
-    }
-		//end draw logo
+			//draw logo
+			var c=64, xof = 4, yof=1;
+	    var x,y,addr,caddr;
+	    for( y = 0; y<4; y++) {
+	      for( x = 0; x<34; x++) {
+	        addr = 1024 + xof + x + ((y+yof)*40);
+	        caddr = 55296 + xof + x + ((y+yof)*40);
+	        this.context.poke( addr, c );
+	        var col = cols1[y] ;
+	        this.context.poke( caddr, col );
+	        c++;
+	      }
+	    }
 
-    t.nl();t.nl();t.nl();t.nl();t.nl();t.nl();
+	    for( var i=0;i<theme.splotches.length;i++) {
+	      var sp = theme.splotches[i];
+	        x=sp[0];y=sp[1];caddr = 55296 + x + ((y)*40);this.context.poke( caddr, sp[2] );
+	    }
+			//end draw logo
+			t.nl();t.nl();t.nl();t.nl();t.nl();t.nl();
+		}
+
+		else {
+			maxPrintCount = 23;
+
+		}
+
 
 		if( !this.selectList ) { //menu
 			if( title != "main" ) {
@@ -453,23 +463,22 @@ class Menu {
 	        t.nl();
 	        t.nl();
 	    }
-
-	    //var selectCursor = this.curs[ this.optSelect ];
-	    //t.console.setCursorX( selectCursor[0]);
-	    //t.console.setCursorY( selectCursor[1]);
-
 		}
 		else { //list
 
-			var menuStr = "*** " + this.listTitle +" ***";
-			x = 20 - (Math.floor(menuStr.length / 2));
-			var offX = x;
-			if( this.listOffset != -1 ) {
-				offX = this.listOffset;
-			}
-			t.padLine( x, menuStr );
+			if( !this.hideLogo ) {
 
-			t.nl();
+				var menuStr = "*** " + this.listTitle +" ***";
+				x = 20 - (Math.floor(menuStr.length / 2));
+				var offX = x;
+				if( this.listOffset != -1 ) {
+					offX = this.listOffset;
+				}
+				t.padLine( x, menuStr );
+
+				t.nl();
+
+			}
 
 			this.listPage = Math.floor((this.optSelect-2) / 4);
 			if( this.listPage < 0) {
@@ -513,13 +522,13 @@ class Menu {
 					this.page_last = i;
 
 					if( !this.showNumbers) {
-						if( printCount >= 12 ) {
+						if( printCount >= maxPrintCount ) {
 							more = true;
 							break;
 						}
 					}
 					else {
-						if( printCount >= 8 ) {
+						if( printCount >= maxPrintCount-4 ) {
 							more = true;
 							break;
 						}
@@ -637,6 +646,10 @@ class Menu {
 		this.showNumbers = true;
 		if( ! (l.showNum === undefined ) ) {
 			this.showNumbers = l.showNum;
+		}
+		this.hideLogo = false;
+		if( l.hideLogo ) {
+			this.hideLogo = true;
 		}
 
 		this.rendervmStateText();
@@ -1025,6 +1038,7 @@ class Menu {
 			list.items.push( { name: disks[i], id:  disks[i] } );
 		}
 
+
 		list.callback = "select_Disk";
 
 		this.startList( list );
@@ -1266,6 +1280,7 @@ class Menu {
 		 };
 
 		list.callback = "select_List";
+		this.hideLogo = true;
 
 		var pgm = this.context.getProgramLines();
 		for( var i=0; i<pgm.length; i++ )
@@ -1281,6 +1296,8 @@ class Menu {
 					console.log(l[2]);
 				}
 		}
+
+		list.hideLogo = true;
 
 		this.startList( list );
 
