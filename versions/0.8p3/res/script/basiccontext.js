@@ -2080,8 +2080,16 @@ class BasicContext {
           var bf = this.runPointer2;
           if(this.debugFlag) console.log(" this.runPointer = " + this.runPointer, " this.runPointer2 = " + this.runPointer2 );
           if(this.debugFlag) console.log(" cmdCount = " + cmdCount);
+
+          /****************************
+          *
+          The actual execution of commands is done by the command below
+          *
+          ****************************/
           var rv = this.runCommands( l[1], cmdCount );
-          //console.log(" rv = ", rv);
+
+
+
           var af = rv[ 1 ];
 
           if( rv[0] == MIDLINE_INTERUPT) {
@@ -2286,6 +2294,18 @@ class BasicContext {
     this.dataPointer++;
 
     return result;
+  }
+
+  printLineVisibleChars( rawLine ) {
+
+    for( var i=0; i<rawLine.length; i++ ) {
+
+      var c = rawLine.charAt(i);
+
+      this.sendCharsSimple( c, false );
+
+    }
+    this.printLine( "" );
   }
 
 
@@ -2814,6 +2834,10 @@ class BasicContext {
         var cn = cmd.controlKW;
         if( cn == "goto" ) {
           this.goto( cmd.params[0] );
+          return [TERMINATE_W_JUMP,i+1,cnt+1];
+        }
+        else if( cn == "run" ) {
+          this.runPGM();
           return [TERMINATE_W_JUMP,i+1,cnt+1];
         }
         else if( cn == "end" ) {

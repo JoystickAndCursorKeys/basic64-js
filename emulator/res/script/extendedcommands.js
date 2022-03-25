@@ -321,7 +321,7 @@ class ExtendedCommands {
 
   _stat_renumber( pars ) {
 
-    var start = 100, step = 100;
+    var start = 100, step = 5;
 
     if( pars.length == 1 ) {
       start = pars[0].value;
@@ -718,7 +718,7 @@ class ExtendedCommands {
 
     }
 
-    _stat_spmcol( pars ) {
+    _stat_scolmod( pars ) {
 
       if( pars.length == 0 ) {
         this.erh.throwError( "sprite nr missing");
@@ -740,7 +740,7 @@ class ExtendedCommands {
 
     }
 
-    _stat_sx2( pars ) {
+    _stat_sdouble( pars ) {
 
       if( pars.length == 0 ) {
         this.erh.throwError( "sprite nr missing");
@@ -767,7 +767,7 @@ class ExtendedCommands {
     }
 
 
-    _stat_sframecp( pars ) {
+    _stat_sfcopy( pars ) {
 
       if( pars.length == 0 ) {
         this.erh.throwError( "srcframe");
@@ -787,19 +787,8 @@ class ExtendedCommands {
       this.context.spriteFrameCopy( pars[0].value %256, pars[1].value %256 );
     }
 
-    _stat_sframeflipx( pars ) {
+    _int_sfxflip( data ) {
 
-      if( pars.length == 0 ) {
-        this.erh.throwError( "frame missing");
-        return;
-      }
-
-      if( pars.length > 1 ) {
-        this.erh.throwError( "too many parameters");
-        return;
-      }
-
-      var data = this.context.spriteFrameGet( pars[0].value %256 );
       for( var i=0;i<data.length;i++) {
         data[ i ] = this._intMirrorByte( data[ i ] );
       }
@@ -811,23 +800,9 @@ class ExtendedCommands {
         data[o+2] = tmp;
       }
 
-      this.context.spriteFrameSet( pars[0].value %256, data );
-
     }
 
-    _stat_sframeflipy( pars ) {
-
-      if( pars.length == 0 ) {
-        this.erh.throwError( "frame missing");
-        return;
-      }
-
-      if( pars.length > 1 ) {
-        this.erh.throwError( "too many parameters");
-        return;
-      }
-
-      var data = this.context.spriteFrameGet( pars[0].value %256 );
+    _int_sfyflip( data ) {
 
       for( var y=0;y<11;y++) {
         var o1=(y*3);
@@ -848,11 +823,9 @@ class ExtendedCommands {
 
       }
 
-      this.context.spriteFrameSet( pars[0].value %256, data );
-
     }
 
-    _stat_sframefx( pars ) {
+    _stat_sfx( pars ) {
 
       if( pars.length == 0 ) {
         this.erh.throwError( "frame missing");
@@ -877,11 +850,17 @@ class ExtendedCommands {
 
       var data = this.context.spriteFrameGet( pars[0].value %256 );
 
-      if( fx == 0 || fx == 1) {
+      if( fx == 0 ) {
+        this._int_sfxflip( data );
+      }
+      else if( fx == 0 ) {
+        this._int_sfyflip( data );
+      }
+      else if( fx == 10 || fx == 11) {
         var mask = [];
         mask.push(128+32+8+2);
         mask.push(64+16+4+1);
-        var flip = fx;
+        var flip = fx-10;
         for( var i=0;i<63;i+=3) {
           data[i] = data[i] & mask[flip];
           data[i+1] = data[i+1] & mask[flip];
@@ -937,7 +916,7 @@ class ExtendedCommands {
     }
 
 
-    _stat_spoke( pars ) {
+    _stat_sfpoke( pars ) {
 
       if( pars.length == 0 ) {
         this.erh.throwError( "frame nr missing");
@@ -959,7 +938,7 @@ class ExtendedCommands {
         return;
       }
 
-      this.context.spritePoke(
+      this.context.spriteFramePoke(
           pars[0].value % 256, //frame
           pars[1].value % 64,  //offset
           pars[2].value % 256, //value

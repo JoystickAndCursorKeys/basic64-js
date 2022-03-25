@@ -406,10 +406,11 @@ class Menu {
 		var x;
 		var drawMenu = !this.selectList;
 		var maxPrintCount = 8;
+		var skiplineInList = true;
 
 		if( !this.hideLogo || drawMenu ) {
 
-			//draw logo
+			/********* draw logo ***/
 			var c=64, xof = 4, yof=1;
 	    var x,y,addr,caddr;
 	    for( y = 0; y<4; y++) {
@@ -427,17 +428,17 @@ class Menu {
 	      var sp = theme.splotches[i];
 	        x=sp[0];y=sp[1];caddr = 55296 + x + ((y)*40);this.context.poke( caddr, sp[2] );
 	    }
-			//end draw logo
+			/********* end draw logo ***/
 			t.nl();t.nl();t.nl();t.nl();t.nl();t.nl();
 		}
-
 		else {
 			maxPrintCount = 23;
-
+			skiplineInList = false;
 		}
 
 
-		if( !this.selectList ) { //menu
+		if( !this.selectList ) {
+			/**** Draw menu option ****/
 			if( title != "main" ) {
 	      var menuStr = "*** " + title +" ***";
 	      x = 20 - (Math.floor(menuStr.length / 2));
@@ -465,7 +466,8 @@ class Menu {
 	        t.nl();
 	    }
 		}
-		else { //list
+		else {
+			/**** Draw list of data ****/
 
 			if( !this.hideLogo ) {
 
@@ -543,10 +545,13 @@ class Menu {
 					}
 					if( this.showNumbers) {
 						t.padSave( this.listOffset , " " +(i+1)+ " - " + this.listItems[i].name );
-						t.nl();
 					}
 					else {
 						t.printCodeLine( this.listItems[i].name );
+					}
+
+					if( skiplineInList ) {
+						t.nl();
 					}
 
 					this.curs.push( t.console.getCursorPos() );
@@ -585,7 +590,7 @@ class Menu {
       padStr+=" ";
     }
 
-    this.context.printLine( padStr + txt.toUpperCase() );
+    this.context.printLineVisibleChars( padStr + txt.toUpperCase() );
   }
 
 
@@ -1269,7 +1274,7 @@ class Menu {
 
 		var pgm = this.context.getProgramLines();
 
-		for(var i=page.ixFrom; i<=page.ixTo; i++ )
+		for(var i=page.ixFrom; i<=page.ixTo/2; i++ )
 		{
 				var l = pgm[i];
 				var display = l[2].trim();
@@ -1291,7 +1296,6 @@ class Menu {
 		 };
 
 		list.callback = "select_List";
-		this.hideLogo = true;
 
 		var pgm = this.context.getProgramLines();
 		for( var i=0; i<pgm.length; i++ )
@@ -1309,7 +1313,6 @@ class Menu {
 		}
 
 		list.hideLogo = true;
-
 		this.startList( list );
 
 	}
@@ -1439,7 +1442,7 @@ class Menu {
       return;
     }
 
-		var list = { title: "Directory", items: [] };
+		var list = { title: "Directory", showNum: true, items: [], offset:0 };
 		var dir = this.context.getDir();
 		var row;
 
@@ -1453,6 +1456,8 @@ class Menu {
 		if( this.debugFlag ) {
 			console.log("list dir");
 		}
+
+		list.hideLogo = true;
 		this.startList( list );
   }
 

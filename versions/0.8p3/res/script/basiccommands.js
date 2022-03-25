@@ -129,11 +129,6 @@ class BasicCommands {
       return [RAW];
   }
 
-  _if_run() {
-      var EXPR = 0, PAR = 1, RAW=2;
-      return [RAW];
-  }
-
   _stat_read( pars ) {
     var p0 = pars[ 0 ];
     if( p0.type != "var" ) {
@@ -271,11 +266,6 @@ class BasicCommands {
     this.erh.throwError( "not supported" );
   }
 
-  _stat_run( pars ) {
-    var context = this.context;
-
-    context.runPGM();
-  }
 
   _if_print() {
       var EXPR = 0, PAR = 1, RAW=2;

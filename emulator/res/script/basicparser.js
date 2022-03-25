@@ -9,7 +9,7 @@ class Parser {
 
   init() {
 
-	  this.CTRL_KW = ["IF","THEN","GOTO","AND", "NOT", "OR",  "GOSUB", "RETURN", "FOR", "TO", "NEXT", "STEP", "DATA", "REM", "GOSUB", "DIM", "END", "LET", "STOP", "DEF", "FN", "ON" ];
+	  this.CTRL_KW = ["IF","THEN","GOTO","AND", "NOT", "OR",  "GOSUB", "RETURN", "FOR", "TO", "NEXT", "STEP", "DATA", "REM", "GOSUB", "DIM", "END", "LET", "STOP", "DEF", "FN", "ON", "RUN" ];
     this.SHORTCUT_KW = ["?"];
 
     this.KEYWORDS = this.commands.getStatements();
@@ -191,6 +191,7 @@ class Parser {
     splits.push( { p1: "S", p2: "POKE", p3: null, whole: "SPOKE" } );
     splits.push( { p1: "WJ", p2: "IF", p3: "FY", whole: "WJIFFY" } );
     splits.push( { p1: "REF", p2: "OR", p3: "MAT", whole: "REFORMAT" } );
+
 
     var tokens2 = tokens;
 
@@ -995,6 +996,30 @@ parseArrayAssignment( context, preTokens, commands, command, nameToken, token0  
         if( token !== undefined ) {
           if( token.type != "cmdsep") {
             this.throwError( context, "expected cmdsep, instead of "+token.type+"/"+token.data);
+          }
+        }
+
+        command.params=[];
+        command.params[0] = num;
+        commands.push( command );
+
+      }
+      else if( controlToken == "RUN") {
+        var num = -1;
+
+        token = tokens.shift();
+
+        if( !( token === undefined ) ) {
+          if( token.type != "num") {
+            this.throwError( context, "RUN expects number", "undef'd statement");
+          }
+
+          num = parseInt(token.data);
+          token = tokens.shift();
+          if( token !== undefined ) {
+            if( token.type != "cmdsep") {
+              this.throwError( context, "expected cmdsep, instead of "+token.type+"/"+token.data);
+            }
           }
         }
 

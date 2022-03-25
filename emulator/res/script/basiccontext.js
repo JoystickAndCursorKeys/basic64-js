@@ -23,6 +23,7 @@ class BasicContext {
     this.cursorCountMax = this.cursorCountMaxNormal;
 
     this.turboMode = false;
+    this.renumMode = "rem";
     this.cmdCountPerCycleDefault = 5;
     this.cmdCountPerCycleTurbo = 1000;
     this.cmdCountPerCycle = this.cmdCountPerCycleDefault ;
@@ -78,6 +79,9 @@ class BasicContext {
       }
     }
 
+
+
+
     var turbo = localStorage.getItem( "BJ64_Turbo" );
     if( turbo != null ) {
       turbo = JSON.parse( turbo );
@@ -86,6 +90,15 @@ class BasicContext {
       if( turbo == "on" ) {
         this.setTurbo( true );
       }
+    }
+
+    var renumMode = localStorage.getItem( "BJ64_Renum" );
+    if( renumMode != null ) {
+      renumMode = JSON.parse( renumMode );
+      renumMode = renumMode.renumMode;
+
+      this.renumMode = renumMode;
+
     }
 
     var clock = localStorage.getItem( "BJ64_Clock" );
@@ -267,6 +280,10 @@ class BasicContext {
 
     this.nullTime = nullClock;
 
+  }
+
+  setRenumMode( mode ) {
+    this.renumMode = mode;
   }
 
   setTurbo( on ) {
@@ -697,7 +714,7 @@ class BasicContext {
     return data;
   }
 
-  spritePoke( f, a, v ) {
+  spriteFramePoke( f, a, v ) {
 
     var baddr = f * 64;
     this.poke( baddr + (a%64) , v );
@@ -1220,7 +1237,7 @@ class BasicContext {
 
     this.printLine("");
     if( hard ) {
-      this.printLine("  **** c64 basic emulator v0.80p2 ****");
+      this.printLine("  **** c64 basic emulator v0.80p3 ****");
       this.printLine("");
       var ext = "off";
       if(this.extendedcommands.enabled) ext = "on ";
@@ -2063,8 +2080,16 @@ class BasicContext {
           var bf = this.runPointer2;
           if(this.debugFlag) console.log(" this.runPointer = " + this.runPointer, " this.runPointer2 = " + this.runPointer2 );
           if(this.debugFlag) console.log(" cmdCount = " + cmdCount);
+
+          /****************************
+          *
+          The actual execution of commands is done by the command below
+          *
+          ****************************/
           var rv = this.runCommands( l[1], cmdCount );
-          //console.log(" rv = ", rv);
+
+
+
           var af = rv[ 1 ];
 
           if( rv[0] == MIDLINE_INTERUPT) {
@@ -2086,6 +2111,7 @@ class BasicContext {
             this.printLine("ready.");
             this.panicIfStopped();
             if( rv[0] == END_W_ERROR ) {
+              console.log("ERROR: ", e, " LINE ", this.retreiveRuntimeLine() );
               console.log("PARAMETER DUMP:", this.vars );
               console.log("FUNCTION DUMP:", this.functions );
             }
@@ -2147,7 +2173,7 @@ class BasicContext {
       this.printLine("ready.");
       this.runFlag = false;
       this.panicIfStopped();
-      console.log("ERROR: ", e );
+      console.log("ERROR: ", e, " LINE ", this.retreiveRuntimeLine() );
       console.log("PARAMETER DUMP:", this.vars );
       console.log("FUNCTION DUMP:", this.functions );
 
@@ -2270,6 +2296,18 @@ class BasicContext {
     return result;
   }
 
+  printLineVisibleChars( rawLine ) {
+
+    for( var i=0; i<rawLine.length; i++ ) {
+
+      var c = rawLine.charAt(i);
+
+      this.sendCharsSimple( c, false );
+
+    }
+    this.printLine( "" );
+  }
+
 
   listCodeLine( rawLine ) {
 
@@ -2382,21 +2420,119 @@ class BasicContext {
     return rec;
   }
 
+  lineIsData( line ) {
+    console.log( line );
+    if( line[1].length == 1 ) {
+      if( ! ( line[1][0].controlKW === undefined) ) {
+        if( line[1][0].controlKW.toUpperCase() == "DATA" ) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  lineIsRem( line ) {
+    console.log( line );
+    if( line[1].length == 1 ) {
+      if( ! ( line[1][0].controlKW === undefined) ) {
+        if( line[1][0].controlKW.toUpperCase() == "REM" ) {
+          var remIndex = line[2].indexOf("REM");
+          if( remIndex == -1 ) { console.log( "warning: invalid rem statement on line " + line[0]); return false ; }
+
+          var checkline = line[2].substring( remIndex + 3 ).trim();
+          if( checkline.startsWith( "-" ) )  {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
   renumberProgram( start, gap ) {
 
     var p = this.program;
 
     var newLineNr = start;
     var renumbering = {};
+    var lineNumbers = [];
 
-    for( var i=0; i<p.length; i++) {
-        var line = p[ i ];
-        renumbering["old_" + line[0]] = newLineNr;
-        newLineNr += gap;
+    var method = this.renumMode;
+
+    if( method  == "plain" ) {
+      for( var i=0; i<p.length; i++) {
+          var line = p[ i ];
+
+          renumbering["old_" + line[0]] = newLineNr;
+          lineNumbers.push( newLineNr );
+          newLineNr += gap;
+      }
+    }
+    else if( method  == "data" ) {
+      // non data
+      for( var i=0; i<p.length; i++) {
+          var line = p[ i ];
+          var data = this.lineIsData( line );
+
+          if( data ) {
+            continue;
+          }
+          else {
+            renumbering["old_" + line[0]] = newLineNr;
+            lineNumbers.push( newLineNr );
+            newLineNr += gap;
+          }
+      }
+
+      //data
+      var kNumber = Math.ceil( newLineNr / 1000 );
+      var newLineNr2 = 1000 * ( kNumber  );
+      if( newLineNr2 - newLineNr  < 100 ) {
+        newLineNr2+=1000;
+      }
+      newLineNr = newLineNr2;
+
+      for( var i=0; i<p.length; i++) {
+          var line = p[ i ];
+          var data = this.lineIsData( line );
+
+          if( !data ) {
+            continue;
+          }
+          else {
+            renumbering["old_" + line[0]] = newLineNr;
+            lineNumbers.push( newLineNr );
+            newLineNr += gap;
+          }
+      }
+
+    }
+    else if( method  == "rem" ) {
+      // non data
+      for( var i=0; i<p.length; i++) {
+          var line = p[ i ];
+          var rem = this.lineIsRem( line );
+
+          if( rem ) {
+            var kNumber = Math.ceil( newLineNr / 1000 );
+            var newLineNr2 = 1000 * ( kNumber  );
+            if( newLineNr2 - newLineNr  < 100 ) {
+              newLineNr2+=1000;
+            }
+            newLineNr = newLineNr2;
+          }
+          renumbering["old_" + line[0]] = newLineNr;
+          lineNumbers.push( newLineNr );
+          newLineNr += gap;
+
+      }
+
     }
 
-    newLineNr = start;
+    //newLineNr = start;
     for( var i=0; i<p.length; i++) {
+        newLineNr = lineNumbers[ i ]
         var line = p[ i ];
         var lRec = this.rebuildLineString( newLineNr, line[2], true, renumbering, true );
 
@@ -2404,7 +2540,7 @@ class BasicContext {
         line[1] = lRec.commands;
         line[2] = lRec.raw.trim();
 
-        newLineNr += gap;
+        //newLineNr += gap;
     }
   }
 
@@ -2602,13 +2738,18 @@ class BasicContext {
 
   }
 
+  retreiveRuntimeLine() {
+    if( this.runPointer > -1 ) {
+      var line = this.program[this.runPointer];
+      return line[0];
+    }
+    return -1;
+  }
+
 
   retreiveLine() {
     if( this.runFlag ) {
-      if( this.runPointer > -1 ) {
-        var line = this.program[this.runPointer];
-        return line[0];
-      }
+      return this.retreiveRuntimeLine();
     }
     else {
       if( this["parseLineNumber"] === undefined ) {
@@ -2693,6 +2834,10 @@ class BasicContext {
         var cn = cmd.controlKW;
         if( cn == "goto" ) {
           this.goto( cmd.params[0] );
+          return [TERMINATE_W_JUMP,i+1,cnt+1];
+        }
+        else if( cn == "run" ) {
+          this.runPGM();
           return [TERMINATE_W_JUMP,i+1,cnt+1];
         }
         else if( cn == "end" ) {

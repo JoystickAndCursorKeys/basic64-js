@@ -129,11 +129,6 @@ class BasicCommands {
       return [RAW];
   }
 
-  _if_run() {
-      var EXPR = 0, PAR = 1, RAW=2;
-      return [RAW];
-  }
-
   _stat_read( pars ) {
     var p0 = pars[ 0 ];
     if( p0.type != "var" ) {
@@ -271,11 +266,6 @@ class BasicCommands {
     this.erh.throwError( "not supported" );
   }
 
-  _stat_run( pars ) {
-    var context = this.context;
-
-    context.runPGM();
-  }
 
   _if_print() {
       var EXPR = 0, PAR = 1, RAW=2;
@@ -354,7 +344,7 @@ class BasicCommands {
   _stat_poke( pars ) {
 
     var context = this.context;
-    context.poke( pars[0].value, pars[1].value );
+    context.poke( Math.floor( pars[0].value ), pars[1].value );
 
   }
 
@@ -437,12 +427,21 @@ class BasicCommands {
 
   _fun_left_DLR_( pars ) {
       //? LEFT$(A$,8)
-      return pars[0].value.substr(0,pars[1].value);
+      var s = pars[0].value;
+
+      if( (typeof s) != "string") {
+        throw "@type mismatch";
+      }
+      return s.substr(0,pars[1].value);
   }
 
   _fun_right_DLR_( pars ) {
       //? RIGHT$(A$,8)
       var s = pars[0].value;
+
+      if( (typeof s) != "string") {
+        throw "@type mismatch";
+      }
       return s.substr( s.length - pars[1].value );
   }
 
@@ -450,6 +449,9 @@ class BasicCommands {
       //? RIGHT$(A$,8)
       var s = pars[0].value;
 
+      if( (typeof s) != "string") {
+        throw "@type mismatch";
+      }
       if( pars.length == 3) {
         return s.substr( pars[1].value-1, pars[2].value );
       }
@@ -524,7 +526,7 @@ class BasicCommands {
   _fun_peek( pars ) {
 
     var context = this.context;
-    return context.peek( pars[0].value );
+    return context.peek( Math.floor( pars[0].value ) );
 
   }
 
