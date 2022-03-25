@@ -354,7 +354,7 @@ class BasicCommands {
   _stat_poke( pars ) {
 
     var context = this.context;
-    context.poke( pars[0].value, pars[1].value );
+    context.poke( Math.floor( pars[0].value ), pars[1].value );
 
   }
 
@@ -437,12 +437,21 @@ class BasicCommands {
 
   _fun_left_DLR_( pars ) {
       //? LEFT$(A$,8)
-      return pars[0].value.substr(0,pars[1].value);
+      var s = pars[0].value;
+
+      if( (typeof s) != "string") {
+        throw "@type mismatch";
+      }
+      return s.substr(0,pars[1].value);
   }
 
   _fun_right_DLR_( pars ) {
       //? RIGHT$(A$,8)
       var s = pars[0].value;
+
+      if( (typeof s) != "string") {
+        throw "@type mismatch";
+      }
       return s.substr( s.length - pars[1].value );
   }
 
@@ -450,6 +459,9 @@ class BasicCommands {
       //? RIGHT$(A$,8)
       var s = pars[0].value;
 
+      if( (typeof s) != "string") {
+        throw "@type mismatch";
+      }
       if( pars.length == 3) {
         return s.substr( pars[1].value-1, pars[2].value );
       }
@@ -524,7 +536,7 @@ class BasicCommands {
   _fun_peek( pars ) {
 
     var context = this.context;
-    return context.peek( pars[0].value );
+    return context.peek( Math.floor( pars[0].value ) );
 
   }
 

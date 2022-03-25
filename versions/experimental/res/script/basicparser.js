@@ -191,6 +191,7 @@ class Parser {
     splits.push( { p1: "S", p2: "POKE", p3: null, whole: "SPOKE" } );
     splits.push( { p1: "WJ", p2: "IF", p3: "FY", whole: "WJIFFY" } );
     splits.push( { p1: "REF", p2: "OR", p3: "MAT", whole: "REFORMAT" } );
+    
 
     var tokens2 = tokens;
 

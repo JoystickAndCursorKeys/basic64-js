@@ -149,6 +149,7 @@ class Menu {
     opts.push({opt: "changeImmersiveMode", display: "immersive mode" });
     opts.push({opt: "changeClock", display: "clock mode" });
     opts.push({opt: "changeTurbo", display: "turbo mode" });
+    opts.push({opt: "changeRenum", display: "renumber mode" });
     opts.push({opt: "changeExtended", display: "Extended commands" });
 		opts.push({opt: "changeDisplay", display: "Display" });
 		opts.push({opt: "changeTheme", display: "Change Menu Theme" });
@@ -1238,6 +1239,16 @@ class Menu {
 
 	}
 
+	select_RenumberMode( id ) {
+		if( this.debugFlag ) {
+			console.log( id );
+		}
+
+		localStorage.setItem( "BJ64_Renum", JSON.stringify( { renumMode: id } ) );
+
+		this.context.setRenumMode( id );
+	}
+
 	select_Turbo( id ) {
 		if( this.debugFlag ) {
 			console.log( id );
@@ -1350,6 +1361,28 @@ class Menu {
 		] };
 
 		list.callback = "select_Clock";
+
+		this.startList( list );
+
+	}
+
+	do_changeRenum() {
+
+		if( !this.context.confirmCookies() ) {
+			return;
+		}
+
+		var list = { title: "Renumber Mode", items: [
+			{ name: "plain", id: "plain"},
+			{ name: "data", id: "data"},
+			{ name: "rem", id: "rem"}
+		] };
+
+		list.callback = "select_RenumberMode";
+
+		if( this.debugFlag ) {
+			console.log("list options");
+		}
 
 		this.startList( list );
 
