@@ -3,7 +3,7 @@
 20 scol 0,1
 30 sframe 0,192:
 40 for f=0to3 : for t=0to62:read b
-45 spoke 192 + f,t,b : next : next
+45 sfpoke 192 + f,t,b : next : next
 99 fc = 0
 100 for t=20 to 200 step 1
 101 spos 0,t,200
