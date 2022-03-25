@@ -1,3 +1,4 @@
+5 turbo
 10 sprite 0,1
 15 cls
 20 scol 0,1
