@@ -1,0 +1,18 @@
+[
+  {
+		"section": "text",
+		"list": ["guessing.bas", "fireworks.bas", "tictactoe.bas", "simplesnake.bas"]
+	},
+	{
+		"section": "extended graphics",
+		"list": ["mandelbrot.bas", "screensaver1.bas"]
+	},
+	{
+		"section": "extended sprite",
+		"list": ["spriteanim.bas", "spriteanim2.bas"]
+	},
+	{
+		"section": "short",
+		"list": ["10liner_fsnake.bas"]
+	}
+]
