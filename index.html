@@ -11,6 +11,41 @@ a:visited {
   color: #660066
 }
 
+.releasenotes {
+  padding-top: 50px;
+  padding-right: 30px;
+  padding-bottom: 50px;
+  padding-left: 80px;
+}
+
+.alertBase {
+  padding: 10px;
+  padding-top: 10px;
+  padding-right: 20px;
+  padding-bottom: 10px;
+  padding-left: 20px;
+
+}
+
+.alert0 {
+  background-color: rgba(255,255,255,1);
+  opacity: 0;
+}
+
+.alert1 {
+  background-color: rgba(255,255,0,.2);
+  transition: all 2s ease;
+  padding-top: 40px;
+  padding-bottom: 40px;
+  opacity: 1.0;
+}
+
+.visible {
+  visibility: visible;
+  opacity: 1;
+  transition: opacity 2s linear;
+}
+
 </style>
 <script>
 var parts = document.URL.split("?")
@@ -38,6 +73,17 @@ if( parts.length > 1) {
   }
 }
 
+function openDiv( id ) {
+  var div = document.getElementById(id + "DIV");
+  div.style.display = 'block';
+}
+
+function blinkAlert() {
+  var div = document.getElementById( "alertDIV");
+  div.className = "alert1";
+}
+
+setTimeout(blinkAlert, 1000);
 
 </script>
 </head>
@@ -53,10 +99,19 @@ if( parts.length > 1) {
 </tr>
 </table>
 <font size=+1><a href=emulator/index.html target=_blank>Desktop</a></font> or
-<font size=+1><a href=emulator/index.html?kb target=_blank>Tablet</a></font><br>
-<br><br>
+<font size=+1><a href=emulator/index.html?kb target=_blank>Tablet</a></font>
 
+<!--alert-->
+<div class="alertBase">
+<div class="alert0" id="alertDIV">Patch 3 is now released.
+See more info <a href="#p3releasenotes" onClick="openDiv('p3releasenotes');">here</a>.
+<br><br><font size=-1>(NOTE: the 'spokes' command is now called 'sfpoke').</font>
+</div>
+</div>
+<!--end of alert-->
 </center>
+
+
 <b><a name="info"><font size=+2>Basic64.JS</font></a></b><br><br>
 <b>Code like it's 1982</b><br>
 In the 80s, we did not have PCs, we had micro computers. The Commodore 64 is an 8 bit micro computer. What was special was that
@@ -95,6 +150,17 @@ Leave a comment on <a href=https://twitter.com/chaos51  target=_blank>Twitter</a
 
 
 <b><a name="versions">Versions</a></b><br>
+<a href=versions/0.8p3/index.html target=_blank>Version 0.8 - Patch 3</a>  <font size=-2><a href="#p3releasenotes" onClick="openDiv('p3releasenotes');">[read more]</a></font><br>
+<div class="releasenotes" id="p3releasenotesDIV" style="display:none">
+<a  id="p3releasenotes"><b>Release Notes Patch 3</b></a><br><br>
+  This patch has the following fixes:<br><br>
+    1. Added and normalized external sprite commands.<br>
+    2. Extra options for renumbering.<br>
+    3. Fix for being able to include "run" inside a programline.<br>
+    4. Improved listing of you basic program inside the power menu<br><br>
+    COMPATIBILITY WARNING: <br>
+    the 'spokes' command is now called 'sfpoke'<br>
+</div>
 <a href=versions/0.8p2/index.html target=_blank>Version 0.8 - Patch 2</a><br>
 <a href=versions/0.8p1/index.html target=_blank>Version 0.8 - Patch 1</a><br>
 <a href=versions/0.8/index.html target=_blank>Version 0.8</a><br>
@@ -113,6 +179,7 @@ Leave a comment on <a href=https://twitter.com/chaos51  target=_blank>Twitter</a
 
 <br>
 <br>
+
 
 <b><a name="Other">Other</a></b><br>
 <a href=http://www.vintage-basic.net/games.html target=_blank>Type-In Games (external link/vintage-basic)</a><br>

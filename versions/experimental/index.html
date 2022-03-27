@@ -178,6 +178,7 @@
 
 	var game1, program;
 	var document_page_color = "#000000";
+	var kbOn = false;
 
 	function start( console ) {
 		screenCanvas.focus();
@@ -194,7 +195,7 @@
 
 		const queryString = window.location.search;
 		const urlParams = new URLSearchParams(queryString);
-		var kbOn = urlParams.get('kb');
+		kbOn = urlParams.get('kb');
 
 		var kbTableDiv = document.getElementById("kbdiv");
 		var kbTable = document.getElementById("kbtable");
@@ -202,6 +203,10 @@
 		if( kbOn != null ) {
 			var kb = new VirtualKB( kbTable, program );
 			kbTableDiv.style="display:block";
+			kbOn = true;
+		}
+		else {
+			kbOn = false;
 		}
 
 		var stateDefinitions = new StateDefinitions( program );
@@ -225,6 +230,12 @@
 					"PASTE_HERE__USE_CTRL_V";
 		document.getElementById("exporttxtdata").select();
 
+		if( kbOn ) {
+				var kbTableDiv = document.getElementById("kbdiv");
+				kbTableDiv.style="display:none";
+		}
+
+
 	}
 
 	var clipboardCallback_class, clipboardCallback_method;
@@ -239,6 +250,12 @@
 		console.log("callback");
 		document.getElementById("exporttxt").style="display:none";
 		screenCanvas.style="display:block";
+
+		if( kbOn ) {
+				var kbTableDiv = document.getElementById("kbdiv");
+				kbTableDiv.style="display:block";
+		}
+
 		screenCanvas.focus();
 
 	}
