@@ -6,7 +6,7 @@ class StringReader {
 			this.lineIndex = 1;
 			this.line = 1;
 			var a={}; a.b=strIn;
-
+			
 	}
 
 	peek() {
@@ -108,22 +108,8 @@ class Tokenizer {
 		return [rv,0];
 	}
 
-
-	isNumeric( string ) {
-		for( var i=0; i< string.length; i++) {
-			if(! this.isNumCharRaw( string.substr( i, 1) ) ) {
-				return false;
-			}
-		}
-		return true;
-	}
-
-	isNumCharRaw( c  ) {
-		return [(c.match("[0-9\.~]") != null),0];
-	}
-
 	isNumChar( ctx  ) {
-		return this.isNumCharRaw( ctx.c );
+		return [(ctx.c.match("[0-9\.~]") != null),0];
 	}
 
 	isPadChar( ctx  ) {

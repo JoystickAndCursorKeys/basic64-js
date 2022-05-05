@@ -629,9 +629,20 @@ class Program {
           evt.preventDefault();
       }
       else if( evt.key == "ArrowDown") {
-          c.clearCursor();
-          c.cursorDown();
-          ctx.updateYPos();
+          var pos = c.getCursorPos();
+
+          if( pos[ 1 ] < 24 ) {
+            c.clearCursor();
+            c.cursorDown();
+            ctx.updateYPos();
+          }
+          else {
+            c.clearCursor();
+            ctx.passEnter();
+            c.cursorDown();
+            ctx.updateYPos();
+          }
+
           evt.preventDefault();
       }
       else if( evt.key == "ArrowUp"  && evt.ctrlKey) {

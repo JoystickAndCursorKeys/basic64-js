@@ -789,6 +789,10 @@ class C64Screen {
 		 this.col = c;
 	 }
 
+	 getColor() {
+		 return this.col;
+	 }
+
 	 setBGColor( c ) {
 		 this.bgcol = c;
 	 }
@@ -979,6 +983,7 @@ class C64Screen {
 		if( !this.cursorOn ) {
 			this.cursorOn = true;
 			this.cursorChar = buf[this.cursory][this.cursorx][0];
+			this.cursorCharCol = buf[this.cursory][this.cursorx][1];
 			var index = 32+128;
 			buf[this.cursory][this.cursorx][2] = true;
 			buf[this.cursory][this.cursorx][1] = this.col;
@@ -988,7 +993,7 @@ class C64Screen {
 			this.cursorOn = false;
 			var index = 32;
 			buf[this.cursory][this.cursorx][2] = true;
-			buf[this.cursory][this.cursorx][1] = this.col;
+			buf[this.cursory][this.cursorx][1] = this.cursorCharCol;
 			buf[this.cursory][this.cursorx][0] = this.cursorChar;
 		}
 
@@ -1000,7 +1005,7 @@ class C64Screen {
  			this.cursorOn = false;
  			var index = 32;
  			buf[this.cursory][this.cursorx][2] = true;
- 			buf[this.cursory][this.cursorx][1] = this.col;
+ 			buf[this.cursory][this.cursorx][1] = this.cursorCharCol;
  			buf[this.cursory][this.cursorx][0] = this.cursorChar;
  		}
    }

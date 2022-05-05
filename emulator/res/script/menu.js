@@ -405,7 +405,7 @@ class Menu {
 
 		var x;
 		var drawMenu = !this.selectList;
-		var maxPrintCount = 8;
+		var maxPrintCount = 11;
 		var skiplineInList = true;
 
 		if( !this.hideLogo || drawMenu ) {
@@ -450,24 +450,41 @@ class Menu {
 	    x=this.menuOffset[ t.menuvmState ];
 
 	    this.curs = [];
-	    for( var i=0; i<8 && i<options.length; i++) {
+			if( options.length<=8 ) {
+					maxPrintCount = 8;
+					skiplineInList = true;
+			}
+		else {
+					maxPrintCount = 16;
+					skiplineInList = false;
+		}
 
-	        if( i == this.optSelect ) {
-	          t.console.setColor(hlColor);
-	        }
-	        else {
-	          t.console.setColor(txtColor);
-	        }
-	        t.pad( x, " " +(i+1)+ " - " + options[i].display );
+		for( var i=0; i<maxPrintCount && i<options.length; i++) {
 
-	        this.curs.push( t.console.getCursorPos() );
+        if( i == this.optSelect ) {
+          t.console.setColor(hlColor);
+        }
+        else {
+          t.console.setColor(txtColor);
+        }
+        t.pad( x, " " +(i+1)+ " - " + options[i].display );
 
-	        t.nl();
-	        t.nl();
-	    }
+        this.curs.push( t.console.getCursorPos() );
+
+        t.nl();
+				if( skiplineInList ) {
+        	t.nl();
+				}
+    }
+
 		}
 		else {
 			/**** Draw list of data ****/
+
+
+				if( this.showNumbers) {
+ 						maxPrintCount = maxPrintCount -4;
+				}
 
 			if( !this.hideLogo ) {
 
@@ -483,7 +500,7 @@ class Menu {
 
 			}
 
-			this.listPage = Math.floor((this.optSelect-2) / 4);
+			this.listPage = Math.floor((this.optSelect) / 5);
 			if( this.listPage < 0) {
 				this.listPage = 0;
 			}
@@ -492,22 +509,13 @@ class Menu {
 			this.curs = [];
 			var more = false;
 
-			if( this.showNumbers) {
-				if( offset > 0 ) {
+			if( offset > 0 ) {
 					t.pad( offX, "..." );
 					t.nl();
-					t.nl();
-				}
 			}
 			else {
-				if( offset > 0 ) {
-					t.pad( offX, "..." );
-					t.nl();
-				}
-				else {
 					t.pad( offX, "" );
 					t.nl();
-				}
 			}
 
 			var first = true;
@@ -524,17 +532,9 @@ class Menu {
 					}
 					this.page_last = i;
 
-					if( !this.showNumbers) {
-						if( printCount >= maxPrintCount ) {
-							more = true;
-							break;
-						}
-					}
-					else {
-						if( printCount >= maxPrintCount-4 ) {
-							more = true;
-							break;
-						}
+					if( printCount >= maxPrintCount ) {
+						more = true;
+						break;
 					}
 
 					if( i == this.optSelect ) {
@@ -1273,16 +1273,32 @@ class Menu {
 		this.endMenuWithMessage("LISTING PAGE");
 
 		var pgm = this.context.getProgramLines();
+		var start = id-3;
 
-		for(var i=page.ixFrom; i<=page.ixTo/2; i++ )
+		if( start < 0 ) { start = 0; }
+
+		var col1 = this.console.getColor();
+		var col2 = 1;
+		if( col1 == 1 ) { col2 = 7; }
+		var max = 20;
+		for(var i=start; max>0 && i<pgm.length; i++ )
 		{
 				var l = pgm[i];
-				var display = l[2].trim();
-				if( display.length > 35 ) {
-					display = l[2].substr(0,34)+"..";
+				if( id == i ) {
+					this.console.setColor( col2 );
+					this.context.listCodeLine( l[2] );
+					this.console.setColor( col1 );
 				}
-				this.context.listCodeLine( l[2] );
+				else {
+					this.context.listCodeLine( l[2] );
+				}
 
+				if( l[2].length > 38 ) {
+						max-=2;
+				}
+				else {
+					max-=1;
+				}
 		}
 
 	}
@@ -1298,6 +1314,9 @@ class Menu {
 		list.callback = "select_List";
 
 		var pgm = this.context.getProgramLines();
+
+		//var basicList = [];
+
 		for( var i=0; i<pgm.length; i++ )
 		{
 				var l = pgm[i];
@@ -1306,6 +1325,7 @@ class Menu {
 					display = l[2].substr(0,34)+"..";
 				}
 				list.items.push({name: display, id: i});
+		//		basicList.push({name: display, id: i});
 
 				if( this.debugFlag ) {
 					console.log(l[2]);

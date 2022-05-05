@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Basic-64/js</title>
+	<meta charset="utf-8" />
+	<meta http-equiv="X-UA-Compatible" content="chrome=1">
+
+	<link rel="icon" href="res/img/fav.png">
+	<style>
+
+		.body {
+			-webkit-touch-callout: none;
+			-webkit-user-select: none;
+			-khtml-user-select: none;
+			-moz-user-select: none;
+			-ms-user-select: none;
+			user-select: none;
+			touch-action: manipulation;
+		}
+
+		.outer {
+		  display: table;
+		  position: absolute;
+		  top: 0;
+		  left: 0;
+		  height: 100%;
+		  width: 100%;
+
+		}
+
+		.middle {
+		  display: table-cell;
+		}
+
+		.inner {
+		  margin-left: auto;
+		  margin-right: auto;
+		  text-align: center;
+		}
+		.screenCanvas {
+  		margin-left: auto;
+  		margin-right: auto;
+
+  		outline: none;
+  		-webkit-tap-highlight-color: rgba(255, 255, 255, 0); /* mobile webkit */
+  		cursor:crosshair;
+
+  		display: block;
+		}
+
+		textarea {
+			width: 99%;
+			height: 90vh;
+		}
+
+		.fakec64 {
+			background-color: #0000aa;
+			border: none;
+			color: #0088ff;
+			padding: 16px 32px;
+			font-family: "Lucida Console", "Courier New", monospace;
+			font-weight: 900;
+			 font-size: large;
+			margin: 4px 2px;
+			cursor: pointer;
+		}
+
+		.fakec64nopad {
+			background-color: #0000aa;
+			border: none;
+			color: #0088ff;
+			font-family: "Lucida Console", "Courier New", monospace;
+			font-weight: 900;
+			 font-size: large;
+			margin: 4px 2px;
+			cursor: pointer;
+		}
+
+
+		.kbkeysbase {
+			text-align: center;
+
+			height: 80px;
+			border: 0px red solid;
+	    border-radius: 10px;
+
+		}
+
+		.kbkeys1 {
+
+		background-color: #000000;
+		color: #ffffff;
+		width: 60px;
+		font-size: 30px;
+		}
+
+		.kbkeys2 {
+		background-color: #000000;
+		color: #ffffff;
+		width: 120px;
+		font-size: 25px;
+		}
+
+		.kbkeys8 {
+		background-color: #000000;
+		color: #ffffff;
+		width: 120px;
+		font-size: 25px;
+		}
+
+
+		.kbkeysShift {
+		color: #ffffee;
+		font-size: 15px;
+		}
+
+		.kbkeys1p5 {
+		background-color: #000000;
+		color: #ffffff
+		width: 90px;
+		font-size: 20px;
+		}
+
+		.kbbg {
+    border: 1px black solid;
+    border-radius: 5px;
+		background-color: #888888;
+		color: #ffffff
+		}
+
+		.footer {
+    	position: fixed;
+    	bottom: 0;
+			left:0;
+    	width: 100%;
+		}
+
+	</style>
+
+	<script src="res/script/polyfix.js"></script>
+	<script src="res/script/g1/core/boot.js"></script>
+	<script src="res/script/g1/screens/c64/screen.js"></script>
+  <script src="res/script/basicarray.js"></script>
+	<script src="res/script/errorhandler.js"></script>
+	<script src="res/script/basictokenizer.js"></script>
+	<script src="res/script/basicparser.js"></script>
+	<script src="res/script/vdisk.js"></script>
+	<script src="res/script/extendedcommands.js"></script>
+	<script src="res/script/basiccommands.js"></script>
+	<script src="res/script/menu_images.js"></script>
+	<script src="res/script/menu.js"></script>
+	<script src="res/script/basiccontext.js"></script>
+	<script src="res/script/w64.js"></script>
+	<script src="res/script/statedefinitions.js"></script>
+	<script src="res/script/kb.js"></script>
+
+
+<script>
+
+	var dmCMU = null;
+	var booter = null;
+	var SCR_H = null;
+	var SCR_H = null;
+	var MIN_SCR_W = 1024;
+	var MIN_SCR_H = 600;
+	var screenCanvas;
+
+
+
+	window.onload = function() {
+
+		polyfix();
+
+		screenCanvas = document.getElementById("screenCanvas");
+		var console = new C64Screen( 'screenCanvas', 'res/script/g1/screens/c64', start );
+
+	}
+
+	var game1, program;
+	var document_page_color = "#000000";
+	var kbOn = false;
+
+	function start( console ) {
+		screenCanvas.focus();
+
+		var container = document.getElementById("middlediv");
+
+		var doc = document;
+
+		var size = console.getRenderSize( );
+		SCR_W = size[0];
+		SCR_H = size[1];
+
+		program = new Program( console, container );
+
+		const queryString = window.location.search;
+		const urlParams = new URLSearchParams(queryString);
+		kbOn = urlParams.get('kb');
+
+		var kbTableDiv = document.getElementById("kbdiv");
+		var kbTable = document.getElementById("kbtable");
+
+		if( kbOn != null ) {
+			var kb = new VirtualKB( kbTable, program );
+			kbTableDiv.style="display:block";
+			kbOn = true;
+		}
+		else {
+			kbOn = false;
+		}
+
+		var stateDefinitions = new StateDefinitions( program );
+
+		game1 = new Boot( 'screenCanvas', SCR_W, SCR_H,  stateDefinitions );
+
+		default_Document_Page_Color();
+	}
+
+	function default_Document_Page_Color() {
+			var div0 = document.getElementById("outerdiv");
+			div0.style.backgroundColor = document_page_color;
+	}
+
+	function enableClipBoardWidget() {
+
+		screenCanvas.style="display:none";
+		document.getElementById("exporttxt").style="display:block";
+		document.getElementById("exporttxtdata").focus();
+		document.getElementById('exporttxtdata').value =
+					"PASTE_HERE__USE_CTRL_V";
+		document.getElementById("exporttxtdata").select();
+
+		if( kbOn ) {
+				var kbTableDiv = document.getElementById("kbdiv");
+				kbTableDiv.style="display:none";
+		}
+
+
+	}
+
+	var clipboardCallback_class, clipboardCallback_method;
+
+	function registerClipboardCallback( clazz, method ) {
+		clipboardCallback_class = clazz;
+		clipboardCallback_method = method;
+	}
+
+
+	function clipboardClose() {
+		console.log("callback");
+		document.getElementById("exporttxt").style="display:none";
+		screenCanvas.style="display:block";
+
+		if( kbOn ) {
+				var kbTableDiv = document.getElementById("kbdiv");
+				kbTableDiv.style="display:block";
+		}
+
+		screenCanvas.focus();
+
+	}
+
+
+	function clipboardCallback() {
+		console.log("callback");
+		clipboardClose();
+
+		var text = document.getElementById('exporttxtdata').value;
+
+		clipboardCallback_class[ clipboardCallback_method ]( text );
+	}
+
+
+	function enableConvertLinkWidget() {
+
+		screenCanvas.style="display:none";
+		document.getElementById("linkMaker").style="display:block";
+		document.getElementById("linkmakerinput").focus();
+		document.getElementById('linkmakerinput').value = '';
+		document.getElementById("linkmakerinput").select();
+
+	}
+
+	var convertLinkCallback_class, convertLinkCallback_method;
+
+	function registerConvertLinkCallback( clazz, method ) {
+		convertLinkCallback_class = clazz;
+		convertLinkCallback_method = method;
+	}
+
+	function convertLinkCallback() {
+		console.log("callback");
+
+		var text = document.getElementById('linkmakerinput').value;
+
+		clipboardCallback_class[ clipboardCallback_method ]( text );
+	}
+
+
+
+function convertLinkClipboard() {
+
+
+	navigator.clipboard.writeText( document.getElementById('linkmakeroutput').value );
+
+}
+
+
+	function convertLinkClose() {
+
+		document.getElementById("linkMaker").style="display:none";
+		screenCanvas.style="display:block";
+		screenCanvas.focus();
+
+	}
+
+	function setLinkCallbackText( text ) {
+		console.log("callback");
+		document.getElementById("linkmakeroutput").value=text;
+
+	}
+
+
+</script>
+
+
+</head>
+<body bgcolor=#000030 class="body">
+
+<div class="outer" id="outerdiv">
+
+  <div id="middlediv" class="middle">
+
+    <div id="innerdiv" class="inner">
+
+		<canvas class='screenCanvas' id="screenCanvas" width="100%" height="100%" tabindex='1'></canvas>
+<br>
+
+
+		<a width=100% hidden href=# name="imageSaver" id="imageSaver">Save</a>
+		<input hidden name="imageLoader" id="imageLoader" type="file" onclick="this.value=null;"></input>
+		<div id=exporttxt hidden >
+			<br>&nbsp;
+			<input class=fakec64  value="READY" type=button
+				onclick="clipboardCallback();">
+				<input class=fakec64 value="BACK TO BASIC" type=button
+						onclick="clipboardClose();">
+
+				<br>&nbsp;
+				<textarea class=fakec64nopad width=100% id=exporttxtdata></textarea>
+		</div>
+		<div id=linkMaker hidden >
+
+				<center>
+				<table border=0 class=fakec64>
+					<tr>
+						<td>Basic Source Link:</td>
+						<td><input class=fakec64 style="width: 640px"  id=linkmakerinput name=linkmakerinput value="LINK_2_BASIC_PGM_HERE" type=text></td>
+					</tr>
+					<tr>
+						<td>Shareable Link:</td>
+						<td><input class=fakec64 style="width: 640px"  id=linkmakeroutput name=linkmakeroutput value="" type=text></td>
+					</tr>
+				</table>
+				<input class=fakec64 value="MAKE LINK" type=button
+					onclick="convertLinkCallback();">
+				<input class=fakec64 value="COPY LINK" type=button
+						onclick="convertLinkClipboard();">
+				<input class=fakec64 value="BACK TO BASIC" type=button
+						onclick="convertLinkClose();">
+					<br>
+				</center>
+		</div>
+
+
+    </div>
+
+  </div>
+
+</div>
+<div id=kbdiv hidden class="footer">
+	<center>
+		<table id=kbtable width=100%>
+		</table>
+	</center>
+</div>
+
+</body>
+</html>

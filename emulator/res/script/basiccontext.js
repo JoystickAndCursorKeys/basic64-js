@@ -79,9 +79,6 @@ class BasicContext {
       }
     }
 
-
-
-
     var turbo = localStorage.getItem( "BJ64_Turbo" );
     if( turbo != null ) {
       turbo = JSON.parse( turbo );
@@ -1237,7 +1234,7 @@ class BasicContext {
 
     this.printLine("");
     if( hard ) {
-      this.printLine("  **** c64 basic emulator v0.80p3 ****");
+      this.printLine("  **** c64 basic emulator v0.80p4 ****");
       this.printLine("");
       var ext = "off";
       if(this.extendedcommands.enabled) ext = "on ";
@@ -2111,6 +2108,10 @@ class BasicContext {
             this.printLine("ready.");
             this.panicIfStopped();
             if( rv[0] == END_W_ERROR ) {
+              var e = null;
+              if( rv.length >= 4 ) {
+                e = rv[3];
+              }
               console.log("ERROR: ", e, " LINE ", this.retreiveRuntimeLine() );
               console.log("PARAMETER DUMP:", this.vars );
               console.log("FUNCTION DUMP:", this.functions );
@@ -2309,6 +2310,7 @@ class BasicContext {
   }
 
 
+
   listCodeLine( rawLine ) {
 
     var inString = false;
@@ -2342,6 +2344,7 @@ class BasicContext {
     p.init();
 
     var tokens = p.getTokens( raw, false, false );
+    tokens = p.mergeBrokenUpTokens( tokens );
 
     if( ! ( renumbering === undefined )) {
 
@@ -3040,7 +3043,7 @@ class BasicContext {
             this.printError("unexpected " + e );
           }
 
-          return [END_W_ERROR,i+1,cnt];
+          return [END_W_ERROR,i+1,cnt, e ];
         }
       }
       else if( cmd.type == "assignment" )  {
@@ -3229,6 +3232,10 @@ class BasicContext {
     this.program.push([null,null,row]);
 
   }
+
+
+
+
 
   padSpaces6( no ) {
     var s = no + "";
