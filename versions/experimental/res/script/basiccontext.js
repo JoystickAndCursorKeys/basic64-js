@@ -79,9 +79,6 @@ class BasicContext {
       }
     }
 
-
-
-
     var turbo = localStorage.getItem( "BJ64_Turbo" );
     if( turbo != null ) {
       turbo = JSON.parse( turbo );
@@ -1237,7 +1234,7 @@ class BasicContext {
 
     this.printLine("");
     if( hard ) {
-      this.printLine("  **** c64 basic emulator v0.80x1 ****");
+      this.printLine("  **** c64 basic emulator v0.80p4 ****");
       this.printLine("");
       var ext = "off";
       if(this.extendedcommands.enabled) ext = "on ";
@@ -2080,8 +2077,16 @@ class BasicContext {
           var bf = this.runPointer2;
           if(this.debugFlag) console.log(" this.runPointer = " + this.runPointer, " this.runPointer2 = " + this.runPointer2 );
           if(this.debugFlag) console.log(" cmdCount = " + cmdCount);
+
+          /****************************
+          *
+          The actual execution of commands is done by the command below
+          *
+          ****************************/
           var rv = this.runCommands( l[1], cmdCount );
-          //console.log(" rv = ", rv);
+
+
+
           var af = rv[ 1 ];
 
           if( rv[0] == MIDLINE_INTERUPT) {
@@ -2103,6 +2108,10 @@ class BasicContext {
             this.printLine("ready.");
             this.panicIfStopped();
             if( rv[0] == END_W_ERROR ) {
+              var e = null;
+              if( rv.length >= 4 ) {
+                e = rv[3];
+              }
               console.log("ERROR: ", e, " LINE ", this.retreiveRuntimeLine() );
               console.log("PARAMETER DUMP:", this.vars );
               console.log("FUNCTION DUMP:", this.functions );
@@ -2288,6 +2297,19 @@ class BasicContext {
     return result;
   }
 
+  printLineVisibleChars( rawLine ) {
+
+    for( var i=0; i<rawLine.length; i++ ) {
+
+      var c = rawLine.charAt(i);
+
+      this.sendCharsSimple( c, false );
+
+    }
+    this.printLine( "" );
+  }
+
+
 
   listCodeLine( rawLine ) {
 
@@ -2322,6 +2344,7 @@ class BasicContext {
     p.init();
 
     var tokens = p.getTokens( raw, false, false );
+    tokens = p.mergeBrokenUpTokens( tokens );
 
     if( ! ( renumbering === undefined )) {
 
@@ -2816,6 +2839,10 @@ class BasicContext {
           this.goto( cmd.params[0] );
           return [TERMINATE_W_JUMP,i+1,cnt+1];
         }
+        else if( cn == "run" ) {
+          this.runPGM();
+          return [TERMINATE_W_JUMP,i+1,cnt+1];
+        }
         else if( cn == "end" ) {
           return [TERMINATE_PROGRAM,i+1,cnt+1];
         }
@@ -3016,7 +3043,7 @@ class BasicContext {
             this.printError("unexpected " + e );
           }
 
-          return [END_W_ERROR,i+1,cnt];
+          return [END_W_ERROR,i+1,cnt, e ];
         }
       }
       else if( cmd.type == "assignment" )  {
@@ -3205,6 +3232,10 @@ class BasicContext {
     this.program.push([null,null,row]);
 
   }
+
+
+
+
 
   padSpaces6( no ) {
     var s = no + "";

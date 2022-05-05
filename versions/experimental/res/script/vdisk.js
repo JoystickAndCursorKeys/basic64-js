@@ -283,7 +283,7 @@ class VDisk {
 
     dir.files = [];
     dir.title = "Empty"
-    this.setDir( );
+    this.setDir( dir );
 
   }
 

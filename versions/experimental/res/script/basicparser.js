@@ -9,7 +9,7 @@ class Parser {
 
   init() {
 
-	  this.CTRL_KW = ["IF","THEN","GOTO","AND", "NOT", "OR",  "GOSUB", "RETURN", "FOR", "TO", "NEXT", "STEP", "DATA", "REM", "GOSUB", "DIM", "END", "LET", "STOP", "DEF", "FN", "ON" ];
+	  this.CTRL_KW = ["IF","THEN","GOTO","AND", "NOT", "OR",  "GOSUB", "RETURN", "FOR", "TO", "NEXT", "STEP", "DATA", "REM", "GOSUB", "DIM", "END", "LET", "STOP", "DEF", "FN", "ON", "RUN" ];
     this.SHORTCUT_KW = ["?"];
 
     this.KEYWORDS = this.commands.getStatements();
@@ -170,12 +170,20 @@ class Parser {
 
 
 
-  mergeBrokenUpTokens( tokens ) {
+  mergeBrokenUpTokens( tokens, toker0 ) {
 
+    var toker;
+
+    if( toker0 === undefined ) {
+      toker = new Tokenizer( null, this.KEYWORDS );
+    }
+    else {
+      toker = toker0;
+    }
     var splits = [];
 
     //standard
-    splits.push( { p1: "REST", p2: "OR", p3: "E", whole: "RESTORE" } );
+    splits.push( { p1: "RES", p2: "TO", p3: "RE", whole: "RESTORE" } );
     splits.push( { p1: "S", p2: "TO", p3: "P", whole: "STOP" } );
 
     //extended
@@ -191,20 +199,20 @@ class Parser {
     splits.push( { p1: "S", p2: "POKE", p3: null, whole: "SPOKE" } );
     splits.push( { p1: "WJ", p2: "IF", p3: "FY", whole: "WJIFFY" } );
     splits.push( { p1: "REF", p2: "OR", p3: "MAT", whole: "REFORMAT" } );
-    
+
 
     var tokens2 = tokens;
 
     for( var i=0; i<splits.length; i++) {
       var r=splits[i];
-      tokens2 = this.mergeTokenRange( tokens2, r );
+      tokens2 = this.mergeTokenRange( tokens2, r , toker );
     }
 
     return tokens2;
   }
 
 
-  mergeTokenRange( tokens, record ) {
+  mergeTokenRange( tokens, record, toker ) {
 		var tokens2 = [];
     var tokens3 = [];
 
@@ -242,14 +250,37 @@ class Parser {
            ( tokens2[i-1].type == "name" || tokens2[i-1].type == "bop" ) &&
            ( tokens2[i-0].type == "name" || tokens2[i-0].type == "bop" ) ) {
 
-             if( tokens2[i-2].data == record.p1 &&
+            if( tokens2[i-2].data == record.p1 &&
                 tokens2[i-1].data == record.p2 &&
                 tokens2[i-0].data == record.p3 ) {
                   tokens2[i-2].data = record.whole;
                   tokens2[i-1].type = "removeme";
                   tokens2[i-0].type = "removeme";
-                }
-           }
+            }
+            else if( tokens2[i-2].data == record.p1 &&
+                  tokens2[i-1].data == record.p2 &&
+                  tokens2[i-0].data.startsWith( record.p3 ) ) {
+
+                  tokens2[i-2].data = record.whole;
+
+                  /*
+                    Split tokens combined.
+                    Example:
+                    BORDER10 (contains)-> DER10 (tobesplit) -> DER,10 -> DISCART DER -> Keep 10 as argument
+                  */
+
+                  tokens2[i-1].data = tokens2[i-0].data.substr( record.p3.length );
+                  if( toker.isNumeric( tokens2[i-1].data ) ) {
+                    tokens2[i-1].type = "num";
+                  }
+                  else {
+                    tokens2[i-1].type = "name";
+                  }
+
+                  tokens2[i-0].type = "removeme";
+            }
+
+        }
       }
 		}
 
@@ -1004,6 +1035,30 @@ parseArrayAssignment( context, preTokens, commands, command, nameToken, token0  
         commands.push( command );
 
       }
+      else if( controlToken == "RUN") {
+        var num = -1;
+
+        token = tokens.shift();
+
+        if( !( token === undefined ) ) {
+          if( token.type != "num") {
+            this.throwError( context, "RUN expects number", "undef'd statement");
+          }
+
+          num = parseInt(token.data);
+          token = tokens.shift();
+          if( token !== undefined ) {
+            if( token.type != "cmdsep") {
+              this.throwError( context, "expected cmdsep, instead of "+token.type+"/"+token.data);
+            }
+          }
+        }
+
+        command.params=[];
+        command.params[0] = num;
+        commands.push( command );
+
+      }
       else if( controlToken == "ON" ) {
         var nums = [];
 
@@ -1468,7 +1523,7 @@ parseArrayAssignment( context, preTokens, commands, command, nameToken, token0  
       detail="INTERNAL";
       tokens = this.removePadding( tokens );
       tokens = this.mergeCompTokens( tokens );
-      tokens = this.mergeBrokenUpTokens( tokens );
+      tokens = this.mergeBrokenUpTokens( tokens, toker );
 
 
       if( this.debugFlag ) {

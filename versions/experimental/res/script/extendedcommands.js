@@ -15,6 +15,8 @@ class ExtendedCommands {
     this.g_col2 = -1;
 
     this.erh = new ErrorHandler();
+
+
   }
 
   _intGetColorRecord() {
@@ -207,6 +209,76 @@ class ExtendedCommands {
   }
 
 
+  getCategories() {
+    var stats = this._int_getStatements();
+    var funs = this._int_getFunctions();
+
+    var cat = {};
+    var catLists = {};
+
+    for( var i=0;i<stats.length;i++) {
+      var rname = stats[i];
+      var si = rname.replace("_stat_","_stat_info_");
+
+      var catlabel;
+      if( !( this[ si ] === undefined ) ) { catlabel = this[ si ](); }
+      else { catlabel = "general"; }
+      rname = rname.replace("_stat_","").toUpperCase();
+
+      if( cat[ catlabel ] === undefined ) { cat[ catlabel ] = 0; catLists[ catlabel ] = []; }
+      cat[ catlabel ]++;
+      catLists[ catlabel ].push( rname );
+    }
+
+    for( var i=0;i<funs.length;i++) {
+      var rname = funs[i];
+      var si = rname.replace("_fun_","_fun_info_");
+
+      var catlabel;
+      if( !( this[ si ] === undefined ) ) { catlabel = this[ si ](); }
+      else { catlabel = "general"; }
+      rname = rname.replace("_fun_","").toUpperCase() + "()";
+
+      if( cat[ catlabel ] === undefined ) { cat[ catlabel ] = 0; catLists[ catlabel ] = []; }
+      cat[ catlabel ]++;
+      catLists[ catlabel ].push( rname );
+    }
+
+    var cats = Object.getOwnPropertyNames( cat );
+
+    return [cats,catLists];
+  }
+
+
+  _int_getStatements() {
+
+    var stats = Object.getOwnPropertyNames( ExtendedCommands.prototype );
+    var stats2 = [];
+
+    for( var i=0;i<stats.length;i++) {
+      if( stats[i].startsWith("_stat_") && !stats[i].startsWith("_stat_info_") ) {
+        stats2.push( stats[i] );
+      }
+    }
+
+    return stats2;
+  }
+
+  _int_getFunctions() {
+    var stats = Object.getOwnPropertyNames( ExtendedCommands.prototype );
+
+    var stats2 = [];
+
+    for( var i=0;i<stats.length;i++) {
+      if( stats[i].startsWith("_fun_") && ! stats[i].startsWith("_fun_info_") ) {
+        stats2.push( stats[i] );
+      }
+    }
+
+    return stats2;
+  }
+
+
   getStatements() {
     if( this.enabled == false ) { return []; }
 
@@ -219,7 +291,7 @@ class ExtendedCommands {
     var stats2 = [];
 
     for( var i=0;i<stats.length;i++) {
-      if( stats[i].startsWith("_stat_")) {
+      if( stats[i].startsWith("_stat_") && ! stats[i].startsWith("_stat_info_")  ) {
         stats2.push( stats[i].substr(6 ).toUpperCase() );
       }
     }
@@ -235,7 +307,7 @@ class ExtendedCommands {
     var stats2 = [];
 
     for( var i=0;i<stats.length;i++) {
-      if( stats[i].startsWith("_fun_")) {
+      if( stats[i].startsWith("_fun_") && ! stats[i].startsWith("_fun_info_") ) {
         stats2.push( stats[i].substr(5 ).toUpperCase() );
       }
     }
@@ -253,20 +325,49 @@ class ExtendedCommands {
     this.enabled = false;
   }
 
+  _int_padZeros2( no ) {
+    var s = no + "";
+    for(var i=s.length; i<2; i++) {
+      s+="0";
+    }
+    return s;
+  }
+
   _stat_help( pars ) {
     this.context.printLine("");
-    this.context.printLine("extended commands");
-    this.context.printLine("-----------------");
+    this.context.printLine("help ext. commands");
 
-    var stats = this.getStatements();
-    for( var i=0; i<stats.length; i++) {
-      this.context.printLine( stats[i] );
+
+    var catRecord = this.getCategories();
+    var lst = catRecord[0];
+    var catLists = catRecord[1];
+    var hlpctx = 1000;
+
+    if( pars.length == 1 ) {
+      hlpctx = pars[0].value;
     }
 
-    var fun = this.getFunctions();
-    for( var i=0; i<fun.length; i++) {
-      this.context.printLine( fun[i] + "()");
+    if( hlpctx == 1000 ) {
+      this.context.printLine("-----------------");
+      for( var i=0; i<lst.length; i++) {
+        this.context.printLine( i + " " + lst[i] );
+      }
     }
+    else {
+
+      var lbl = lst[ hlpctx ];
+      lst = catLists[ lbl ];
+      if(lst === undefined ) {
+        this.erh.throwError( "wrong help index" );
+      }
+      this.context.printLine(">" + lbl);
+      this.context.printLine("-----------------");
+      for( var i=0; i<lst.length; i++) {
+        //this.context.printLine( ((hlpctx * 100) + i) + " " + lst[i] );
+        this.context.printLine( " " + lst[i] );
+      }
+    }
+
   }
 
   _stat_panic( pars ) {
@@ -276,6 +377,9 @@ class ExtendedCommands {
   _stat_unnew( pars ) {
     this.context.old();
   }
+
+
+  _stat_info_disklabel() { return "disk"; }
 
   _stat_disklabel( pars ) {
 
@@ -299,6 +403,8 @@ class ExtendedCommands {
     this.context.clearScreen();
   }
 
+  _stat_info_cls() { return "text"; }
+
   _stat_gcls( pars ) {
 
     if( pars.length > 0 ) {
@@ -310,6 +416,8 @@ class ExtendedCommands {
       this.g_col1,
       this.g_col2 );
   }
+
+  _stat_info_gcls() { return "gfx"; }
 
   _stat_slow( pars ) {
     this.context.setTurbo( false );
@@ -353,6 +461,7 @@ class ExtendedCommands {
     this.context.normalizeProgram();
 
   }
+  _stat_info_reformat() { return "disk"; }
 
   _stat_dir( pars ) {
     var dir = this.context.getDir();
@@ -369,6 +478,8 @@ class ExtendedCommands {
 
   }
 
+  _stat_info_dir() { return "disk"; }
+
   _stat_delete( pars ) {
 
     if( pars.length == 0 ) {
@@ -383,6 +494,8 @@ class ExtendedCommands {
       return;
     }
   }
+  _stat_info_delete() { return "disk"; }
+
 
     //--graphics
     _stat_mode( pars ) {
@@ -396,7 +509,7 @@ class ExtendedCommands {
         return;
       }
 
-      console.log ("set mode " + pars[0].value);
+      console.log ("setting gfx mode " + pars[0].value);
 
       var ctx = this.context;
       if( pars[0].value == 0 ) {
@@ -427,6 +540,8 @@ class ExtendedCommands {
       }
     }
 
+    _stat_info_mode() { return "gfx"; }
+
     _stat_pen( pars ) {
 
       if( pars.length < 1 ) {
@@ -442,6 +557,7 @@ class ExtendedCommands {
         return;
       }
     }
+    _stat_info_pen() { return "text"; }
 
 
     _stat_gpen( pars ) {
@@ -452,6 +568,7 @@ class ExtendedCommands {
 
       this.g_colIndex = pars[0].value;
     }
+    _stat_info_gpen() { return "gfx"; }
 
 
     _stat_gcoldef( pars ) {
@@ -487,6 +604,8 @@ class ExtendedCommands {
       }
     }
 
+    _stat_info_gcoldef() { return "gfx"; }
+
     _stat_gcolors( pars ) {
 
       if( pars.length < 1 ) {
@@ -510,6 +629,8 @@ class ExtendedCommands {
         return;
       }
     }
+
+    _stat_info_gcolors() { return "gfx"; }
 
     _if_seek() {
         var EXPR = 0, PAR = 1, RAW=2;
@@ -637,6 +758,8 @@ class ExtendedCommands {
       }
     }
 
+    _stat_info_color() { return "text"; }
+
     _stat_bgcolor( pars ) {
 
       if( pars.length == 0 ) {
@@ -656,6 +779,8 @@ class ExtendedCommands {
 
     }
 
+    _stat_info_bgcolor() { return "gfx"; }
+
     _stat_border( pars ) {
 
       if( pars.length == 0 ) {
@@ -674,6 +799,8 @@ class ExtendedCommands {
       }
 
     }
+
+    _stat_info_border() { return "gfx"; }
 
     _stat_penpos( pars ) {
 
@@ -696,6 +823,7 @@ class ExtendedCommands {
 
     }
 
+    _stat_info_penpos() { return "text"; }
 
     _stat_sprite( pars ) {
 
@@ -718,6 +846,8 @@ class ExtendedCommands {
 
     }
 
+    _stat_info_sprite() { return "sprite"; }
+
     _stat_scolmod( pars ) {
 
       if( pars.length == 0 ) {
@@ -735,10 +865,11 @@ class ExtendedCommands {
         return;
       }
 
-
       this.context.spriteMultiCol( pars[0].value %8, pars[1].value %2 );
 
     }
+
+    _stat_info_scolmod() { return "sprite"; }
 
     _stat_sdouble( pars ) {
 
@@ -766,6 +897,7 @@ class ExtendedCommands {
 
     }
 
+    _stat_info_sdouble() { return "sprite"; }
 
     _stat_sfcopy( pars ) {
 
@@ -786,6 +918,9 @@ class ExtendedCommands {
 
       this.context.spriteFrameCopy( pars[0].value %256, pars[1].value %256 );
     }
+
+    _stat_info_sfcopy() { return "sprite"; }
+
 
     _int_sfxflip( data ) {
 
@@ -873,6 +1008,7 @@ class ExtendedCommands {
 
     }
 
+    _stat_info_sfx() { return "sprite"; }
 
     _stat_sframe( pars ) {
 
@@ -893,6 +1029,8 @@ class ExtendedCommands {
 
       this.context.spriteFrame( pars[0].value %8, pars[1].value );
     }
+
+    _stat_info_sframe() { return "sprite"; }
 
     _stat_scol( pars ) {
 
@@ -915,6 +1053,7 @@ class ExtendedCommands {
 
     }
 
+    _stat_info_scol() { return "sprite"; }
 
     _stat_sfpoke( pars ) {
 
@@ -946,6 +1085,8 @@ class ExtendedCommands {
 
     }
 
+    _stat_info_sfpoke() { return "sprite"; }
+
     _stat_spos( pars ) {
 
       if( pars.length == 0 ) {
@@ -975,6 +1116,8 @@ class ExtendedCommands {
           );
 
     }
+
+    _stat_info_spos() { return "sprite"; }
 
     _if_path() {
         var EXPR = 0, PAR = 1, RAW=2;
@@ -1100,6 +1243,8 @@ class ExtendedCommands {
 
     }
 
+    _stat_info_line() { return "gfx"; }
+
     _stat_box( pars ) {
 
       if( pars.length == 0 ) {
@@ -1150,6 +1295,8 @@ class ExtendedCommands {
 
     }
 
+    _stat_info_box() { return "gfx"; }
+
     _stat_hline( pars ) {
 
       if( pars.length == 0 ) {
@@ -1194,8 +1341,9 @@ class ExtendedCommands {
 
     }
 
-    _stat_plot( pars ) {
+    _stat_info_hline() { return "gfx"; }
 
+    _stat_plot( pars ) {
 
       if( pars.length == 0 ) {
         this.erh.throwError( "x missing");
@@ -1231,7 +1379,7 @@ class ExtendedCommands {
           colIndex );
 
     }
-
+    _stat_info_plot() { return "gfx"; }
 
     _stat_charcol( pars ) {
 
@@ -1266,6 +1414,8 @@ class ExtendedCommands {
       }
     }
 
+    _stat_info_charcol() { return "text"; }
+
 
     _stat_char( pars ) {
 
@@ -1299,6 +1449,7 @@ class ExtendedCommands {
         return;
       }
     }
+    _stat_info_char() { return "text"; }
 
   /************************ functions ************************/
 
@@ -1327,6 +1478,7 @@ class ExtendedCommands {
     }
 
   }
+  _fun_info_pixcol() { return "gfx"; }
 
   _fun_pixel( pars ) {
 
@@ -1353,6 +1505,7 @@ class ExtendedCommands {
     }
 
   }
+  _fun_info_pixel() { return "gfx"; }
 
 
   _fun_char( pars ) {
@@ -1376,6 +1529,7 @@ class ExtendedCommands {
         pars[1].value %25
       );
   }
+  _fun_info_char() { return "text"; }
 
   _fun_charcol( pars ) {
 
@@ -1398,5 +1552,7 @@ class ExtendedCommands {
         pars[1].value %25
       );
   }
+
+  _fun_info_charcol() { return "text"; }
 
 }
