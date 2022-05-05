@@ -170,8 +170,16 @@ class Parser {
 
 
 
-  mergeBrokenUpTokens( tokens ) {
+  mergeBrokenUpTokens( tokens, toker0 ) {
 
+    var toker;
+
+    if( toker0 === undefined ) {
+      toker = new Tokenizer( null, this.KEYWORDS );
+    }
+    else {
+      toker = toker0;
+    }
     var splits = [];
 
     //standard
@@ -197,14 +205,14 @@ class Parser {
 
     for( var i=0; i<splits.length; i++) {
       var r=splits[i];
-      tokens2 = this.mergeTokenRange( tokens2, r );
+      tokens2 = this.mergeTokenRange( tokens2, r , toker );
     }
 
     return tokens2;
   }
 
 
-  mergeTokenRange( tokens, record ) {
+  mergeTokenRange( tokens, record, toker ) {
 		var tokens2 = [];
     var tokens3 = [];
 
@@ -242,14 +250,37 @@ class Parser {
            ( tokens2[i-1].type == "name" || tokens2[i-1].type == "bop" ) &&
            ( tokens2[i-0].type == "name" || tokens2[i-0].type == "bop" ) ) {
 
-             if( tokens2[i-2].data == record.p1 &&
+            if( tokens2[i-2].data == record.p1 &&
                 tokens2[i-1].data == record.p2 &&
                 tokens2[i-0].data == record.p3 ) {
                   tokens2[i-2].data = record.whole;
                   tokens2[i-1].type = "removeme";
                   tokens2[i-0].type = "removeme";
-                }
-           }
+            }
+            else if( tokens2[i-2].data == record.p1 &&
+                  tokens2[i-1].data == record.p2 &&
+                  tokens2[i-0].data.startsWith( record.p3 ) ) {
+
+                  tokens2[i-2].data = record.whole;
+
+                  /*
+                    Split tokens combined.
+                    Example:
+                    BORDER10 (contains)-> DER10 (tobesplit) -> DER,10 -> DISCART DER -> Keep 10 as argument
+                  */
+
+                  tokens2[i-1].data = tokens2[i-0].data.substr( record.p3.length );
+                  if( toker.isNumeric( tokens2[i-1].data ) ) {
+                    tokens2[i-1].type = "num";
+                  }
+                  else {
+                    tokens2[i-1].type = "name";
+                  }
+
+                  tokens2[i-0].type = "removeme";
+            }
+
+        }
       }
 		}
 
@@ -1492,7 +1523,7 @@ parseArrayAssignment( context, preTokens, commands, command, nameToken, token0  
       detail="INTERNAL";
       tokens = this.removePadding( tokens );
       tokens = this.mergeCompTokens( tokens );
-      tokens = this.mergeBrokenUpTokens( tokens );
+      tokens = this.mergeBrokenUpTokens( tokens, toker );
 
 
       if( this.debugFlag ) {

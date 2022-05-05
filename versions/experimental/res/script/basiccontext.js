@@ -2344,6 +2344,7 @@ class BasicContext {
     p.init();
 
     var tokens = p.getTokens( raw, false, false );
+    tokens = p.mergeBrokenUpTokens( tokens );
 
     if( ! ( renumbering === undefined )) {
 
