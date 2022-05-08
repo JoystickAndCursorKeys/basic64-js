@@ -201,6 +201,9 @@ class BasicContext {
     this.symbolTable["light blue"]  = 154;
     this.symbolTable.grey3  = 155; //light grey
 
+    this.version = "v0.80p4";
+    this.kernalNumber = 128; //
+    this.poke( 65408 , this.kernalNumber );
 
     var backmap = []
     var mapInfo = Object.entries(this.symbolTable);
@@ -208,20 +211,6 @@ class BasicContext {
       backmap[ mapInfo[i][1]] = mapInfo[i][0];
     }
     this.symbolTableBM = backmap;
-
-
-    /*for( var ii=0; ii<256; ii++) {
-
-      var bits = this._getByteBits( ii );
-      var byte2 = this._setByteBits( bits );
-      var bits2 = this._getByteBits( byte2 );
-
-      console.log( "byte: ", ii );
-      console.log( "bits: ", bits );
-      console.log( "byte2: ", byte2 );
-      console.log( "bits2: ", bits2 );
-
-    }*/
 
   }
 
@@ -1217,6 +1206,7 @@ class BasicContext {
 
   reset( hard, muteReady ) {
     this.console.clearScreen();
+    this.poke( 65408 , this.kernalNumber );
     this.vpoke(53280,14);
     this.vpoke(53281,6);
     this.vpoke(53269,0);
@@ -1234,7 +1224,7 @@ class BasicContext {
 
     this.printLine("");
     if( hard ) {
-      this.printLine("  **** c64 basic emulator v0.80p4 ****");
+      this.printLine("  **** c64 basic emulator "+this.version+" ****");
       this.printLine("");
       var ext = "off";
       if(this.extendedcommands.enabled) ext = "on ";
