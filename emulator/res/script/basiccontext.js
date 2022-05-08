@@ -1375,6 +1375,7 @@ class BasicContext {
         for( var y=23; y>this.yPos; y-- ) {
           this.lineMarkers[ y+1 ] = this.lineMarkers[ y ];
           this.lineCopy( y, y+1 );
+          this.clearLine( y );
         }
         this.lineMarkers[ this.yPos ] = 1;
         this.lineMarkers[ this.yPos+1 ] = 2;
@@ -1387,6 +1388,14 @@ class BasicContext {
       }
       this.lineMarkers[ 23 ] = 1;
       this.lineMarkers[ 24 ] = 2;
+    }
+  }
+
+  clearLine( y ) {
+    var c = this.console;
+    for( var x=0; x<40; x++) {
+      c.setChar( x, y , 32 );
+      c.setCharCol( x, y , c.getColor() );
     }
   }
 
