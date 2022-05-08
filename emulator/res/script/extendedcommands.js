@@ -1077,6 +1077,10 @@ class ExtendedCommands {
         return;
       }
 
+      if( (pars[0].value % 256) <1 ) {
+        throw "@invalid spriteframe zero";
+      }
+
       this.context.spriteFramePoke(
           pars[0].value % 256, //frame
           pars[1].value % 64,  //offset

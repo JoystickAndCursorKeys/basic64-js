@@ -201,7 +201,7 @@ class BasicContext {
     this.symbolTable["light blue"]  = 154;
     this.symbolTable.grey3  = 155; //light grey
 
-    this.version = "v0.80p4";
+    this.version = "v0.80p5";
     this.kernalNumber = 128; //
     this.poke( 65408 , this.kernalNumber );
 
