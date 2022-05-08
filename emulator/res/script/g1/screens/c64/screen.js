@@ -60,21 +60,6 @@ class C64Screen {
 			this.clearScreenCallback = null;
 			this.scrollCallback = null;
 
-/*			this.WIDTH = 320*2.5;
-			this.HEIGHT = 200*2.5;
-
-			this.FULLWIDTH = this.WIDTH + this.border.w * 2;
-			this.FULLHEIGHT = this.HEIGHT + this.border.h * 2;
-
-			this.rcanvas.width=this.FULLWIDTH ;
-      this.rcanvas.height=this.FULLHEIGHT;
-
-			this.rcanvas.imageSmoothingEnabled= false;
-			this.bufcontext.imageSmoothingEnabled= false;
-
-*/
-
-
 			this._setCharMapping();
 			this._initSpriteArrays();
 
@@ -220,7 +205,7 @@ class C64Screen {
 		 this.context.imageSmoothingEnabled= false;
 		 this.bufcontext.imageSmoothingEnabled= false;
 
-		 this.bcolLast = -1 ; //force border redraw
+		 this.bcolLast = -1 ; //force initial border redraw
 	 }
 
 
@@ -351,6 +336,7 @@ class C64Screen {
 			 sp.addr = 0;
 			 sp.col = 1;
 			 sp.multiCol = false;
+			 sp.behindTxt = false;
 
 		 }
 
@@ -533,6 +519,15 @@ class C64Screen {
 				 var spr = this.sprites;
 				 for( var j=0; j<8; j++) {
 					 spr[ j ].enabled = bits[j];
+					 this.screenRefresh = true;
+
+				 }
+			 }
+			 else if( nr ==  53275)  {
+				 var bits = this._getByteBits( v );
+				 var spr = this.sprites;
+				 for( var j=0; j<8; j++) {
+					 spr[ j ].behindTxt = bits[j];
 					 this.screenRefresh = true;
 
 				 }
@@ -1876,6 +1871,143 @@ class C64Screen {
 
    }
 
+
+	 _renderDirectChrMono2fg( x, y, ch0, col0, bgcol) {
+
+     var fid;
+		 var dataPtr;
+
+		 var fgCol = this.colors[ col0 ];
+
+		 if( this.useHires ) {
+			 fid = this.memory;
+	 		 dataPtr = this.videoBMRam;
+		 }
+		 else {
+			 if( this.useRomCharMem ) {
+				fid = this.fontImageRom;
+				dataPtr = 0;
+			 }
+			 else {
+				fid = this.memory;
+				dataPtr = this.videoRam;
+			 }
+		 }
+
+     var iDta = this.iDta;
+     var pixWidthM4 = this.iwidth * 4;
+
+
+
+     var ch=ch0;
+
+		 //calculate row + column nrs
+     var row = ch >> 4 /* div 16*/;
+     var column = ch % 16;
+
+     var xd0 = x << 2 /* multiply 4, 4 bytes per pixel */;
+     var yd= pixWidthM4 * y;
+
+		 //BASE of source data -> chM8 = font data start offset  + char offset
+     var chM8 = dataPtr + ch*8;
+
+     for( var yC = 0; yC<8; yC++) {
+       var xd = xd0;
+
+       var byte = fid[ chM8 + yC ];
+       var mask = 0b10000000;
+
+       for( var xC = 0; xC<8; xC++) {
+
+         if ( !((byte & mask ) > 0 )) {
+						 mask = mask >> 1;
+         		 xd+=4;
+             continue;
+         }
+
+         var dBase = xd + yd;
+
+         iDta[ dBase + 0 ] = fgCol.r;
+         iDta[ dBase + 1 ] = fgCol.g;
+         iDta[ dBase + 2 ] = fgCol.b;
+         iDta[ dBase + 3 ] = 255;
+
+         xd+=4;
+         mask = mask >> 1;
+       }
+       yd += pixWidthM4;
+     }
+
+   }
+
+
+	 _renderDirectChrMono2bg( x, y, ch0, dummycol0, bgcol0) {
+
+     var fid;
+		 var dataPtr;
+
+		 var bgcol = this.colors[ bgcol0 ];
+
+		 if( this.useHires ) {
+			 fid = this.memory;
+	 		 dataPtr = this.videoBMRam;
+		 }
+		 else {
+			 if( this.useRomCharMem ) {
+				fid = this.fontImageRom;
+				dataPtr = 0;
+			 }
+			 else {
+				fid = this.memory;
+				dataPtr = this.videoRam;
+			 }
+		 }
+
+     var iDta = this.iDta;
+     var pixWidthM4 = this.iwidth * 4;
+
+     var ch=ch0;
+
+		 //calculate row + column nrs
+     var row = ch >> 4 /* div 16*/;
+     var column = ch % 16;
+
+     var xd0 = x << 2 /* multiply 4, 4 bytes per pixel */;
+     var yd= pixWidthM4 * y;
+
+		 //BASE of source data -> chM8 = font data start offset  + char offset
+     var chM8 = dataPtr + ch*8;
+
+     for( var yC = 0; yC<8; yC++) {
+       var xd = xd0;
+
+       var byte = fid[ chM8 + yC ];
+       var mask = 0b10000000;
+
+       for( var xC = 0; xC<8; xC++) {
+
+         if ( ((byte & mask ) > 0 )) {
+						 xd+=4;
+						 mask = mask >> 1;
+             continue;
+         }
+
+         var dBase = xd + yd;
+
+         iDta[ dBase + 0 ] = bgcol.r;
+         iDta[ dBase + 1 ] = bgcol.g;
+         iDta[ dBase + 2 ] = bgcol.b;
+         iDta[ dBase + 3 ] = 255;
+
+         xd+=4;
+         mask = mask >> 1;
+       }
+       yd += pixWidthM4;
+     }
+   }
+
+
+
 	 _renderDirectChrMulti( x, y, ch0, col0) {
 
      var fid = this.fontImageRom;
@@ -1958,10 +2090,23 @@ class C64Screen {
 	 }
 
 
+
 	 renderChar(x, y, c, col0, bgcol) {
 		 var col = col0 % 16;
 
      this._renderDirectChrMono( x, y, c, col, this.bgcol );
+	 }
+
+	 renderCharFG(x, y, c, col0, bgcol) {
+		 var col = col0 % 16;
+
+     this._renderDirectChrMono2fg( x, y, c, col, this.bgcol );
+	 }
+
+	 renderCharBG(x, y, c, col0, bgcol) {
+
+
+     this._renderDirectChrMono2bg( x, y, c, null, this.bgcol );
 	 }
 
 	 renderCharHires(x, y, c, col0, dummy) {
@@ -2005,7 +2150,11 @@ class C64Screen {
 			 this.bcolLast = this.bcol;
 		 }
 
-		 this._renderBuffer();
+		 try {
+		 	this._renderBuffer();
+		 } catch ( e ) {
+  		console.log("exception",e)
+     }
 		 this._updateDisplay();
 	 }
 
@@ -2061,7 +2210,77 @@ class C64Screen {
 		 );
 	 }
 
+
 	 _renderBuffer() {
+
+
+		 for( var i = this.sprites.length -1; i>=0; i-- ) {
+			 var sp = this.sprites[ i ];
+			 if( sp.enabled && sp.behindTxt ) {
+				this._renderBufferHiddenSprites();
+				return;
+			 }
+		 }
+
+		this._renderBufferNoHiddenSprites();
+	 }
+
+	 _renderBufferHiddenSprites() {
+
+		var buf = this.txScBuf;
+		var ctx = this.context;
+		var bufctx = this.bufcontext;
+
+		this._renderBufferBG();
+
+		 for( var i = this.sprites.length -1; i>=0; i-- ) {
+			 var sp = this.sprites[ i ];
+				 if( sp.enabled && sp.behindTxt ) {
+
+					this.renderSprite( i, sp.x, sp.y );
+
+					var dox =0;
+					var doy =0;
+					if( sp.fat )  { dox = 24; }
+					if( sp.long ) { doy = 21; }
+
+					var x0 = ((sp.x - 24 ) >>3 );
+					var x1 = ((sp.x -1 + dox ) >>3 );
+					var y0 = ((sp.y - 21) >>3 );
+					var y1 = ((sp.y -1 + doy ) >>3 );
+
+					if( x0 <0 ) { x0=0; }
+					if( y0 <0 ) { y0=0; }
+
+					for( var y=y0; y<=y1 && y<24; y++) {
+							for( var x=x0; x<=x1 && x<40; x++) {
+								buf[y][x][2] = true;
+								//buf[y][x][1] = Math.floor(Math.random()*2)+5;
+								//buf[y][x][0] = 46;
+							}
+					}
+
+			 }
+		}
+
+
+		this._renderBufferFG();
+
+		 for( var i = this.sprites.length -1; i>=0; i-- ) {
+			 var sp = this.sprites[ i ];
+				 if( sp.enabled && !sp.behindTxt ) {
+
+					this.renderSprite( i, sp.x, sp.y );
+			 }
+		 }
+
+		 ctx.putImageData(this.iImgDta, 0, 0);
+
+		 bufctx.drawImage( this.canvas, 0, 0);
+
+	 }
+
+	 _renderBufferNoHiddenSprites() {
 		 var buf = this.txScBuf;
 		 var ctx = this.context;
 		 var bufctx = this.bufcontext;
@@ -2122,8 +2341,6 @@ class C64Screen {
 				 this.renderChr = this.renderCharMC;
 			 }
 
-
-
 			 if( this.bgcolLast != this.bgcol
 			 			|| this.mcol1Last != this.mcol1
 						|| this.mcol2Last != this.mcol2
@@ -2173,6 +2390,183 @@ class C64Screen {
 
 	 }
 
+
+	 _renderBufferFG() {
+		 var buf = this.txScBuf;
+		 var ctx = this.context;
+		 var bufctx = this.bufcontext;
+
+		 var xo=24, yo=21;
+
+		 if( this.useHires ) {
+
+			 this.renderChr = this.renderCharHires;
+			 if( this.multiColor ) {
+				 this.renderChr = this.renderCharHiresMC;
+			 }
+
+			 if( this.bgcolLast != this.bgcol
+			 			|| this.mcol1Last != this.mcol1
+						|| this.mcol2Last != this.mcol2
+						|| this.multiColorLast != this.multiColor
+						|| this.useHiresLast != this.useHires
+
+					) { //update whole screen
+				 for( var y=0; y<25; y++) {
+				 	for( var x=0; x<40; x++) {
+
+								var chr = (y*40+x);
+								buf[y][x][2] = false;
+							 	this.renderChr(xo+x*8, yo+y*8, chr, buf[y][x][0], buf[y][x][1] );
+
+				 	}
+				 }
+				 this.bgcolLast = this.bgcol;
+				 this.mcol1Last = this.mcol1;
+				 this.mcol2Last = this.mcol2;
+				 this.multiColorLast = this.multiColor;
+				 this.useHiresLast = this.useHires;
+
+			 }
+			 else {  //update only certain chars on screen
+
+				 for( var y=0; y<25; y++) {
+				 	for( var x=0; x<40; x++) {
+
+						var chr = (y*40+x);
+
+						if( buf[y][x][2] ) {
+								buf[y][x][2] = false;
+							 this.renderChr(xo+x*8, yo+y*8, chr, buf[y][x][0], buf[y][x][1] );
+						}
+				 	}
+				 }
+			 }
+		 }
+		 else {
+
+			 this.renderChr = this.renderCharFG;
+			 if( this.multiColor ) {
+				 this.renderChr = this.renderCharMC;
+			 }
+
+			 if( this.bgcolLast != this.bgcol
+			 			|| this.mcol1Last != this.mcol1
+						|| this.mcol2Last != this.mcol2
+						|| this.multiColorLast != this.multiColor
+						|| this.useHiresLast != this.useHires
+						|| this.screenRefresh
+					) {
+
+				 for( var y=0; y<25; y++) {
+				 	for( var x=0; x<40; x++) {
+
+								buf[y][x][2] = false;
+							 	this.renderChr(xo+x*8, yo+y*8, buf[y][x][0], buf[y][x][1] );
+
+				 	}
+				 }
+				 this.bgcolLast = this.bgcol;
+				 this.mcol1Last = this.mcol1;
+				 this.mcol2Last = this.mcol2;
+				 this.multiColorLast = this.multiColor;
+				 this.useHiresLast = this.useHires;
+				 this.screenRefresh = false;
+			 }
+			 else {
+				 for( var y=0; y<25; y++) {
+				 	for( var x=0; x<40; x++) {
+						if( buf[y][x][2] ) {
+								buf[y][x][2] = false;
+							 this.renderChr(xo+x*8, yo+y*8, buf[y][x][0], buf[y][x][1] );
+						}
+				 	}
+				 }
+			 }
+		 }
+	 }
+
+	 renderNull() {}
+
+	 _renderBufferBG() {
+		 var buf = this.txScBuf;
+		 var ctx = this.context;
+		 var bufctx = this.bufcontext;
+
+		 var xo=24, yo=21;
+
+		 if( this.useHires ) {
+
+			 this.renderChr = this.renderNull;
+			 if( this.multiColor ) {
+				 this.renderChr = this.renderNull;
+			 }
+
+			 if( this.bgcolLast != this.bgcol
+			 			|| this.mcol1Last != this.mcol1
+						|| this.mcol2Last != this.mcol2
+						|| this.multiColorLast != this.multiColor
+						|| this.useHiresLast != this.useHires
+
+					) { //update whole screen
+				 for( var y=0; y<25; y++) {
+				 	for( var x=0; x<40; x++) {
+
+								var chr = (y*40+x);
+							 	this.renderChr(xo+x*8, yo+y*8, chr, buf[y][x][0], buf[y][x][1] );
+
+				 	}
+				 }
+
+			 }
+			 else {  //update only certain chars on screen
+
+				 for( var y=0; y<25; y++) {
+				 	for( var x=0; x<40; x++) {
+
+						var chr = (y*40+x);
+
+						if( buf[y][x][2] ) {
+							 this.renderChr(xo+x*8, yo+y*8, chr, buf[y][x][0], buf[y][x][1] );
+						}
+				 	}
+				 }
+			 }
+		 }
+		 else {
+
+			 this.renderChr = this.renderCharBG;
+			 if( this.multiColor ) {
+				 this.renderChr = this.renderNull;
+			 }
+
+			 if( this.bgcolLast != this.bgcol
+			 			|| this.mcol1Last != this.mcol1
+						|| this.mcol2Last != this.mcol2
+						|| this.multiColorLast != this.multiColor
+						|| this.useHiresLast != this.useHires
+						|| this.screenRefresh
+					) {
+
+				 for( var y=0; y<25; y++) {
+				 	for( var x=0; x<40; x++) {
+
+								buf[y][x][2] = false;
+							 	this.renderChr(xo+x*8, yo+y*8, buf[y][x][0], buf[y][x][1] );
+				 	}
+				 }
+			 }
+			 else {
+				 for( var y=0; y<25; y++) {
+				 	for( var x=0; x<40; x++) {
+						if( buf[y][x][2] ) {
+							 this.renderChr(xo+x*8, yo+y*8, buf[y][x][0], buf[y][x][1] );
+						}
+				 	}
+				 }
+			 }
+		 }
+	 }
 
    _prepColor( img, col ) {
 

@@ -548,7 +548,6 @@ class ExtendedCommands {
         this.erh.throwError( "col missing" );
         return;
       }
-      console.log(pars);
 
       this.console.setColor( pars[0].value );
 

@@ -201,6 +201,9 @@ class BasicContext {
     this.symbolTable["light blue"]  = 154;
     this.symbolTable.grey3  = 155; //light grey
 
+    this.version="0.80p5";
+    this.kernalNumber = 128; //
+    this.poke( 65408 , this.kernalNumber );
 
     var backmap = []
     var mapInfo = Object.entries(this.symbolTable);
@@ -535,6 +538,7 @@ class BasicContext {
         else {
           //Can't poke in ROM
           //Since now VIC registers are hidden, and char rom is showed here
+          console.log( "CLASH: Could not poke into ROM",a,b)
         }
 
       }
@@ -712,6 +716,10 @@ class BasicContext {
   }
 
   spriteFramePoke( f, a, v ) {
+
+    if( f<1 ) {
+      throw "@rom clash frame index 0";
+    }
 
     var baddr = f * 64;
     this.poke( baddr + (a%64) , v );
@@ -1217,6 +1225,8 @@ class BasicContext {
 
   reset( hard, muteReady ) {
     this.console.clearScreen();
+    this.poke( 65408 , this.kernalNumber );
+
     this.vpoke(53280,14);
     this.vpoke(53281,6);
     this.vpoke(53269,0);
@@ -1234,7 +1244,7 @@ class BasicContext {
 
     this.printLine("");
     if( hard ) {
-      this.printLine("  **** c64 basic emulator v0.80p4 ****");
+      this.printLine("  **** c64 basic emulator v"+this.version+" ****");
       this.printLine("");
       var ext = "off";
       if(this.extendedcommands.enabled) ext = "on ";
@@ -1262,6 +1272,7 @@ class BasicContext {
 
   showDebug() {
     if( !this.showDebugFlag ) {
+      console.log( "Program Dump:", this.program );
       this.debugChars = [];
       this.debugCharsCol = [];
       this.debugChars2 = [];
@@ -1388,6 +1399,7 @@ class BasicContext {
         }
         this.lineMarkers[ this.yPos ] = 1;
         this.lineMarkers[ this.yPos+1 ] = 2;
+        this.lineClear( this.yPos+1);
       }
     }
     else {
@@ -1409,6 +1421,14 @@ class BasicContext {
 
       c.setChar( x, dst , ch );
       c.setCharCol( x, dst , co );
+    }
+  }
+
+  lineClear( y ) {
+    var c = this.console;
+    for( var x=0; x<40; x++) {
+      c.setChar( x, y , 32 );
+      c.setCharCol( x, y , c.getColor() );
     }
   }
 
@@ -2601,6 +2621,7 @@ class BasicContext {
 
   runPGM() {
 
+    console.log("runPGM");
     this.executeLineFlag = false;
 
     if( this.startAsGoto ) {
