@@ -25,7 +25,7 @@ class BasicContext {
     this.turboMode = false;
     this.renumMode = "rem";
     this.cmdCountPerCycleDefault = 5;
-    this.cmdCountPerCycleTurbo = 1000;
+    this.cmdCountPerCycleTurbo = 50000;
     this.cmdCountPerCycle = this.cmdCountPerCycleDefault ;
 
     var ctx = this.context;
@@ -3107,6 +3107,7 @@ class BasicContext {
       //cnt++;
       i++;
       cnt++;
+      break;
     }
 
     if( i== cmds.length ) {

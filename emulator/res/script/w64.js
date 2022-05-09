@@ -730,7 +730,7 @@ class Program {
   }
 
   playRun() {
-
+/*
     var basiccontext = this.basiccontext;
 
     basiccontext.cycle();
@@ -738,7 +738,9 @@ class Program {
     if( this.basiccontext.getPlayExampleFlag() ) {
       return "loadExample";
     }
+*/
     return false;
+
   }
 
 
@@ -760,6 +762,16 @@ class Program {
         console.log("Border update:  " + col);
       }
       this.console.renderDisplay();
+      {
+        var basiccontext = this.basiccontext;
+
+        basiccontext.cycle();
+
+        if( this.basiccontext.getPlayExampleFlag() ) {
+          return "loadExample";
+        }
+      }
+
     }
     catch ( e ) {
       this.renderError = true;
