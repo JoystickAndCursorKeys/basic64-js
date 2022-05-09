@@ -16,6 +16,7 @@ class BasicContext {
     this.inputFlag = false;
     this.listFlag = false;
     this.immersiveFlag = false;
+    this.enhancedListingFlag = false;
     this.gosubReturn = [];
     this.nullTime = new Date().getTime();
     this.cursorCountMaxNormal = 15;
@@ -153,6 +154,17 @@ class BasicContext {
       }
     }
 
+    this.enhancedListingFlag = false;
+    var listingMode = localStorage.getItem( "BJ64_ListingMode" );
+    if( listingMode != null ) {
+      listingMode = JSON.parse( listingMode );
+      listingMode = listingMode.listing;
+
+      if( listingMode == "enhanced" ) {
+        this.enhancedListingFlag = true;
+      }
+    }
+
     this.code2colMap = [];
     var km = this.code2colMap;
 
@@ -244,6 +256,11 @@ class BasicContext {
   setImmersiveFlag( v ) {
     this.immersiveFlag = v;
   }
+
+  setListModeEnhanced( v ) {
+    this.enhancedListingFlag = v;
+  }
+
 
   enterListMode( list ) {
     this.listFlag = true;
@@ -343,9 +360,54 @@ class BasicContext {
     return false;
   }
 
+
+
+  toggleMenu() {
+    if(!this.menuFocus) {
+      this.listStop();
+      this.updateEditMode();
+      this.menu.start();
+    }
+    else  {
+      this.menu.stop();
+      this.updateEditMode();
+    }
+    this.menuFocus = !this.menuFocus;
+  }
+
+
+  gotoListModeEnhanced() {
+      //this.toggleMenu();
+      if(!this.menuFocus) {
+
+      this.listStop();
+      this.updateEditMode();
+
+      //this.menu.start2();
+      this.menu.startBasicList();
+      this.menuFocus = true;
+
+/*
+      this.menuFocus = true;
+      this.listStop();
+      this.updateEditMode();
+      this.menu.start();
+      this.menu.saveState();
+      this.menu.gotoBasicList();
+*/
+    }
+
+
+  }
+
+  getListModeEnhanced() {
+    return this.enhancedListingFlag;
+  }
+
   getImmersiveFlag() {
     return this.immersiveFlag;
   }
+
 
   getProgramState() {
     return {
@@ -426,18 +488,6 @@ class BasicContext {
     }
   }
 
-  toggleMenu() {
-    if(!this.menuFocus) {
-      this.listStop();
-      this.updateEditMode();
-      this.menu.start();
-    }
-    else  {
-      this.menu.stop();
-      this.updateEditMode();
-    }
-    this.menuFocus = !this.menuFocus;
-  }
 
   endMenu() {
 
@@ -2193,7 +2243,6 @@ class BasicContext {
     this.runPointer2 = oldPointers[ 1 ];
     this.runPointer = oldPointers[ 0 ];
 
-    //this.goto( oldLine );
   }
 
   gosub( line, runPointer2 ) {
@@ -3623,7 +3672,7 @@ class BasicContext {
         this.runFlag = false;
       }
 
-      if( ! this.runFlag && ! this.listFlag) {
+      if( ! this.runFlag && ! this.listFlag && !this.menuFocus) {
         this.printLine("ready.");
       }
 
