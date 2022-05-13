@@ -19,9 +19,6 @@ class BasicCommands {
 
   getStatements() {
 
-    //if( this.statementList != null ) {
-    //  return this.statementList;
-    //}
 
     var stats = Object.getOwnPropertyNames( BasicCommands.prototype );
 
@@ -33,7 +30,6 @@ class BasicCommands {
       }
     }
 
-    //this.statementList = stats2;
     return stats2;
   }
 
@@ -65,6 +61,16 @@ class BasicCommands {
     var parts = [];
 
     var mode = "noparam";
+
+    if( pars.length==0 ) {
+      if( this.context.getListModeEnhanced() ) {
+
+        if( this.context.program.length > 20 && ! this.context.isRunning() ) {
+          this.context.gotoListModeEnhanced();
+          return;
+        }
+      }
+    }
 
     if( pars.length==1 ) {
       parts = pars[0].parts;
@@ -213,17 +219,34 @@ class BasicCommands {
       context.printLine("searching for " + pars[0].value);
     }
 
-    if( pars.length == 0) {
-        result = context.load( false );
+    try {
+      if( pars.length == 0) {
+          result = context.load( false );
+        }
+        else {
+          result = context.load( pars[0].value );
+        }
     }
-    else {
-      result = context.load( pars[0].value );
-    }
+    catch( e ) {
+      if( e.clazz ) {
+        if( e.clazz == "syntax" ) {
 
+          if( pars.length == 0) {
+            context.printLine("found default");
+          }
+          else {
+            context.printLine("found "+pars[0].value);
+          }
+
+          context.printLine("?syntax error in " + e.lineNr );
+          return;
+        }
+      }
+    }
 
 
     if( !result ) {
-      context.printLine("?not found error");
+      context.printLine("?file not found error");
     }
     else  {
 
@@ -286,7 +309,6 @@ class BasicCommands {
   }
 
   _stat_print( pars ) {
-
 
     var context = this.context;
     if( pars.length == 0 ) {

@@ -187,6 +187,7 @@ class Parser {
     splits.push( { p1: "S", p2: "TO", p3: "P", whole: "STOP" } );
 
     //extended
+    splits.push( { p1: "PEN", p2: "POS", p3: null, whole: "PENPOS" } );
     splits.push( { p1: "B", p2: "OR", p3: "DER", whole: "BORDER" } );
     splits.push( { p1: "G", p2: "COLOR", p3: "S", whole: "GCOLORS" } );
     splits.push( { p1: "CHAR", p2: "COL", p3: null, whole: "CHARCOL" } );
@@ -667,7 +668,7 @@ class Parser {
             }
 						else { /* we have an variable*/
 
-							part = { type: "var", data: token.data, op: op };
+							part = { type: "var", data: this.normalizeVarName( token.data), op: op };
               if( op == null && negate ) {
                 var subExpression = {
                       parts: [part],
@@ -793,13 +794,28 @@ class Parser {
     return x;
   }
 
+
+  normalizeVarName( x ) {
+    if( x.endsWith("$") || x.endsWith( "%") ) {
+      var suffix = "$";
+      if( x.endsWith("%") ) {
+         suffix = "%";
+      }
+      var nameBody = x.substring(0,x.length-1);
+      return nameBody.substr(0,2) + suffix;
+    }
+
+    return x.substr(0,2);
+  }
+
+
   parseAssignment( context, preTokens, commands, command, nameToken, token0  ) {
 
     var token = token0;
 		var tokens = context.tokens;
 
     command.type = "assignment";
-    command.var = nameToken;
+    command.var = this.normalizeVarName( nameToken );
     command.arrayAssignment = false;
 
     var endTokens = [];
@@ -815,10 +831,9 @@ class Parser {
 		var tokens = context.tokens;
 
     command.type = "assignment";
-    command.var = nameToken;
+    command.var = this.normalizeVarName( nameToken );
     command.arrayAssignment = true;
 
-    //token = tokens.shift();
     var indices = this.parseFunParList( context );
     command.indices = indices;
 
@@ -889,23 +904,6 @@ class Parser {
           this.throwError( context, "let, unexpected token " + token.type );
         }
 
-/*parseAssignment( context, preTokens, commands, command, nameToken, token0  ) {
-parseArrayAssignment( context, preTokens, commands, command, nameToken, token0  ) {
-
-
-        if( token.type != "eq") {
-          this.throwError( context, "LET expects =");
-        }
-
-        var cmdType = "assignment";
-        command.type = cmdType;
-        command.var = nameToken;
-
-        var endTokens = [];
-        endTokens.push( { type: "cmdsep", data: "@@@all" });
-
-        command.expression = this.parseBoolExpression( context, endTokens );
-        commands.push( command );*/
       }
       else if( controlToken == "DIM") {
 
@@ -954,7 +952,7 @@ parseArrayAssignment( context, preTokens, commands, command, nameToken, token0  
           }
 
           command.params.push( indices );
-          command.arrayNames.push( nameToken );
+          command.arrayNames.push( this.normalizeVarName( nameToken ) );
 
           first = false;
         }
@@ -983,7 +981,7 @@ parseArrayAssignment( context, preTokens, commands, command, nameToken, token0  
         if(! ( token.type == "name"  )) {
           this.throwError( context, "DEF FN expects function name and ( ->varname )");
         }
-        var varName = token.data;
+        var varName = this.normalizeVarName( token.data );
 
         token = tokens.shift();
         if(! ( token.type == "bracket" && token.data == ")" )) {
@@ -1467,7 +1465,7 @@ parseArrayAssignment( context, preTokens, commands, command, nameToken, token0  
 			}
       else {
           if( !keyword ) {
-            this.throwError( context, "statement without keyword");
+            this.throwError( context, "unknown statement");
           }
           this.parseStatementCall( context, preTokens, commands, command, nameToken, token );
 
