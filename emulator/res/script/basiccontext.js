@@ -16,7 +16,6 @@ class BasicContext {
     this.inputFlag = false;
     this.listFlag = false;
     this.immersiveFlag = false;
-    this.enhancedListingFlag = false;
     this.gosubReturn = [];
     this.nullTime = new Date().getTime();
     this.cursorCountMaxNormal = 15;
@@ -154,17 +153,6 @@ class BasicContext {
       }
     }
 
-    this.enhancedListingFlag = false;
-    var listingMode = localStorage.getItem( "BJ64_ListingMode" );
-    if( listingMode != null ) {
-      listingMode = JSON.parse( listingMode );
-      listingMode = listingMode.listing;
-
-      if( listingMode == "enhanced" ) {
-        this.enhancedListingFlag = true;
-      }
-    }
-
     this.code2colMap = [];
     var km = this.code2colMap;
 
@@ -213,9 +201,6 @@ class BasicContext {
     this.symbolTable["light blue"]  = 154;
     this.symbolTable.grey3  = 155; //light grey
 
-    this.version = "v0.80p5";
-    this.kernalNumber = 128; //
-    this.poke( 65408 , this.kernalNumber );
 
     var backmap = []
     var mapInfo = Object.entries(this.symbolTable);
@@ -223,6 +208,20 @@ class BasicContext {
       backmap[ mapInfo[i][1]] = mapInfo[i][0];
     }
     this.symbolTableBM = backmap;
+
+
+    /*for( var ii=0; ii<256; ii++) {
+
+      var bits = this._getByteBits( ii );
+      var byte2 = this._setByteBits( bits );
+      var bits2 = this._getByteBits( byte2 );
+
+      console.log( "byte: ", ii );
+      console.log( "bits: ", bits );
+      console.log( "byte2: ", byte2 );
+      console.log( "bits2: ", bits2 );
+
+    }*/
 
   }
 
@@ -256,11 +255,6 @@ class BasicContext {
   setImmersiveFlag( v ) {
     this.immersiveFlag = v;
   }
-
-  setListModeEnhanced( v ) {
-    this.enhancedListingFlag = v;
-  }
-
 
   enterListMode( list ) {
     this.listFlag = true;
@@ -360,54 +354,9 @@ class BasicContext {
     return false;
   }
 
-
-
-  toggleMenu() {
-    if(!this.menuFocus) {
-      this.listStop();
-      this.updateEditMode();
-      this.menu.start();
-    }
-    else  {
-      this.menu.stop();
-      this.updateEditMode();
-    }
-    this.menuFocus = !this.menuFocus;
-  }
-
-
-  gotoListModeEnhanced() {
-      //this.toggleMenu();
-      if(!this.menuFocus) {
-
-      this.listStop();
-      this.updateEditMode();
-
-      //this.menu.start2();
-      this.menu.startBasicList();
-      this.menuFocus = true;
-
-/*
-      this.menuFocus = true;
-      this.listStop();
-      this.updateEditMode();
-      this.menu.start();
-      this.menu.saveState();
-      this.menu.gotoBasicList();
-*/
-    }
-
-
-  }
-
-  getListModeEnhanced() {
-    return this.enhancedListingFlag;
-  }
-
   getImmersiveFlag() {
     return this.immersiveFlag;
   }
-
 
   getProgramState() {
     return {
@@ -488,6 +437,18 @@ class BasicContext {
     }
   }
 
+  toggleMenu() {
+    if(!this.menuFocus) {
+      this.listStop();
+      this.updateEditMode();
+      this.menu.start();
+    }
+    else  {
+      this.menu.stop();
+      this.updateEditMode();
+    }
+    this.menuFocus = !this.menuFocus;
+  }
 
   endMenu() {
 
@@ -1256,7 +1217,6 @@ class BasicContext {
 
   reset( hard, muteReady ) {
     this.console.clearScreen();
-    this.poke( 65408 , this.kernalNumber );
     this.vpoke(53280,14);
     this.vpoke(53281,6);
     this.vpoke(53269,0);
@@ -1274,7 +1234,7 @@ class BasicContext {
 
     this.printLine("");
     if( hard ) {
-      this.printLine("  **** c64 basic emulator "+this.version+" ****");
+      this.printLine("  **** c64 basic emulator v0.80p4 ****");
       this.printLine("");
       var ext = "off";
       if(this.extendedcommands.enabled) ext = "on ";
@@ -1425,7 +1385,6 @@ class BasicContext {
         for( var y=23; y>this.yPos; y-- ) {
           this.lineMarkers[ y+1 ] = this.lineMarkers[ y ];
           this.lineCopy( y, y+1 );
-          this.clearLine( y );
         }
         this.lineMarkers[ this.yPos ] = 1;
         this.lineMarkers[ this.yPos+1 ] = 2;
@@ -1438,14 +1397,6 @@ class BasicContext {
       }
       this.lineMarkers[ 23 ] = 1;
       this.lineMarkers[ 24 ] = 2;
-    }
-  }
-
-  clearLine( y ) {
-    var c = this.console;
-    for( var x=0; x<40; x++) {
-      c.setChar( x, y , 32 );
-      c.setCharCol( x, y , c.getColor() );
     }
   }
 
@@ -2243,6 +2194,7 @@ class BasicContext {
     this.runPointer2 = oldPointers[ 1 ];
     this.runPointer = oldPointers[ 0 ];
 
+    //this.goto( oldLine );
   }
 
   gosub( line, runPointer2 ) {
@@ -3672,7 +3624,7 @@ class BasicContext {
         this.runFlag = false;
       }
 
-      if( ! this.runFlag && ! this.listFlag && !this.menuFocus) {
+      if( ! this.runFlag && ! this.listFlag) {
         this.printLine("ready.");
       }
 

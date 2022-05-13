@@ -16,7 +16,10 @@ class ExtendedCommands {
 
     this.erh = new ErrorHandler();
 
+  }
 
+  isEnabled( ) {
+    return this.enabled;
   }
 
   _intGetColorRecord() {
@@ -1075,6 +1078,10 @@ class ExtendedCommands {
       if( pars.length > 3 ) {
         this.erh.throwError( "too many parameters");
         return;
+      }
+
+      if( (pars[0].value % 256) <1 ) {
+        throw "@invalid spriteframe zero";
       }
 
       this.context.spriteFramePoke(

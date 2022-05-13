@@ -19,6 +19,9 @@ class BasicCommands {
 
   getStatements() {
 
+    //if( this.statementList != null ) {
+    //  return this.statementList;
+    //}
 
     var stats = Object.getOwnPropertyNames( BasicCommands.prototype );
 
@@ -30,6 +33,7 @@ class BasicCommands {
       }
     }
 
+    //this.statementList = stats2;
     return stats2;
   }
 
@@ -61,16 +65,6 @@ class BasicCommands {
     var parts = [];
 
     var mode = "noparam";
-
-    if( pars.length==0 ) {
-      if( this.context.getListModeEnhanced() ) {
-
-        if( this.context.program.length > 20 ) {
-          this.context.gotoListModeEnhanced();
-          return;
-        }
-      }
-    }
 
     if( pars.length==1 ) {
       parts = pars[0].parts;

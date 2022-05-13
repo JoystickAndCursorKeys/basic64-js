@@ -42,6 +42,10 @@ class Program {
     k2c["CTRL_:9"] = '\x92';
     k2c["CTRL_:0"] = '\xd2';
     k2c[":Home"]  = '\x93';
+    k2c[":ArrowUp"]  = '\xd1';
+    k2c[":ArrowDown"]  = '\x91'; //145
+    k2c[":ArrowLeft"]  = '\xdd'; //221
+    k2c[":ArrowRight"]  = '\x9d';//157
     k2c["SHFT_:Home"]  = '\xd3';
 
     //Columns 3 in https://www.c64-wiki.com/wiki/PETSCII_Codes_in_Listings
@@ -56,7 +60,6 @@ class Program {
     k2c["ALT_:7"] = '\x9a';
     k2c["ALT_:8"] = '\x9b';
 
-
     k2c["CTRL_:1"] = '\x90'; //1
     k2c["CTRL_:2"] = '\x05'; //2
     k2c["CTRL_:3"] = '\x1c'; //3
@@ -66,6 +69,10 @@ class Program {
     k2c["CTRL_:7"] = '\x1f'; //7
     k2c["CTRL_:8"] = '\x9e'; //8
     k2c["CTRL_:9"] = '\x12'; //9
+    k2c[":ArrowUp"]  = '\x91';
+    k2c[":ArrowDown"]  = '\x11';
+    k2c[":ArrowLeft"]  = '\x9d';//157
+    k2c[":ArrowRight"]  = '\x1d';//29
     k2c["CTRL_:0"] = '\x92'; //9
     k2c[":Home"]  = '\x13';
     k2c["SHFT_:Home"]  = '\x93';
@@ -146,12 +153,29 @@ class Program {
 
         this.basiccontext.printLine("loading");
 
+        var extendedFlag = this.basiccontext.getEnabledExtended();
+
         try {
 
           console.log(pgm);
           var regExp=/\r\n|\n\r|\n|\r/g;
           var lines = pgm.replace(regExp,"\n").split("\n");
-          var bas = this.basiccontext.textLinesToBas( lines );
+          var bas;
+
+          try {
+            bas = this.basiccontext.textLinesToBas( lines );
+          }
+          catch ( e ) {
+            if( ! extendedFlag )  {
+
+                this.basiccontext.enableExtended( true );
+                bas = this.basiccontext.textLinesToBas( lines );
+
+            }
+            else {
+              throw e;
+            }
+          }
 
           this.basiccontext.printReady();
           this.basiccontext.printLine("run");
@@ -165,8 +189,11 @@ class Program {
         }
         catch ( e ) {
           this.basiccontext.runStop();
-          this.basiccontext.printError("load");
+          this.basiccontext.printError("load", false, e.lineNr);
           this.basiccontext.printReady();
+          if( !extendedFlag ) {
+            this.basiccontext.enableExtended( false );
+          }
         }
       }
       else if( examples != null ) {
@@ -237,7 +264,7 @@ class Program {
         }
         catch ( e ) {
           this.basiccontext.runStop();
-          this.basiccontext.printError("load");
+          this.basiccontext.printError("load", false, e.lineNr);
           this.basiccontext.printReady();
         }
       }
@@ -279,6 +306,7 @@ class Program {
           this.basiccontext.printLine("searching for *");
           this.basiccontext.printLine("loading");
 
+          var extendedFlag = this.basiccontext.getEnabledExtended();
           try {
             pgm = atob( pgm );
 
@@ -288,7 +316,22 @@ class Program {
             console.log(pgm);
             var regExp=/\r\n|\n\r|\n|\r/g;
             var lines = pgm.replace(regExp,"\n").split("\n");
-            var bas = this.basiccontext.textLinesToBas( lines );
+            var bas;
+
+            try {
+              bas = this.basiccontext.textLinesToBas( lines );
+            }
+            catch ( e ) {
+              if( ! extendedFlag )  {
+
+                  this.basiccontext.enableExtended( true );
+                  bas = this.basiccontext.textLinesToBas( lines );
+              }
+              else {
+                throw e;
+              }
+            }
+
             this.basiccontext.setProgram( bas );
 
             this.basiccontext.clearScreen();
@@ -298,8 +341,11 @@ class Program {
           }
           catch ( e ) {
             this.basiccontext.runStop();
-            this.basiccontext.printError("load");
+            this.basiccontext.printError("load", false, e.lineNr );
             this.basiccontext.printReady();
+            if( !extendedFlag ) {
+              this.basiccontext.enableExtended( false );
+            }
           }
         }
     }
@@ -536,8 +582,6 @@ class Program {
         this.basiccontext.runStop();
     }
 
-
-    //this.resetKeyModifiers();
     return;
   }
 
@@ -565,8 +609,10 @@ class Program {
 
       if( evt.key == "Enter") {
 
+
           c.clearCursor();
           var line=ctx.getCurrentLine();
+
 
           this.stringMode = false;
           stringMode = false;
@@ -609,7 +655,7 @@ class Program {
 
         evt.preventDefault();
       }
-      else if( evt.key == "ArrowLeft") {
+      /*else if( evt.key == "ArrowLeft") {
 
           c.clearCursor();
           c.cursorLeft();
@@ -624,7 +670,8 @@ class Program {
       }
       else if( evt.key == "ArrowUp"  && !evt.ctrlKey) {
           c.clearCursor();
-          c.cursorUp();
+          ctx.passChars( '\x91', false   );
+          //c.cursorUp();
           ctx.updateYPos();
           evt.preventDefault();
       }
@@ -644,7 +691,7 @@ class Program {
           }
 
           evt.preventDefault();
-      }
+      }*/
       else if( evt.key == "ArrowUp"  && evt.ctrlKey) {
         ctx.passChars( '\x5e', false   ); //https://sta.c64.org/cbm64pet.html
         evt.preventDefault();

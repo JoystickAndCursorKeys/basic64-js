@@ -8,7 +8,7 @@ class C64Screen {
 		  var __this = this;
 
 			this.debugFlag = false;
-			this._setColors();
+			this.setColors( 0.9 );
 
 		  var font = new Image();
 		  this.characterSetImage = font;
@@ -60,21 +60,6 @@ class C64Screen {
 			this.clearScreenCallback = null;
 			this.scrollCallback = null;
 
-/*			this.WIDTH = 320*2.5;
-			this.HEIGHT = 200*2.5;
-
-			this.FULLWIDTH = this.WIDTH + this.border.w * 2;
-			this.FULLHEIGHT = this.HEIGHT + this.border.h * 2;
-
-			this.rcanvas.width=this.FULLWIDTH ;
-      this.rcanvas.height=this.FULLHEIGHT;
-
-			this.rcanvas.imageSmoothingEnabled= false;
-			this.bufcontext.imageSmoothingEnabled= false;
-
-*/
-
-
 			this._setCharMapping();
 			this._initSpriteArrays();
 
@@ -114,7 +99,6 @@ class C64Screen {
 			this.useRomCharMem = true;
 			this.visibleRomCharMem = false;
 
-			//"randomize" memory, simulate look and feel when poking in basic
 			for( var i=0; i<256*256; i++) {
 				this.memory[ i ] = 0;
 				if( Math.random() >.9 ) {
@@ -452,8 +436,12 @@ class C64Screen {
 		 if( this.debugFlag ) { console.log( backmap ); }
 	 }
 
-	 _setColors() {
+	 setColors( saturation ) {
 		 this.colors = [];
+
+		 /*enforce a full refresh*/
+		 this.bgcolLast = -1;
+		 this.bcolLast = -1;
 
 		 this.colors[ 0 ] = { r:1, g:1, b:1 };
 		 this.colors[ 1 ] = { r:255, g:255, b:255 };
@@ -471,6 +459,23 @@ class C64Screen {
 		 this.colors[ 13 ] = { r:170, g:255, b:102 };
 		 this.colors[ 14 ] = { r:0, g:136, b:255 };
 		 this.colors[ 15 ] = { r:187, g:187, b:187 };
+
+		 for( var i=0; i< this.colors.length; i++) {
+				this.colors[ i ] =
+						this.saturizeColor( this.colors[ i ], saturation );
+		 }
+
+	 }
+
+
+	 saturizeColor( c, sat ) {
+		 var avg = (c.r+c.g+c.b) / 3;
+		 var r,g,b;
+		 r = (c.r * sat) + ( avg * (1 - sat));
+		 g = (c.g * sat) + ( avg * (1 - sat));
+		 b = (c.b * sat) + ( avg * (1 - sat));
+		 var c2 = { r: r, g:g, b:b }
+		 return c2;
 	 }
 
 	 _getByteBits( byte ) {
@@ -2082,6 +2087,7 @@ class C64Screen {
 						|| this.mcol2Last != this.mcol2
 						|| this.multiColorLast != this.multiColor
 						|| this.useHiresLast != this.useHires
+						|| this.screenRefresh
 
 					) { //update whole screen
 				 for( var y=0; y<25; y++) {
@@ -2121,8 +2127,6 @@ class C64Screen {
 			 if( this.multiColor ) {
 				 this.renderChr = this.renderCharMC;
 			 }
-
-
 
 			 if( this.bgcolLast != this.bgcol
 			 			|| this.mcol1Last != this.mcol1

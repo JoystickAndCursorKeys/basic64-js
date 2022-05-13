@@ -2,6 +2,8 @@ class BasicContext {
 
   constructor( _console ) {
 
+    this.debugSkipCommandBug = false;
+
     this.debugFlag = false;
     this.console = _console;
     this.menu = new Menu( _console, this  );
@@ -16,6 +18,7 @@ class BasicContext {
     this.inputFlag = false;
     this.listFlag = false;
     this.immersiveFlag = false;
+    this.enhancedListingFlag = false;
     this.gosubReturn = [];
     this.nullTime = new Date().getTime();
     this.cursorCountMaxNormal = 15;
@@ -141,6 +144,15 @@ class BasicContext {
     }
 
 
+    var sat = localStorage.getItem( "BJ64_Saturation" );
+    if( sat != null ) {
+      sat = JSON.parse( sat );
+      sat = sat.saturation;
+
+      this.setSaturation( sat );
+    }
+
+
     this.immersiveFlag = false;
     var immersiveMode = localStorage.getItem( "BJ64_ImmersiveMode" );
     if( immersiveMode != null ) {
@@ -150,6 +162,17 @@ class BasicContext {
       if( immersiveMode == "immersive" ) {
         this.immersiveFlag = true;
         this.setBorderChangedFlag();
+      }
+    }
+
+    this.enhancedListingFlag = false;
+    var listingMode = localStorage.getItem( "BJ64_ListingMode" );
+    if( listingMode != null ) {
+      listingMode = JSON.parse( listingMode );
+      listingMode = listingMode.listing;
+
+      if( listingMode == "enhanced" ) {
+        this.enhancedListingFlag = true;
       }
     }
 
@@ -201,6 +224,9 @@ class BasicContext {
     this.symbolTable["light blue"]  = 154;
     this.symbolTable.grey3  = 155; //light grey
 
+    this.version = "v0.80p5";
+    this.kernalNumber = 128; //
+    this.poke( 65408 , this.kernalNumber );
 
     var backmap = []
     var mapInfo = Object.entries(this.symbolTable);
@@ -209,20 +235,11 @@ class BasicContext {
     }
     this.symbolTableBM = backmap;
 
+  }
 
-    /*for( var ii=0; ii<256; ii++) {
 
-      var bits = this._getByteBits( ii );
-      var byte2 = this._setByteBits( bits );
-      var bits2 = this._getByteBits( byte2 );
-
-      console.log( "byte: ", ii );
-      console.log( "bits: ", bits );
-      console.log( "byte2: ", byte2 );
-      console.log( "bits2: ", bits2 );
-
-    }*/
-
+  setSaturation( x ) {
+    this.console.setColors( x );
   }
 
   toggleSideBorders() {
@@ -254,7 +271,13 @@ class BasicContext {
 
   setImmersiveFlag( v ) {
     this.immersiveFlag = v;
+    this.setBorderChangedFlag();
   }
+
+  setListModeEnhanced( v ) {
+    this.enhancedListingFlag = v;
+  }
+
 
   enterListMode( list ) {
     this.listFlag = true;
@@ -354,9 +377,54 @@ class BasicContext {
     return false;
   }
 
+
+
+  toggleMenu() {
+    if(!this.menuFocus) {
+      this.listStop();
+      this.updateEditMode();
+      this.menu.start();
+    }
+    else  {
+      this.menu.stop();
+      this.updateEditMode();
+    }
+    this.menuFocus = !this.menuFocus;
+  }
+
+
+  gotoListModeEnhanced() {
+      //this.toggleMenu();
+      if(!this.menuFocus) {
+
+      this.listStop();
+      this.updateEditMode();
+
+      //this.menu.start2();
+      this.menu.startBasicList();
+      this.menuFocus = true;
+
+/*
+      this.menuFocus = true;
+      this.listStop();
+      this.updateEditMode();
+      this.menu.start();
+      this.menu.saveState();
+      this.menu.gotoBasicList();
+*/
+    }
+
+
+  }
+
+  getListModeEnhanced() {
+    return this.enhancedListingFlag;
+  }
+
   getImmersiveFlag() {
     return this.immersiveFlag;
   }
+
 
   getProgramState() {
     return {
@@ -437,18 +505,6 @@ class BasicContext {
     }
   }
 
-  toggleMenu() {
-    if(!this.menuFocus) {
-      this.listStop();
-      this.updateEditMode();
-      this.menu.start();
-    }
-    else  {
-      this.menu.stop();
-      this.updateEditMode();
-    }
-    this.menuFocus = !this.menuFocus;
-  }
 
   endMenu() {
 
@@ -1120,6 +1176,10 @@ class BasicContext {
           if(xy[1]<24) {
             this.console.setCursorY( xy[1] + 1);
           }
+          else {
+            this.console.scrollUp();
+            this.console.setCursorY( 24 );
+          }
         }
         else if( c==145 ) {
           var xy = this.console.getCursorPos();
@@ -1217,6 +1277,7 @@ class BasicContext {
 
   reset( hard, muteReady ) {
     this.console.clearScreen();
+    this.poke( 65408 , this.kernalNumber );
     this.vpoke(53280,14);
     this.vpoke(53281,6);
     this.vpoke(53269,0);
@@ -1234,7 +1295,7 @@ class BasicContext {
 
     this.printLine("");
     if( hard ) {
-      this.printLine("  **** c64 basic emulator v0.80p4 ****");
+      this.printLine("  **** c64 basic emulator "+this.version+" ****");
       this.printLine("");
       var ext = "off";
       if(this.extendedcommands.enabled) ext = "on ";
@@ -1357,9 +1418,10 @@ class BasicContext {
   }
 
   passEnter() {
-    //this.console.setCallbacks( this.consoleCallBacks );
+
     this.hideDebug();
     this.updateYPos();
+
     if ( this.lineMarkers[ this.yPos ] == 0 || this.lineMarkers[ this.yPos ] == 2 ) {
       this.printLine("");
     }
@@ -1368,10 +1430,10 @@ class BasicContext {
       this.printLine("");
     }
 
-
     this.updateYPos();
-    //this.console.clearCallbacks();
+
   }
+
   passDeleteChar() {
     this.hideDebug();
     this.console.deleteChar(); this.updateYPos(); }
@@ -1385,6 +1447,7 @@ class BasicContext {
         for( var y=23; y>this.yPos; y-- ) {
           this.lineMarkers[ y+1 ] = this.lineMarkers[ y ];
           this.lineCopy( y, y+1 );
+          this.clearLine( y );
         }
         this.lineMarkers[ this.yPos ] = 1;
         this.lineMarkers[ this.yPos+1 ] = 2;
@@ -1397,6 +1460,14 @@ class BasicContext {
       }
       this.lineMarkers[ 23 ] = 1;
       this.lineMarkers[ 24 ] = 2;
+    }
+  }
+
+  clearLine( y ) {
+    var c = this.console;
+    for( var x=0; x<40; x++) {
+      c.setChar( x, y , 32 );
+      c.setCharCol( x, y , c.getColor() );
     }
   }
 
@@ -1451,7 +1522,15 @@ class BasicContext {
 
    }
 
+  getEditModeCallBacks() {
+    var old = this.editModeCallBacks;
+    return old;
+  }
+
   setEditModeCallBacks( type ) {
+
+    this.editModeCallBacks = type;
+
     if( type == "edit" )  {
       this.console.setCallbacks( this.consoleCallBacksAll );
 
@@ -2194,7 +2273,6 @@ class BasicContext {
     this.runPointer2 = oldPointers[ 1 ];
     this.runPointer = oldPointers[ 0 ];
 
-    //this.goto( oldLine );
   }
 
   gosub( line, runPointer2 ) {
@@ -2373,6 +2451,8 @@ class BasicContext {
         }
       }
     }
+
+    var foundRem = false;
     tokens[0].data = nr;
     var newString;
 
@@ -2381,6 +2461,14 @@ class BasicContext {
       newString = nr + " " ;
     }
     for( var i = 1 ; i< tokens.length; i++) {
+
+       if( tokens[i].type == "name" && tokens[i].data == "REM" ) {
+         for( ; i< tokens.length; i++) {
+            newString += tokens[i].data;
+         }
+        break;
+       }
+
       if( removePadding ) {
          if( tokens[i].type == "pad" ) {
            continue;
@@ -2533,7 +2621,6 @@ class BasicContext {
 
     }
 
-    //newLineNr = start;
     for( var i=0; i<p.length; i++) {
         newLineNr = lineNumbers[ i ]
         var line = p[ i ];
@@ -2543,7 +2630,6 @@ class BasicContext {
         line[1] = lRec.commands;
         line[2] = lRec.raw.trim();
 
-        //newLineNr += gap;
     }
   }
 
@@ -2778,7 +2864,7 @@ class BasicContext {
     return "????";
   }
 
-  runCommands( cmds, limit ) {
+  runCommands( cmds, limit0 ) {
     /* return values
       false -> error or end program
       true  -> executed ok
@@ -2790,6 +2876,7 @@ class BasicContext {
       goto_gosub
     */
 
+    var debug = this.debugSkipCommandBug;
     var commands = this.commands;
     var ecommands = this.extendedcommands;
     var EXPR = 0, PAR = 1;
@@ -2805,18 +2892,21 @@ class BasicContext {
     var end = cmds.length;
     var i=this.runPointer2;
     var cnt=0;
+    var limit;
 
     if(!(limit == undefined )) {
-      //nothing
+      limit = limit0;
     }
     else {
       limit = 9999; //reaching to infinite (max on line maybe  40)
     }
 
-
-
     while( i<end && cnt<limit ) {
 
+
+      if( debug ) {
+        console.log( i, end, cnt, limit );
+      }
 
       if( this.breakCycleFlag ) {
         if(!(limit == undefined )) {
@@ -2829,9 +2919,9 @@ class BasicContext {
 
       var l=this.program[this.runPointer];
 
-      //if( this.runPointer > -1 ) {
-      //  console.log( l[0] + "(" + this.runPointer + ":" + i +")" + this.commandToString( cmd ) );
-      //}
+      if( this.runPointer > -1 && debug ) {
+        console.log( l[0] + "(" + this.runPointer + ":" + i +")" + this.commandToString( cmd ) );
+      }
 
       if( cmd.type == "control" )  {
         var cn = cmd.controlKW;
@@ -3311,18 +3401,18 @@ class BasicContext {
 
   }
 
-  loadContainer( container ) {
+  loadContainer( fileContainer ) {
 
-    if( container == null ) {
-      this.program=[];
+    if( fileContainer == null ) {
+      /* file not found */
       return false;
     }
 
     this.program = null;
 
-    if( container.type == "bas") {
+    if( fileContainer.type == "bas") {
 
-      this.program = JSON.parse( container.data );
+      this.program = JSON.parse( fileContainer.data );
       var p = new Parser( this.commands, this.extendedcommands );
       p.init();
 
@@ -3333,9 +3423,9 @@ class BasicContext {
         }
       }
     }
-    else if( container.type == "snp") {
+    else if( fileContainer.type == "snp") {
 
-      var state = JSON.parse( container.data );
+      var state = JSON.parse( fileContainer.data );
       if( !(state.pgm === undefined) ) {
           this.program = state.pgm;
           this.setProgramState( state.pgmState );
@@ -3354,7 +3444,7 @@ class BasicContext {
           delete p[i];
         }
       }
-      return [true, container.type == "snp" ];
+      return [true, fileContainer.type == "snp" ];
     }
     return false;
   }
@@ -3435,6 +3525,10 @@ class BasicContext {
 
   }
 
+  getEnabledExtended() {
+    return this.extendedcommands.isEnabled();
+  }
+
   enableExtended( flag ) {
     if( flag ) {
       this.extendedcommands._stat_xon( undefined );
@@ -3502,10 +3596,9 @@ class BasicContext {
 
   handleLineInput( str, isInputCommand ) {
 
-
-
-    if( this.debugFlag ) {
-      console.log("handleLineInput: start debug / isInputCommand=" + isInputCommand + " -------------");
+    if( this.debugFlag || this.debugSkipCommandBug ) {
+      console.log( "handleLineInput: start debug / isInputCommand=" + isInputCommand + " -------------");
+      console.log( " inputString: " + str );
     }
 
     if( isInputCommand ) {
@@ -3559,13 +3652,14 @@ class BasicContext {
 
     this.executeLineFlag = true;
 
-    if( this.debugFlag ) {
+    if( this.debugFlag || this.debugSkipCommandBug ) {
       console.log( str );
     }
     var p = new Parser( this.commands, this.extendedcommands );
     p.init();
     try {
       var l = p.parseLine( str );
+      if( this.debugSkipCommandBug ) { console.log( l ); }
     }
     catch( e ) {
 
@@ -3597,11 +3691,13 @@ class BasicContext {
       }
     }
     else {
+      if( this.debugSkipCommandBug ) { console.log( "handleInput->executeCommand" ); }
       this.runPointer = -1;
       this.runPointer2 = 0;
 
       try {
-        this.runCommands( l.commands );
+        if( this.debugSkipCommandBug ) { console.log( l.commands ); }
+        this.runCommands( l.commands, undefined );
       }
       catch( e ) {
 
@@ -3624,7 +3720,7 @@ class BasicContext {
         this.runFlag = false;
       }
 
-      if( ! this.runFlag && ! this.listFlag) {
+      if( ! this.runFlag && ! this.listFlag && !this.menuFocus) {
         this.printLine("ready.");
       }
 

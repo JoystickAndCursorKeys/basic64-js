@@ -85,16 +85,14 @@ class Menu {
     this.menus = {};
     this.menuOffset = {};
 
-		this.directPageMode = false;
-
     this.stateMemory = new Uint8Array( 256 * 256 );
 
     var opts = [];
     //opts.push({opt: "status", display: "Status" });
     //opts.push({opt: "loadsave", display: "Load/Save" });
 
-    opts.push({opt: "diskMenu", display: "Virtual Disk" });
     opts.push({opt: "basicMenu", display: "Basic" });
+    opts.push({opt: "diskMenu", display: "Virtual Disk" });
     opts.push({opt: "exportMenu", display: "Import" });
     opts.push({opt: "clipboardMenu", display: "Clipboard" });
     opts.push({opt: "docsSettingsMenu", display: "Settings and docs" });
@@ -148,7 +146,6 @@ class Menu {
 
     opts = [];
     opts.push({opt: "changeExitMode", display: "exit mode" });
-		opts.push({opt: "changeListingMode", display: "enhanced listing" });
     opts.push({opt: "changeImmersiveMode", display: "immersive mode" });
     opts.push({opt: "changeClock", display: "clock mode" });
     opts.push({opt: "changeTurbo", display: "turbo mode" });
@@ -163,10 +160,15 @@ class Menu {
 
     opts = [];
     opts.push({opt: "listDirectory", display: "Load File" });
-		opts.push({opt: "saveSnapshot", display:  "Save Snapshot" });
-    opts.push({opt: "listDisks",    display: "Swap Disks" });
 		opts.push({opt: "formatDisk", display: "Format Disk", confirm: true });
+    opts.push({opt: "listDisks",    display: "Swap Disks" });
 		opts.push({opt: "createDisk",    display: "Create new Disk", confirm: true });
+
+//    opts.push({opt: "listDirectory", display: "Save" });
+    opts.push({opt: "saveSnapshot", display:  "Save Snapshot" });
+//    opts.push({opt: "listDirectory", display: "Format" });
+//    opts.push({opt: "listDirectory", display: "Disk Swap" });
+//    opts.push({opt: "listDirectory", display: "Rename Disk" });
 
     this.options["disk"] = opts;
     this.menus["disk"] = "disk";
@@ -383,6 +385,7 @@ class Menu {
     t.rendervmStateText() ;
 
   }
+
 
   rendervmStateText() {
 
@@ -604,10 +607,6 @@ class Menu {
     this.context.printLine( padStr + txt );
   }
 
-	saveState() {
-		console.log("Implement me");
-	}
-
   start() {
 
     this.console.clearCursor();
@@ -687,8 +686,7 @@ class Menu {
       mem[i] = this.stateMemory[ i ];
     }
     this.console.clearCursor();
-		this.directPageMode = false;
-
+		//this.context.setBorderChangedFlag();
   }
 
   endMenu() {
@@ -770,17 +768,9 @@ class Menu {
     }
     if( evt.key == "Escape") {
 
-
 			if( this.selectList == true ) {
         this.selectList = false;
 				this.optSelect = this.oldOptSelect;
-
-
-				if( this.directPageMode ) {
-						this.endMenu();
-						return;
-				}
-
 				this.rendervmStateText();
       }
       else if( this.menuvmState == "main" ) {
@@ -1089,17 +1079,6 @@ class Menu {
 			this.context.setImmersiveFlag(false);
 			default_Document_Page_Color();
 		}
-	}
-
-	select_ListingMode( id ) {
-		localStorage.setItem( "BJ64_ListingMode", JSON.stringify( { listing: id } ) );
-
-		if( id == "enhanced" ) {
-			this.context.setListModeEnhanced(false);
-		}
-		else {
-			this.context.setListModeEnhanced(false);
-		}
 
 	}
 
@@ -1287,8 +1266,6 @@ class Menu {
 		}
 	}
 
-
-
 	select_List( id, page ) {
 		if( this.debugFlag ) {
 			console.log( id, page  );
@@ -1326,80 +1303,19 @@ class Menu {
 
 	}
 
-  start2() {
-
-    this.console.clearCursor();
-
-    this.vmState =
-    {
-        console: this.console.getState(),
-        pgm: this.context.getProgram(),
-        pgmState: this.context.getProgramState(),
-    }
-
-    var mem = this.console.getMemory();
-    for( var i=0; i<(256*256); i++) {
-      this.stateMemory[ i ] = mem[ i ];
-    }
-
-		if( this.debugFlag ) {
-    	console.log( this.vmState );
-		}
-    this.initLogo();
-
-  }
-
-/*
-		HINTS for restore
-    this.menuvmState = "docssettings";
-    this.optSelect = 0
-    this.rendervmState();
-*/
-
-	startBasicList() {
-
-		this.directPageMode = true;
-		this.start2();
-
-		var list = { title: "Basic Listing", showNum: false, offset:0, items: [] };
-
-		list.callback = "select_List";
-
-		var pgm = this.context.getProgramLines();
-
-		for( var i=0; i<pgm.length; i++ )
-		{
-				var l = pgm[i];
-				var display = l[2].trim();
-				if( display.length > 35 ) {
-					display = l[2].substr(0,34)+"..";
-				}
-				list.items.push({name: display, id: i});
-
-				if( this.debugFlag ) {
-					console.log(l[2]);
-				}
-		}
-
-		if( list.items.length == 0 ) {
-			list.items.push({name: "NO PROGRAM IN MEMORY", id: 0});
-		}
-
-		list.hideLogo = true;
-		this.startList( list );
-
-    //this.initLogo();
-    this.rendervmState();
-	}
-
 
 	do_list() {
 
-		var list = { title: "Basic Listing", showNum: false, offset:0, items: [] };
+		var list = { title: "Basic Listing", showNum: false, offset:0, items: []
+//			{ name: "compatible",   id: "compat"},
+//			{ name: "synchronized with host", id: "clocksync"}
+		 };
 
 		list.callback = "select_List";
 
 		var pgm = this.context.getProgramLines();
+
+		//var basicList = [];
 
 		for( var i=0; i<pgm.length; i++ )
 		{
@@ -1409,14 +1325,11 @@ class Menu {
 					display = l[2].substr(0,34)+"..";
 				}
 				list.items.push({name: display, id: i});
+		//		basicList.push({name: display, id: i});
 
 				if( this.debugFlag ) {
 					console.log(l[2]);
 				}
-		}
-
-		if( list.items.length == 0 ) {
-			list.items.push({name: "NO PROGRAM IN MEMORY", id: 0});
 		}
 
 		list.hideLogo = true;
@@ -1437,23 +1350,6 @@ class Menu {
 		] };
 
 		list.callback = "select_ExitMode";
-
-		this.startList( list );
-
-	}
-
-	do_changeListingMode() {
-
-		if( !this.context.confirmCookies() ) {
-			return;
-		}
-
-		var list = { title: "list mode:", items: [
-			{ name: "enhanced",   id: "enhanced"},
-			{ name: "normal", id: "normal"}
-		] };
-
-		list.callback = "select_ListingMode";
 
 		this.startList( list );
 

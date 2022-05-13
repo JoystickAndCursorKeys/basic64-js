@@ -187,7 +187,6 @@ class Parser {
     splits.push( { p1: "S", p2: "TO", p3: "P", whole: "STOP" } );
 
     //extended
-    splits.push( { p1: "PEN", p2: "POS", p3: null, whole: "PENPOS" } );
     splits.push( { p1: "B", p2: "OR", p3: "DER", whole: "BORDER" } );
     splits.push( { p1: "G", p2: "COLOR", p3: "S", whole: "GCOLORS" } );
     splits.push( { p1: "CHAR", p2: "COL", p3: null, whole: "CHARCOL" } );
