@@ -289,16 +289,39 @@ class BasicContext {
     this.exitMode = v;
   }
 
+
+
+  setClock( tiStr ) {
+
+    function clockPart( str ) {
+      var p = parseInt( str );
+      if( isNaN( p ) ) {
+        return 0;
+      }
+      return p;
+    }
+    var nowDate = new Date().getTime();
+
+    var myClock = nowDate -
+        (
+            (clockPart( tiStr.substr(4,2))*1000) +
+            (clockPart( tiStr.substr(2,2))*60*1000)+
+            (clockPart( tiStr.substr(0,2))*3600*1000)
+        ) ;
+
+    this.nullTime = myClock;
+
+  }
+
   synchClock() {
 
-    //var clock = new Date().getTime();
     var nullClock = new Date();
     nullClock.setHours(0);
     nullClock.setSeconds(0);
     nullClock.setMinutes(0);
     nullClock.setMilliseconds(0);
 
-    this.nullTime = nullClock;
+    this.nullTime = nullClock.getTime();
 
   }
 
@@ -1440,6 +1463,7 @@ class BasicContext {
 
   cbLineOverFlow() {
 
+
     this.updateYPos();
 
     if( this.yPos<24 ) {
@@ -1659,9 +1683,6 @@ class BasicContext {
             prevCharIsQuote = true;
           }
 
-//
-//7 print"{home}{white}":print spc(9);"game over sc:";s;" top:";tp:ifs>tpthentp=s
-//
         if( prevCharIsQuote && !nextCharIsQuote ) {
             dst = dst.substr( 0, dst.length-1 );
             dst += "CHR$("+c+");\"";
@@ -1688,9 +1709,15 @@ class BasicContext {
 
     var dst2= this.replaceAll( dst, ";\"\";",";");
 
+    var checkLen = dst2.length;
+    if( checkLen > 79 ) {
+      dst2 = txt0;
+    }
+
     if( toLower ) { return dst2.toLowerCase(); }
     return dst2;
   }
+
 
   ResolveStringSymbolToCode( x ) {
 
@@ -3173,12 +3200,9 @@ class BasicContext {
         }
         else { //single var (not an array)
           if( this.vars[ cmd.var ] === undefined ) {
-            if(cmd.var.startsWith("TI")) {
-              this.printError("syntax");
-              return [END_W_ERROR,i+1,cnt+1];
-            }
             this.vars[ cmd.var ] = 0;
           }
+
           if(cmd.var.endsWith("%")) {
             this.vars[ cmd.var ] = Math.floor( this.evalExpression( cmd.expression ) );
           }
@@ -3189,9 +3213,17 @@ class BasicContext {
                 return [END_W_ERROR,i+1,cnt];
               }
               this.vars[ cmd.var ] = this.evalExpression( cmd.expression );
+
           }
           else {
             this.vars[ cmd.var ] = this.evalExpression( cmd.expression );
+            if(cmd.var.startsWith("TI")) {
+              if( this.vars[ cmd.var ].length < 6 ) {
+                this.printError("illegal quantity");
+                return [END_W_ERROR,i+1,cnt];
+              }
+              this.setClock( this.vars[ cmd.var ] );
+            }
           }
         }
       }

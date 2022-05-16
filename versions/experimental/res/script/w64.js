@@ -758,7 +758,6 @@ class Program {
           var mapEntry = this.keyToCTRLCode[checkKey];
           if( ! (mapEntry===undefined)) {
 
-            console.log("check_key: " + checkKey + " - out string " + mapEntry.charCodeAt(0));
             c.clearCursor();
             ctx.passChars( mapEntry, false );
             evt.preventDefault();
