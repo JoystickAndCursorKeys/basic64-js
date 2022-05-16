@@ -106,7 +106,8 @@ class Menu {
     this.menuOffset["main"] = 10;
 
     opts = [];
-    opts.push({opt: "copyPGMtoClip", display: "Copy program" });
+		opts.push({opt: "copyPGMtoClipTokens", display: "Copy program - tokens" });
+		opts.push({opt: "copyPGMtoClipNoPet", display: "Copy program - nopet" });
     opts.push({opt: "pastePGMFromClip", display: "Paste Program" });
 		opts.push({opt: "pastePGMFromClipAppend", display: "Paste and Merge" });
     this.options["clipboard"] = opts;
@@ -725,6 +726,7 @@ class Menu {
 
   endMenu() {
     this.context.endMenu();
+		this.context.updateEditMode();
     this.stop();
   }
 
@@ -1027,8 +1029,13 @@ class Menu {
 		setLinkCallbackText( this.int_getURLWithoutParams() +  "?linkpgm=" + encodedLink );
   }
 
+  do_copyPGMtoClipNoPet() {
+    navigator.clipboard.writeText( this.context.getProgramAsTextNoPETSCII() );
 
-  do_copyPGMtoClip() {
+    this.endMenuWithMessage("copied to clip");
+  }
+
+  do_copyPGMtoClipTokens() {
     navigator.clipboard.writeText( this.context.getProgramAsText() );
 
     this.endMenuWithMessage("copied to clip");
@@ -1453,9 +1460,6 @@ class Menu {
 		var max = 20;
 		var hlY = 0;
 
-		var old = this.context.getEditModeCallBacks();
-		this.context.setEditModeCallBacks( "edit" );
-
 		for(var i=start; max>0 && i<pgm.length; i++ )
 		{
 				var l = pgm[i];
@@ -1478,8 +1482,6 @@ class Menu {
 		}
 
 		this.console.setCursorY( hlY );
-
-		this.context.setEditModeCallBacks( old );
 
 	}
 
