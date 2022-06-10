@@ -178,14 +178,6 @@ class C64Screen {
 			 h: this.border0.h * ys
 		 }
 
-/*
-		 this.WIDTH = 320*xs;
-		 this.HEIGHT = 200*ys;
-
-		 this.FULLWIDTH = this.WIDTH + (this.border.w  * 2);
-		 this.FULLHEIGHT = this.HEIGHT + (this.border.h * 2);
-*/
-
 			this.WIDTH = 320*xs;
 			this.HEIGHT = 200*ys;
 
@@ -1813,6 +1805,91 @@ class C64Screen {
 
 	 }
 
+	 _renderDirectChrMonoScanlines( x, y, ch0, col0, bgcol) {
+
+     var fid;
+		 var dataPtr;
+
+		 if( this.useHires ) {
+			 fid = this.memory;
+	 		 dataPtr = this.videoBMRam;
+		 }
+		 else {
+			 if( this.useRomCharMem ) {
+				fid = this.fontImageRom;
+				dataPtr = 0;
+			 }
+			 else {
+				fid = this.memory;
+				dataPtr = this.videoRam;
+			 }
+		 }
+
+     var iDta = this.iDta;
+     var pixWidthM4 = this.iwidth * 4;
+
+     var fgCol1 = this.colors[ col0 ];
+     var bgCol1 = this.colors[ bgcol ];
+
+		 var fgCol2  = { r:fgCol1.r * .8, g:fgCol1.g * .8, b:fgCol1.b * .8 };
+		 var bgCol2  = { r:bgCol1.r * .8, g:bgCol1.g * .8, b:bgCol1.b * .8 };
+
+		 var bgColArr = [ bgCol1, bgCol2 ];
+		 var fgColArr = [ fgCol1, fgCol2 ];
+
+     var ch=ch0;
+
+		 //calculate row + column nrs
+     var row = ch >> 4 /* div 16*/;
+     var column = ch % 16;
+
+
+     var xd0 = x << 2 /* multiply 4, 4 bytes per pixel */;
+     var yd= pixWidthM4 * y;
+
+		 var yflip=0;
+
+		 //BASE of source data -> chM8 = font data start offset  + char offset
+     var chM8 = dataPtr + ch*8;
+
+     for( var yC = 0; yC<8; yC++) {
+       var xd = xd0;
+			 yflip=1-yflip;
+			 var fgCol = fgColArr[yflip];
+			 var bgCol = bgColArr[yflip];
+
+       var byte = fid[ chM8 + yC ];
+       var mask = 0b10000000;
+
+			 var lr=0,lg=0,lb=0;
+       for( var xC = 0; xC<8; xC++) {
+
+         var col = bgCol;
+
+         if ( (byte & mask ) > 0 ) {
+             col = fgCol;
+         }
+
+         var dBase = xd + yd;
+
+         iDta[ dBase + 0 ] = (col.r *.9) + 0.1*lr;
+         iDta[ dBase + 1 ] = (col.g *.9) + 0.1*lg;
+         iDta[ dBase + 2 ] = (col.b *.9) + 0.1*lb;
+         iDta[ dBase + 3 ] = 255;
+
+				 lr = col.r;
+				 lg = col.g;
+				 lb = col.b;
+
+         xd+=4;
+         mask = mask >> 1;
+       }
+       yd += pixWidthM4;
+     }
+
+   }
+
+
 	 _renderDirectChrMono( x, y, ch0, col0, bgcol) {
 
      var fid;
@@ -1849,6 +1926,7 @@ class C64Screen {
      var xd0 = x << 2 /* multiply 4, 4 bytes per pixel */;
      var yd= pixWidthM4 * y;
 
+
 		 //BASE of source data -> chM8 = font data start offset  + char offset
      var chM8 = dataPtr + ch*8;
 
@@ -1880,6 +1958,7 @@ class C64Screen {
      }
 
    }
+
 
 	 _renderDirectChrMulti( x, y, ch0, col0) {
 
