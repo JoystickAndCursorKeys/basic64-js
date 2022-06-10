@@ -540,6 +540,7 @@ class Program {
     if( evt.key == "F9" || evt.key=="Tab") {
       bcontext.toggleMenu();
       console.log("Menu");
+      this.resetKeyModifiers();
       evt.preventDefault();
     }
 
